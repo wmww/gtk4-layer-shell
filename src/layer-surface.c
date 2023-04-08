@@ -9,10 +9,8 @@
 #include <gtk/gtk.h>
 #include <gdk/wayland/gdkwayland.h>
 
-LayerSurface *pending_layer_surface = NULL;
-
-
 static const char *layer_surface_key = "wayland_layer_surface";
+GList* all_layer_surfaces = NULL;
 
 LayerSurface *
 gtk_window_get_layer_surface (GtkWindow *gtk_window)
@@ -228,8 +226,6 @@ layer_surface_on_window_realize (GtkWidget *widget, LayerSurface *self)
 
     self->wl_surface = gdk_wayland_surface_get_wl_surface (gdk_surface);
     g_return_if_fail(self->wl_surface);
-
-    pending_layer_surface = self;
 }
 
 static void
@@ -244,8 +240,6 @@ layer_surface_on_window_hide (GtkWidget *widget, LayerSurface *self)
 static void
 layer_surface_create_surface_object (LayerSurface *self)
 {
-    pending_layer_surface = NULL;
-
     struct zwlr_layer_shell_v1 *layer_shell_global = gtk_wayland_get_layer_shell_global ();
     g_return_if_fail (layer_shell_global);
 
@@ -300,6 +294,7 @@ static void
 layer_surface_destroy (LayerSurface *self)
 {
     layer_surface_unmap (self);
+    all_layer_surfaces = g_list_remove (all_layer_surfaces, self);
     g_free ((gpointer)self->name_space);
     g_free (self);
 
@@ -367,6 +362,7 @@ layer_surface_new (GtkWindow *gtk_window)
     g_return_val_if_fail (!gtk_widget_get_mapped (GTK_WIDGET (gtk_window)), NULL);
 
     LayerSurface *self = g_new0 (LayerSurface, 1);
+    all_layer_surfaces = g_list_append (all_layer_surfaces, self);
 
     self->gtk_window = gtk_window;
 
@@ -583,6 +579,11 @@ stubbed_xdg_surface_handle_destroy (void* data, struct wl_proxy *proxy)
     layer_surface_unmap(self);
 }
 
+gint find_layer_surface_with_wl_surface (gconstpointer layer_surface, gconstpointer wl_surface)
+{
+    return ((const LayerSurface *)layer_surface)->wl_surface == wl_surface ? 0 : 1;
+}
+
 struct wl_proxy *
 layer_surface_handle_request (
     struct wl_proxy *proxy,
@@ -595,16 +596,19 @@ layer_surface_handle_request (
     const char* type = proxy->object.interface->name;
     if (strcmp(type, xdg_wm_base_interface.name) == 0) {
         if (opcode == XDG_WM_BASE_GET_XDG_SURFACE) {
-            if (pending_layer_surface && pending_layer_surface->wl_surface == (struct wl_surface *)args[1].o) {
+            struct wl_surface *wl_surface = (struct wl_surface *)args[1].o;
+            GList *layer_surface_entry = g_list_find_custom (all_layer_surfaces, wl_surface, find_layer_surface_with_wl_surface);
+            if (layer_surface_entry) {
+                LayerSurface *self = layer_surface_entry->data;
                 struct wl_proxy *xdg_surface = create_client_facing_proxy (
                     proxy,
                     &xdg_surface_interface,
                     version,
                     stubbed_xdg_surface_handle_request,
                     stubbed_xdg_surface_handle_destroy,
-                    pending_layer_surface);
-                pending_layer_surface->client_facing_xdg_surface = (struct xdg_surface *)xdg_surface;
-                layer_surface_create_surface_object(pending_layer_surface);
+                    self);
+                self->client_facing_xdg_surface = (struct xdg_surface *)xdg_surface;
+                layer_surface_create_surface_object(self);
                 return xdg_surface;
             }
         }
