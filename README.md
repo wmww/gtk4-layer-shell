@@ -2,7 +2,6 @@
 It works, but it's still rough around the edges. See the end of https://github.com/wmww/gtk-layer-shell/issues/37 for details.
 
 TODO before release:
-- remove deprecated calls
 - update release process document
 - get tests passing
 - fix widget layout of demo
