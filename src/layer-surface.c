@@ -48,8 +48,8 @@ layer_surface_remap (LayerSurface *self)
 {
     GtkWidget *window_widget = GTK_WIDGET (self->gtk_window);
     g_return_if_fail (window_widget);
-    gtk_widget_set_visible (window_widget, FALSE);
-    gtk_widget_set_visible (window_widget, TRUE);
+    gtk_widget_unrealize (window_widget);
+    gtk_window_present (window_widget);
 }
 
 /*
@@ -233,6 +233,15 @@ layer_surface_on_window_realize (GtkWidget *widget, LayerSurface *self)
 }
 
 static void
+layer_surface_on_window_hide (GtkWidget *widget, LayerSurface *self)
+{
+    (void*)self;
+    // We need our realize handler to be called if the window is shown again in order to grab the new wl_surface
+    // (map is called too late)
+    gtk_widget_unrealize (widget);
+}
+
+static void
 layer_surface_create_surface_object (LayerSurface *self)
 {
     pending_layer_surface = NULL;
@@ -282,6 +291,9 @@ layer_surface_unmap (LayerSurface *super)
 
     clear_client_facing_proxy_data((struct wl_proxy *)self->client_facing_xdg_surface);
     clear_client_facing_proxy_data((struct wl_proxy *)self->client_facing_xdg_toplevel);
+
+    self->client_facing_xdg_surface = NULL;
+    self->client_facing_xdg_toplevel = NULL;
 }
 
 static void
@@ -363,6 +375,7 @@ layer_surface_new (GtkWindow *gtk_window)
                             self,
                             (GDestroyNotify) layer_surface_destroy);
     g_signal_connect (gtk_window, "realize", G_CALLBACK (layer_surface_on_window_realize), self);
+    g_signal_connect (gtk_window, "hide", G_CALLBACK (layer_surface_on_window_hide), self);
 
     if (gtk_widget_get_realized (GTK_WIDGET (gtk_window))) {
         // We must be in the process of realizing now
@@ -527,6 +540,13 @@ stubbed_xdg_toplevel_handle_request (
     return NULL;
 }
 
+static void
+stubbed_xdg_toplevel_handle_destroy (void* data, struct wl_proxy *proxy)
+{
+    LayerSurface *self = (LayerSurface *)data;
+    layer_surface_unmap(self);
+}
+
 static struct wl_proxy *
 stubbed_xdg_surface_handle_request (
     void* data,
@@ -544,7 +564,7 @@ stubbed_xdg_surface_handle_request (
             &xdg_toplevel_interface,
             version,
             stubbed_xdg_toplevel_handle_request,
-            NULL,
+            stubbed_xdg_toplevel_handle_destroy,
             data);
         self->client_facing_xdg_toplevel = (struct xdg_toplevel *)toplevel;
         return toplevel;

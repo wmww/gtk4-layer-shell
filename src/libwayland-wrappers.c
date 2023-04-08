@@ -182,6 +182,24 @@ get_client_facing_proxy_data (struct wl_proxy *proxy, void* expected_handler)
 }
 
 // Overrides the function in wayland-client.c in libwayland
+void
+wl_proxy_destroy (struct wl_proxy *proxy)
+{
+    libwayland_wrappers_init ();
+    if (proxy->object.id == client_facing_proxy_id) {
+        struct wrapped_proxy *wrapper = (struct wrapped_proxy *)proxy;
+        if (wrapper->destroy) {
+            wrapper->destroy(wrapper->data, proxy);
+        }
+        // No need to worry about the refcount since it's only accessibly within libwayland, and it's only used by
+        // functions that never see client facing objects
+        g_free (proxy);
+    } else {
+        real_wl_proxy_destroy (proxy);
+    }
+}
+
+// Overrides the function in wayland-client.c in libwayland
 struct wl_proxy *
 wl_proxy_marshal_array_flags (
     struct wl_proxy *proxy,
@@ -194,11 +212,12 @@ wl_proxy_marshal_array_flags (
     libwayland_wrappers_init ();
     if (proxy->object.id == client_facing_proxy_id) {
         struct wrapped_proxy *wrapper = (struct wrapped_proxy *)proxy;
-        if (wrapper->handler) {
-            return wrapper->handler(wrapper->data, proxy, opcode, interface, version, flags, args);
-        } else {
-            return NULL;
-        }
+        struct wl_proxy *result = NULL;
+        if (wrapper->handler)
+            result = wrapper->handler(wrapper->data, proxy, opcode, interface, version, flags, args);
+        if (flags & WL_MARSHAL_FLAG_DESTROY)
+            wl_proxy_destroy(proxy);
+        return result;
     } else {
         return layer_surface_handle_request (proxy, opcode, interface, version, flags, args);
     }
@@ -318,22 +337,4 @@ wl_proxy_add_dispatcher(struct wl_proxy *proxy,
         g_critical ("wl_proxy_add_dispatcher () not supported for client-facing proxies");
     }
     return real_wl_proxy_add_dispatcher(proxy, dispatcher_func, dispatcher_data, data);
-}
-
-// Overrides the function in wayland-client.c in libwayland
-void
-wl_proxy_destroy (struct wl_proxy *proxy)
-{
-    libwayland_wrappers_init ();
-    if (proxy->object.id == client_facing_proxy_id) {
-        struct wrapped_proxy *wrapper = (struct wrapped_proxy *)proxy;
-        if (wrapper->destroy) {
-            wrapper->destroy(wrapper->data, proxy);
-        }
-        // No need to worry about the refcount since it's only accessibly within libwayland, and it's only used by
-        // functions that never see client facing objects
-        g_free (proxy);
-    } else {
-        real_wl_proxy_destroy (proxy);
-    }
 }
