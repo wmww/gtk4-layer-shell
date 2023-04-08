@@ -1,7 +1,7 @@
 #ifndef GTK_LAYER_DEMO_H
 #define GTK_LAYER_DEMO_H
 
-#include "gtk-layer-shell.h"
+#include "gtk4-layer-shell.h"
 #include <gtk/gtk.h>
 
 typedef enum {

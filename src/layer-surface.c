@@ -1,6 +1,5 @@
 #include "layer-surface.h"
 
-#include "gtk-layer-shell.h"
 #include "wayland-utils.h"
 #include "libwayland-wrappers.h"
 

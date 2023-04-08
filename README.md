@@ -2,9 +2,7 @@
 It works, but it's still rough around the edges. See the end of https://github.com/wmww/gtk-layer-shell/issues/37 for details.
 
 TODO before release:
-- change lib name in meson
-- change version in meson
-- change so name in meson
+- remove deprecated calls
 - update release process document
 - get tests passing
 - fix widget layout of demo

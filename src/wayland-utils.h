@@ -3,7 +3,7 @@
 
 #include "xdg-shell-client.h"
 #include "wlr-layer-shell-unstable-v1-client.h"
-#include "gtk-layer-shell.h"
+#include "gtk4-layer-shell.h"
 #include <gdk/gdk.h>
 #include <gdk/gdk.h>
 

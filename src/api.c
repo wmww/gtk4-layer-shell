@@ -1,4 +1,3 @@
-#include "gtk-layer-shell.h"
 #include "wayland-utils.h"
 #include "layer-surface.h"
 

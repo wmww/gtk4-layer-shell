@@ -4,8 +4,8 @@
 #include <gtk/gtk.h>
 
 /**
- * SECTION:gtk-layer-shell
- * @title: Gtk Layer Shell
+ * SECTION:gtk4-layer-shell
+ * @title: GTK4 Layer Shell
  * @short_description: A library to write GTK Applications using Layer Shell
  *
  * insert more general verbiage here
