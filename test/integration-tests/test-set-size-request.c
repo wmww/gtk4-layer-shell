@@ -14,7 +14,7 @@ static void callback_0()
     gtk_layer_set_anchor(window, GTK_LAYER_SHELL_EDGE_TOP, TRUE);
     gtk_layer_set_anchor(window, GTK_LAYER_SHELL_EDGE_LEFT, TRUE);
     gtk_layer_set_anchor(window, GTK_LAYER_SHELL_EDGE_RIGHT, TRUE);
-    gtk_widget_show_all(GTK_WIDGET(window));
+    gtk_window_present(window);
 }
 
 static void callback_1()
@@ -26,7 +26,8 @@ static void callback_1()
     gtk_layer_set_anchor(window, GTK_LAYER_SHELL_EDGE_LEFT, FALSE);
     gtk_layer_set_anchor(window, GTK_LAYER_SHELL_EDGE_RIGHT, FALSE);
     gtk_widget_set_size_request(GTK_WIDGET(window), 600, 700);
-    gtk_window_resize(window, 1, 1);
+    // TODO
+    //gtk_window_resize(window, 1, 1);
 }
 
 static void callback_2()

@@ -13,8 +13,8 @@ static void callback_0()
     ASSERT(gtk_layer_is_layer_window(window_a));
     ASSERT(!gtk_layer_is_layer_window(window_b));
 
-    gtk_widget_show_all(GTK_WIDGET(window_a));
-    gtk_widget_show_all(GTK_WIDGET(window_b));
+    gtk_window_present(window_a);
+    gtk_window_present(window_b);
 }
 
 static void callback_1()

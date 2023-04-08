@@ -16,7 +16,7 @@ static void callback_0()
 
     window = create_default_window();
     gtk_layer_init_for_window(window);
-    gtk_widget_show_all(GTK_WIDGET(window));
+    gtk_window_present(window);
 
     set_anchors(window, FALSE, FALSE, FALSE, FALSE);
 }

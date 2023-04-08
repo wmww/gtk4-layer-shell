@@ -12,7 +12,7 @@ static void callback_0()
     gtk_layer_set_anchor(window, GTK_LAYER_SHELL_EDGE_LEFT, 2);
     ASSERT_EQ(gtk_layer_get_anchor(window, GTK_LAYER_SHELL_EDGE_LEFT), 1, "%d");
 
-    gtk_widget_show_all(GTK_WIDGET(window));
+    gtk_window_present(window);
 
     gtk_layer_set_anchor(window, GTK_LAYER_SHELL_EDGE_TOP, -1);
     ASSERT_EQ(gtk_layer_get_anchor(window, GTK_LAYER_SHELL_EDGE_TOP), 1, "%d");

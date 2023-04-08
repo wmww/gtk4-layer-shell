@@ -45,7 +45,7 @@ if get_option('docs')
     subdir('doc')
 endif
 
-if false # get_option('tests')
+if get_option('tests')
     subdir('test')
 else
     # Add a single always-failing test to tell the user to reconfigure with tests enabled

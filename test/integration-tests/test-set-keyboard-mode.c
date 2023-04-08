@@ -11,7 +11,7 @@ static void callback_0()
     window = create_default_window();
     gtk_layer_init_for_window(window);
     gtk_layer_set_keyboard_mode(window, GTK_LAYER_SHELL_KEYBOARD_MODE_EXCLUSIVE);
-    gtk_widget_show_all(GTK_WIDGET(window));
+    gtk_window_present(window);
     gtk_layer_set_keyboard_mode(window, GTK_LAYER_SHELL_KEYBOARD_MODE_NONE);
     gtk_layer_set_keyboard_mode(window, GTK_LAYER_SHELL_KEYBOARD_MODE_ON_DEMAND);
 }

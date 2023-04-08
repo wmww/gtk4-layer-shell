@@ -11,6 +11,8 @@ static void callback_0()
     EXPECT_MESSAGE(xdg_surface .get_popup);
     EXPECT_MESSAGE(xdg_popup .grab);
 
+    // TODO
+    /*
     window = GTK_WINDOW(gtk_window_new(GTK_WINDOW_TOPLEVEL));
     GtkWidget *menu_bar = gtk_menu_bar_new();
     gtk_container_add(GTK_CONTAINER(window), menu_bar);
@@ -23,6 +25,7 @@ static void callback_0()
 
     gtk_layer_init_for_window(window);
     gtk_widget_show_all(GTK_WIDGET(window));
+    */
 }
 
 TEST_CALLBACKS(

@@ -1,11 +1,11 @@
 #ifndef TEST_CLIENT_COMMON_H
 #define TEST_CLIENT_COMMON_H
 
-#include "gtk-layer-shell.h"
+#include "gtk4-layer-shell.h"
 #include "test-common.h"
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
-#include <gdk/gdkwayland.h>
+#include <gdk/wayland/gdkwayland.h>
 #include <stdio.h>
 
 // Tell the test script that a request containing the given space-separated components is expected

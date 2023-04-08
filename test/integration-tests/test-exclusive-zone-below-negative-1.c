@@ -9,7 +9,7 @@ static void callback_0()
     window = create_default_window();
     gtk_layer_init_for_window(window);
     gtk_layer_set_anchor(window, GTK_LAYER_SHELL_EDGE_BOTTOM, TRUE);
-    gtk_widget_show_all(GTK_WIDGET(window));
+    gtk_window_present(window);
     gtk_layer_set_exclusive_zone(window, -2);
     ASSERT_EQ(gtk_layer_get_exclusive_zone(window), -1, "%d");
 }

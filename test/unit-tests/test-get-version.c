@@ -1,4 +1,4 @@
-#include "gtk-layer-shell.h"
+#include "gtk4-layer-shell.h"
 #include "test-common.h"
 
 int main(int argc, char** argv)

@@ -10,7 +10,7 @@ static void callback_0()
     ASSERT_EQ(gtk_layer_get_exclusive_zone(window), 0, "%d");
     gtk_layer_set_exclusive_zone(window, 12);
     ASSERT_EQ(gtk_layer_get_exclusive_zone(window), 12, "%d");
-    gtk_widget_show_all(GTK_WIDGET(window));
+    gtk_window_present(window);
     ASSERT_EQ(gtk_layer_get_exclusive_zone(window), 12, "%d");
     gtk_layer_set_exclusive_zone(window, 0);
     ASSERT_EQ(gtk_layer_get_exclusive_zone(window), 0, "%d");
