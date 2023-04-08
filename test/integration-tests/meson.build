@@ -27,4 +27,6 @@ integration_tests = [
     'test-get-monitor',
     'test-set-monitor',
     'test-create-subsurface',
+    'test-create-xdg-toplevel',
+    'test-hide-and-show',
 ]
