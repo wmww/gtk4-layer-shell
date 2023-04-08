@@ -2,9 +2,6 @@
 It works, but it's still rough around the edges. See the end of https://github.com/wmww/gtk-layer-shell/issues/37 for details.
 
 TODO before release:
-- remove traces of GPL (all GPL code should be gone now)
-- drop all copyright headers
-- change license in meson
 - change lib name in meson
 - change version in meson
 - change so name in meson
@@ -85,14 +82,4 @@ sudo apt install meson libwayland-dev libgtk-3-dev gobject-introspection libgire
 * `ninja -C build test`
 
 ## Licensing
-GTK Layer Shell is licensed under the GNU Lesser General Public License version 3.0 or any later version.
-
-Most of the individual source files are licensed under MIT.
-
-To prevent possible future confusion, all contributions must contain the following in the PR message: *By opening this pull request, I agree for my modifications to be licensed under whatever licenses are indicated at the start of the files I modified*
-
-### Licensing Rationale
-I want everyone to be able to use GTK Layer Shell however they desire, but parts of it are extracted from GTK. Therefore, the project as a whole is licensed under [GNU Lesser General Public License (LGPL) version 3](https://www.gnu.org/licenses/lgpl-3.0.en.html) or any later version (a newer version of the same license as GTK). See [LICENSE_LGPL.txt](LICENSE_LGPL.txt) and [LICENSE_GPL.txt](LICENSE_GPL.txt) for details. Almost all of the non-generated code, however, is licensed under [MIT](https://en.wikipedia.org/wiki/MIT_License) ([LICENSE_MIT.txt](LICENSE_MIT.txt)). At the top of each file should be a header that specifies which license applies to it. Please refer to that if in doubt.
-
-### What This Means For You
-This library can be linked against under similar terms as GTK itself, so licensing shouldn't be a problem for most potential users. Furthermore, most of the code within this library can be used in permissively licensed or proprietary projects.
+100% MIT (unlike the GTK3 version of this library which contained GPL code copied from GTK)

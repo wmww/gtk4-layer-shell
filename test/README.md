@@ -10,7 +10,6 @@ This directory is home to the gtk-layer-shell test suite.
 3. Add its name to the list in `test/integration-tests/meson.build`
 
 ## Scripts
-- `check-licenses.py` makes sure all files have licenses at the top
 - `tests-not-enabled.py` is only run if tests are disabled, and explains to the user how to enable them
 - `run-integration-test.py` runs a single integration test
 - `check-all-tests-are-in-meson.py` fails if any test files exist that haven't been added to meson (an easy mistake to make)

@@ -9,6 +9,3 @@ This is part of GTK Layer Shell, but is not built with the rest of the library. 
 ## Building
 - `meson build`
 - `ninja -C build`
-
-## Licensing
-This sub-project is licensed under MIT
