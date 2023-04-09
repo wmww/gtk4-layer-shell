@@ -16,7 +16,6 @@ typedef struct _LayerSurface LayerSurface;
 struct _LayerSurface
 {
     GtkWindow *gtk_window;
-    struct wl_surface *wl_surface;
 
     // Can be set at any time
     gboolean anchors[GTK_LAYER_SHELL_EDGE_ENTRY_NUMBER]; // The current anchor

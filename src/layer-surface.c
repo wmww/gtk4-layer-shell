@@ -44,8 +44,8 @@ layer_surface_needs_commit (LayerSurface *self)
 void
 layer_surface_remap (LayerSurface *self)
 {
-    gtk_widget_unrealize (GTK_WIDGET (self->gtk_window));
-    gtk_window_present (self->gtk_window);
+    gtk_widget_set_visible (GTK_WIDGET (self->gtk_window), FALSE);
+    gtk_widget_set_visible (GTK_WIDGET (self->gtk_window), TRUE);
 }
 
 static void
@@ -203,29 +203,7 @@ layer_surface_send_set_margin (LayerSurface *self)
 }
 
 static void
-layer_surface_on_window_realize (GtkWidget *widget, LayerSurface *self)
-{
-    g_return_if_fail (GTK_WIDGET (self->gtk_window) == widget);
-    g_return_if_fail (!self->layer_surface);
-
-    GdkSurface *gdk_surface = gtk_native_get_surface (GTK_NATIVE (self->gtk_window));
-    g_return_if_fail (gdk_surface);
-
-    self->wl_surface = gdk_wayland_surface_get_wl_surface (gdk_surface);
-    g_return_if_fail(self->wl_surface);
-}
-
-static void
-layer_surface_on_window_hide (GtkWidget *widget, LayerSurface *self)
-{
-    (void*)self;
-    // We need our realize handler to be called if the window is shown again in order to grab the new wl_surface
-    // (map is called too late)
-    gtk_widget_unrealize (widget);
-}
-
-static void
-layer_surface_create_surface_object (LayerSurface *self)
+layer_surface_create_surface_object (LayerSurface *self, struct wl_surface *wl_surface)
 {
     struct zwlr_layer_shell_v1 *layer_shell_global = gtk_wayland_get_layer_shell_global ();
     g_return_if_fail (layer_shell_global);
@@ -239,7 +217,7 @@ layer_surface_create_surface_object (LayerSurface *self)
 
     enum zwlr_layer_shell_v1_layer layer = gtk_layer_shell_layer_get_zwlr_layer_shell_v1_layer(self->layer);
     self->layer_surface = zwlr_layer_shell_v1_get_layer_surface (layer_shell_global,
-                                                                 self->wl_surface,
+                                                                 wl_surface,
                                                                  output,
                                                                  layer,
                                                                  name_space);
@@ -269,8 +247,8 @@ layer_surface_unmap (LayerSurface *super)
     self->client_facing_xdg_surface = NULL;
     self->client_facing_xdg_toplevel = NULL;
 
-    self->cached_xdg_configure_size = (GtkRequisition){0, 0};
-    self->cached_layer_size_set = (GtkRequisition){0, 0};
+    self->cached_xdg_configure_size = (GtkRequisition){-1, -1};
+    self->cached_layer_size_set = (GtkRequisition){-1, -1};
     self->last_layer_configured_size = (GtkRequisition){0, 0};
     self->pending_configure_serial = 0;
 }
@@ -336,6 +314,8 @@ layer_surface_new (GtkWindow *gtk_window)
     g_return_val_if_fail (!gtk_widget_get_mapped (GTK_WIDGET (gtk_window)), NULL);
 
     LayerSurface *self = g_new0 (LayerSurface, 1);
+    self->cached_xdg_configure_size = (GtkRequisition){-1, -1};
+    self->cached_layer_size_set = (GtkRequisition){-1, -1};
     all_layer_surfaces = g_list_append (all_layer_surfaces, self);
 
     self->gtk_window = gtk_window;
@@ -344,13 +324,6 @@ layer_surface_new (GtkWindow *gtk_window)
                             layer_surface_key,
                             self,
                             (GDestroyNotify) layer_surface_destroy);
-    g_signal_connect (gtk_window, "realize", G_CALLBACK (layer_surface_on_window_realize), self);
-    g_signal_connect (gtk_window, "hide", G_CALLBACK (layer_surface_on_window_hide), self);
-
-    if (gtk_widget_get_realized (GTK_WIDGET (gtk_window))) {
-        // We must be in the process of realizing now
-        layer_surface_on_window_realize (GTK_WIDGET (gtk_window), self);
-    }
 
     self->layer = GTK_LAYER_SHELL_LAYER_TOP;
     self->keyboard_mode = GTK_LAYER_SHELL_KEYBOARD_MODE_NONE;
@@ -555,9 +528,13 @@ stubbed_xdg_surface_handle_destroy (void* data, struct wl_proxy *proxy)
     layer_surface_unmap(self);
 }
 
-gint find_layer_surface_with_wl_surface (gconstpointer layer_surface, gconstpointer wl_surface)
+gint find_layer_surface_with_wl_surface (gconstpointer layer_surface, gconstpointer needle)
 {
-    return ((const LayerSurface *)layer_surface)->wl_surface == wl_surface ? 0 : 1;
+    const LayerSurface *self = layer_surface;
+    GdkSurface *gdk_surface = gtk_native_get_surface (GTK_NATIVE (self->gtk_window));
+    if (!gdk_surface) return 1;
+    struct wl_surface *wl_surface = gdk_wayland_surface_get_wl_surface (gdk_surface);
+    return wl_surface == needle ? 0 : 1;
 }
 
 struct wl_proxy *
@@ -584,7 +561,7 @@ layer_surface_handle_request (
                     stubbed_xdg_surface_handle_destroy,
                     self);
                 self->client_facing_xdg_surface = (struct xdg_surface *)xdg_surface;
-                layer_surface_create_surface_object(self);
+                layer_surface_create_surface_object(self, wl_surface);
                 return xdg_surface;
             }
         }

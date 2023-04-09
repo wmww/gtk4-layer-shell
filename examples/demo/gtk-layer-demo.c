@@ -324,7 +324,7 @@ activate (GtkApplication* app, void *_data)
         data->edges[i] = default_anchors[i];
 
     if (default_fixed_size)
-        gtk_widget_set_size_request (GTK_WIDGET (gtk_window), fixed_size_width, fixed_size_height);
+        gtk_window_set_default_size (gtk_window, fixed_size_width, fixed_size_height);
 
     if (no_layer_shell) {
         g_message ("GTK layer shell disabled on command line");
