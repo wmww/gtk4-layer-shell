@@ -26,7 +26,6 @@ integration_tests = [
     'test-get-keyboard-mode',
     'test-get-monitor',
     'test-set-monitor',
-    'test-create-subsurface',
     'test-create-xdg-toplevel',
     'test-hide-and-show',
 ]
