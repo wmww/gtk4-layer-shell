@@ -348,6 +348,10 @@ activate (GtkApplication* app, void *_data)
 
     set_up_menubar (gtk_window);
     GtkWidget *centered_vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_set_margin_bottom (centered_vbox, 10);
+    gtk_widget_set_margin_top (centered_vbox, 10);
+    gtk_widget_set_margin_start (centered_vbox, 10);
+    gtk_widget_set_margin_end (centered_vbox, 10);
     gtk_window_set_child (gtk_window, centered_vbox);
     GtkWidget *centered_hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_box_append (GTK_BOX (centered_vbox), centered_hbox);
@@ -356,9 +360,11 @@ activate (GtkApplication* app, void *_data)
     gtk_box_append (GTK_BOX (centered_hbox), data->toplevel_box);
     {
         data->first_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 12);
+        gtk_widget_set_vexpand (data->first_box, TRUE);
         gtk_box_append (GTK_BOX (data->toplevel_box), data->first_box);
         {
             GtkWidget *selections_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
+            gtk_widget_set_vexpand (selections_box, TRUE);
             gtk_box_append (GTK_BOX (data->first_box), selections_box);
             gtk_box_append (GTK_BOX (selections_box),
                             monitor_selection_new (gtk_window));

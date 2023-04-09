@@ -3,7 +3,7 @@
 GtkWidget *
 version_info_new ()
 {
-    gchar *version_str = g_strdup_printf("GTK LS v%d.%d.%d\nGTK v%d.%d.%d",
+    gchar *version_str = g_strdup_printf("GTK4 LS v%d.%d.%d\nGTK v%d.%d.%d",
                                          gtk_layer_get_major_version (),
                                          gtk_layer_get_minor_version (),
                                          gtk_layer_get_micro_version (),

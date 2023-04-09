@@ -41,34 +41,37 @@ GtkWidget *
 anchor_control_new (GtkWindow *layer_window, const gboolean default_anchors[GTK_LAYER_SHELL_EDGE_ENTRY_NUMBER])
 {
     GtkWidget *outside_vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_set_vexpand (outside_vbox, TRUE);
     GtkWidget *outside_hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_box_append (GTK_BOX (outside_vbox), outside_hbox);
     {
         GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 4);
         gtk_box_append (GTK_BOX (outside_hbox), hbox);
         {
-            GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+            GtkWidget *vbox = gtk_center_box_new ();
+            gtk_orientable_set_orientation (GTK_ORIENTABLE (vbox), GTK_ORIENTATION_VERTICAL);
             gtk_box_append (GTK_BOX (hbox), vbox);
             {
-                GtkWidget *button = anchor_edge_button_new (layer_window, GTK_LAYER_SHELL_EDGE_LEFT, default_anchors, "go-first", "Anchor left");
-                gtk_box_append (GTK_BOX (vbox), button);
+                GtkWidget *button = anchor_edge_button_new (layer_window, GTK_LAYER_SHELL_EDGE_LEFT, default_anchors, "go-previous", "Anchor left");
+                gtk_center_box_set_center_widget (GTK_CENTER_BOX (vbox), button);
             }
         }{
             GtkWidget *center_vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 40);
             gtk_box_append (GTK_BOX (hbox), center_vbox);
             {
-                GtkWidget *button = anchor_edge_button_new (layer_window, GTK_LAYER_SHELL_EDGE_TOP, default_anchors, "go-top", "Anchor top");
+                GtkWidget *button = anchor_edge_button_new (layer_window, GTK_LAYER_SHELL_EDGE_TOP, default_anchors, "go-up", "Anchor top");
                 gtk_box_append (GTK_BOX (center_vbox), button);
             }{
-                GtkWidget *button = anchor_edge_button_new (layer_window, GTK_LAYER_SHELL_EDGE_BOTTOM, default_anchors, "go-bottom", "Anchor bottom");
+                GtkWidget *button = anchor_edge_button_new (layer_window, GTK_LAYER_SHELL_EDGE_BOTTOM, default_anchors, "go-down", "Anchor bottom");
                 gtk_box_append (GTK_BOX (center_vbox), button);
             }
         }{
-            GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
+            GtkWidget *vbox = gtk_center_box_new ();
+            gtk_orientable_set_orientation (GTK_ORIENTABLE (vbox), GTK_ORIENTATION_VERTICAL);
             gtk_box_append (GTK_BOX (hbox), vbox);
             {
-                GtkWidget *button = anchor_edge_button_new (layer_window, GTK_LAYER_SHELL_EDGE_RIGHT, default_anchors, "go-last", "Anchor right");
-                gtk_box_append (GTK_BOX (vbox), button);
+                GtkWidget *button = anchor_edge_button_new (layer_window, GTK_LAYER_SHELL_EDGE_RIGHT, default_anchors, "go-next", "Anchor right");
+                gtk_center_box_set_center_widget (GTK_CENTER_BOX (vbox), button);
             }
         }
     }

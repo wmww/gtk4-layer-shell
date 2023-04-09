@@ -43,6 +43,7 @@ mscl_toggles_new (GtkWindow *layer_window,
     GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
     for (unsigned i = 0; i < sizeof (mscl_toggles) / sizeof (mscl_toggles[0]); i++) {
         GtkWidget *hbox = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 6);
+        gtk_widget_set_halign (hbox, GTK_ALIGN_END);
         gtk_box_append (GTK_BOX (vbox), hbox);
         {
             GtkWidget *label = gtk_label_new (mscl_toggles[i].name);
