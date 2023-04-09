@@ -21,27 +21,7 @@ gtk_window_get_layer_surface (GtkWindow *gtk_window)
     return g_object_get_data (G_OBJECT (gtk_window), layer_surface_key);
 }
 
-void
-layer_surface_needs_commit (LayerSurface *self)
-{
-    if (!self->gtk_window)
-        return;
-
-    // GdkSurface *gdk_surface = gtk_native_get_surface (GTK_NATIVE (self->gtk_window));
-
-    // if (!gdk_surface)
-    //    return;
-
-    // Hopefully this will trigger a commit
-    // Don't commit directly, as that screws up GTK's internal state
-    // (see https://github.com/wmww/gtk-layer-shell/issues/51)
-    // TODO
-    // gdk_window_invalidate_rect (gdk_window, NULL, FALSE);
-
-    gtk_widget_queue_draw (GTK_WIDGET (self->gtk_window));
-}
-
-void
+static void
 layer_surface_remap (LayerSurface *self)
 {
     gtk_widget_set_visible (GTK_WIDGET (self->gtk_window), FALSE);
@@ -94,7 +74,7 @@ layer_surface_send_set_size (LayerSurface *self)
 }
 
 static void
-layer_surface_configure_xdg_surface (LayerSurface *self, uint32_t optional_serial)
+layer_surface_configure_xdg_surface (LayerSurface *self, uint32_t serial, gboolean send_even_if_size_unchanged)
 {
     g_return_if_fail (self->client_facing_xdg_surface && self->client_facing_xdg_toplevel);
 
@@ -117,11 +97,11 @@ layer_surface_configure_xdg_surface (LayerSurface *self, uint32_t optional_seria
 
     if (self->cached_xdg_configure_size.width != width ||
         self->cached_xdg_configure_size.height != height ||
-        optional_serial
+        send_even_if_size_unchanged
     ) {
         self->cached_xdg_configure_size = (GtkRequisition){width, height};
-        if (optional_serial)
-            self->pending_configure_serial = optional_serial;
+        if (serial)
+            self->pending_configure_serial = serial;
 
         struct wl_array states;
         wl_array_init(&states);
@@ -150,8 +130,15 @@ layer_surface_configure_xdg_surface (LayerSurface *self, uint32_t optional_seria
             self->client_facing_xdg_surface,
             configure,
             self->client_facing_xdg_surface,
-            optional_serial);
+            serial);
     }
+}
+
+static void
+layer_surface_needs_commit (LayerSurface *self)
+{
+    // Send a configure to force GTK to commit the surface
+    layer_surface_configure_xdg_surface (self, 0, TRUE);
 }
 
 static void
@@ -163,7 +150,7 @@ layer_surface_handle_configure (void *data,
 {
     LayerSurface *self = data;
     self->last_layer_configured_size = (GtkRequisition){w, h};
-    layer_surface_configure_xdg_surface (self, serial);
+    layer_surface_configure_xdg_surface (self, serial, TRUE);
 }
 
 static void
@@ -303,7 +290,7 @@ static void
 layer_surface_on_default_size_set(GtkWindow *_window, const GParamSpec *_pspec, LayerSurface *self)
 {
     (void)_window; (void)_pspec;
-    layer_surface_configure_xdg_surface (self, 0);
+    layer_surface_configure_xdg_surface (self, 0, FALSE);
 }
 
 LayerSurface *
@@ -387,7 +374,7 @@ layer_surface_set_anchor (LayerSurface *self, GtkLayerShellEdge edge, gboolean a
         if (self->layer_surface) {
             layer_surface_send_set_anchor (self);
             layer_surface_send_set_size (self);
-            layer_surface_configure_xdg_surface (self, 0);
+            layer_surface_configure_xdg_surface (self, 0, FALSE);
             layer_surface_update_auto_exclusive_zone (self);
             layer_surface_needs_commit (self);
         }
@@ -470,7 +457,6 @@ stubbed_xdg_toplevel_handle_request (
     uint32_t flags,
     union wl_argument *args)
 {
-    // TODO
     return NULL;
 }
 

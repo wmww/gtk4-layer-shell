@@ -41,8 +41,6 @@ wl_registry_handle_global_remove (void *_data,
     (void)_data;
     (void)_registry;
     (void)_id;
-
-    // TODO
 }
 
 static const struct wl_registry_listener wl_registry_listener = {
