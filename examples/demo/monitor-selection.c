@@ -9,7 +9,7 @@ on_monitor_selected (GtkComboBox *combo_box, GtkWindow *layer_window)
     GdkMonitor *monitor = NULL;
     if (monitor_index >= 0) {
         GListModel *monitors = gdk_display_get_monitors (gdk_display_get_default ()); // owned by display
-        g_return_if_fail (monitor_index < g_list_model_get_n_items (monitors));
+        g_return_if_fail ((unsigned)monitor_index < g_list_model_get_n_items (monitors));
         monitor = g_list_model_get_item (monitors, monitor_index);
     }
     g_object_set_data (G_OBJECT (combo_box), current_monitor_key, monitor);
@@ -19,7 +19,7 @@ on_monitor_selected (GtkComboBox *combo_box, GtkWindow *layer_window)
 void
 on_monitors_changed (GdkDisplay *display, GdkMonitor *_monitor, GtkComboBox *combo_box)
 {
-    (void)_monitor;
+    (void)display; (void)_monitor;
 
     gtk_combo_box_text_remove_all (GTK_COMBO_BOX_TEXT (combo_box));
     gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo_box), "Default");
@@ -28,7 +28,7 @@ on_monitors_changed (GdkDisplay *display, GdkMonitor *_monitor, GtkComboBox *com
         gtk_combo_box_set_active (GTK_COMBO_BOX (combo_box), 0);
     }
     GListModel *monitors = gdk_display_get_monitors (gdk_display_get_default ()); // owned by display
-    for (int i = 0; i < g_list_model_get_n_items (monitors); i++) {
+    for (unsigned i = 0; i < g_list_model_get_n_items (monitors); i++) {
         GdkMonitor *monitor = g_list_model_get_item (monitors, i);
         GString *text = g_string_new ("");
         g_string_printf (text, "%d. %s", i + 1, gdk_monitor_get_model (monitor));

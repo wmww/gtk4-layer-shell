@@ -2,6 +2,7 @@
 
 static void
 quit_activated(GSimpleAction *action, GVariant *parameter, GApplication *application) {
+    (void)action; (void)parameter;
     g_application_quit (application);
 }
 

@@ -282,6 +282,7 @@ layer_window_update_orientation (GtkWindow *layer_window)
 static void
 on_orientation_changed (GtkWindow *window, WindowOrientation orientation, ToplevelData *data)
 {
+    (void)window;
     GtkOrientation orient_toplevel, orient_sub;
     orient_toplevel = GTK_ORIENTATION_HORIZONTAL;
     orient_sub = GTK_ORIENTATION_VERTICAL;
@@ -310,12 +311,14 @@ static void
 on_window_destroy(GtkWindow *window, GApplication *_data)
 {
     (void)_data;
-    g_application_quit (gtk_window_get_application (window));
+    g_application_quit (G_APPLICATION (gtk_window_get_application (window)));
 }
 
 static void
 activate (GtkApplication* app, void *_data)
 {
+    (void)_data;
+
     GtkWindow *gtk_window = GTK_WINDOW (gtk_application_window_new (app));
 
     ToplevelData *data = g_new0 (ToplevelData, 1);

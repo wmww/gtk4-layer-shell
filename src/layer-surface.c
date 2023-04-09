@@ -149,6 +149,7 @@ layer_surface_handle_configure (void *data,
                                 uint32_t w,
                                 uint32_t h)
 {
+    (void)surface;
     LayerSurface *self = data;
     self->last_layer_configured_size = (GtkRequisition){w, h};
     layer_surface_configure_xdg_surface (self, serial, TRUE);
@@ -448,22 +449,10 @@ layer_surface_get_namespace (LayerSurface *self)
         return "gtk-layer-shell";
 }
 
-static struct wl_proxy *
-stubbed_xdg_toplevel_handle_request (
-    void* data,
-    struct wl_proxy *proxy,
-    uint32_t opcode,
-    const struct wl_interface *interface,
-    uint32_t version,
-    uint32_t flags,
-    union wl_argument *args)
-{
-    return NULL;
-}
-
 static void
 stubbed_xdg_toplevel_handle_destroy (void* data, struct wl_proxy *proxy)
 {
+    (void)proxy;
     LayerSurface *self = (LayerSurface *)data;
     layer_surface_unmap(self);
 }
@@ -478,13 +467,14 @@ stubbed_xdg_surface_handle_request (
     uint32_t flags,
     union wl_argument *args)
 {
+    (void)interface; (void)flags;
     LayerSurface *self = (LayerSurface *)data;
     if (opcode == XDG_SURFACE_GET_TOPLEVEL) {
         struct wl_proxy *toplevel = create_client_facing_proxy (
             proxy,
             &xdg_toplevel_interface,
             version,
-            stubbed_xdg_toplevel_handle_request,
+            NULL,
             stubbed_xdg_toplevel_handle_destroy,
             data);
         self->client_facing_xdg_toplevel = (struct xdg_toplevel *)toplevel;
@@ -511,6 +501,7 @@ stubbed_xdg_surface_handle_request (
 static void
 stubbed_xdg_surface_handle_destroy (void* data, struct wl_proxy *proxy)
 {
+    (void)proxy;
     LayerSurface *self = (LayerSurface *)data;
     layer_surface_unmap(self);
 }
