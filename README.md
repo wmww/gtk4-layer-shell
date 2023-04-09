@@ -2,14 +2,13 @@
 It works, but it's still rough around the edges. See the end of https://github.com/wmww/gtk-layer-shell/issues/37 for details.
 
 TODO before release:
-- update release process document
-- get tests passing
-- fix widget layout of demo
-- make the fixed size toggle work
-- investigate the size-allocate warning
-- investigate extracting info from more XDG shell calls
-- fix all compiler warnings
+- fix docs building in CI
+- fix margin crash in demo
 - detect if library got properly loaded and warn otherwise
+- test with standalone project
+- update vala example
+- update python example
+- update release process document
 - update readme on this repo
 - update readme on GTK3 repo
 
