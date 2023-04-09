@@ -10,18 +10,16 @@
  *
  * insert more general verbiage here
  *
- * # Forcing Window Size
+ * # Setting Window Size
  * If you wish to force your layer surface window to be a different size than it
  * is by default:
  * |[<!-- language="C" -->
- *   gtk_widget_set_size_request (GTK_WIDGET (layer_gtk_window), width, height);
- *   // force the window to resize to the new request
- *   gtk_window_resize (layer_gtk_window, 1, 1);
+ *   gtk_window_set_default_size (layer_gtk_window, width, height);
  * ]|
- * If width or height is -1, the default is used for that axis. If the window is
+ * If width or height is 0, the default is used for that axis. If the window is
  * anchored to opposite edges of the output (see gtk_layer_set_anchor ()), the 
  * size request is ignored. If you later wish to use the default window size,
- * simply repeat the two calls but with both width and height as -1.
+ * simply repeat the call with both width and height as 0.
  */
 
 G_BEGIN_DECLS
