@@ -17,7 +17,7 @@ static void callback_0()
     gtk_layer_set_anchor(window, GTK_LAYER_SHELL_EDGE_TOP, 2);
     gtk_layer_set_anchor(window, GTK_LAYER_SHELL_EDGE_LEFT, 3);
 
-    gtk_widget_set_size_request(GTK_WIDGET(window), 300, 200);
+    gtk_window_set_default_size(window, 300, 200);
     gtk_window_present(window);
 }
 

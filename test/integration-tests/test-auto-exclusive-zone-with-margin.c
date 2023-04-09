@@ -11,7 +11,7 @@ static void callback_0()
     gtk_layer_init_for_window(window);
     gtk_layer_auto_exclusive_zone_enable(window);
     gtk_layer_set_anchor(window, GTK_LAYER_SHELL_EDGE_BOTTOM, TRUE);
-    gtk_widget_set_size_request(GTK_WIDGET(window), 320, 240);
+    gtk_window_set_default_size(window, 320, 240);
     gtk_window_present(window);
 }
 

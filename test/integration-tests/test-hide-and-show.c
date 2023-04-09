@@ -11,6 +11,7 @@ static void callback_0()
 
 static void callback_1()
 {
+    EXPECT_MESSAGE(zwlr_layer_surface_v1 .destroy);
     gtk_widget_set_visible(GTK_WIDGET(window), FALSE);
 }
 

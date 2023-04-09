@@ -8,7 +8,7 @@ integration_tests = [
     'test-set-anchor-normalizes-booleans',
     'test-set-layer',
     'test-get-layer',
-    'test-set-size-request',
+    'test-set-default-size',
     'test-adapts-to-screen-size',
     'test-auto-exclusive-zone-no-margin',
     'test-auto-exclusive-zone-with-margin',

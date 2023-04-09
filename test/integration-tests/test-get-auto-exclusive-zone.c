@@ -5,7 +5,7 @@ static GtkWindow* window;
 static void callback_0()
 {
     window = create_default_window();
-    gtk_widget_set_size_request(GTK_WIDGET(window), 300, 200);
+    gtk_window_set_default_size(window, 300, 200);
     gtk_layer_init_for_window(window);
 
     gtk_layer_set_anchor(window, GTK_LAYER_SHELL_EDGE_BOTTOM, TRUE);
@@ -18,9 +18,7 @@ static void callback_0()
 static void callback_1()
 {
     ASSERT_EQ(gtk_layer_get_exclusive_zone(window), 200, "%d");
-    gtk_widget_set_size_request(GTK_WIDGET(window), 320, 240);
-    // TODO
-    //gtk_window_resize(window, 1, 1);
+    gtk_window_set_default_size(window, 320, 240);
 }
 
 static void callback_2()
