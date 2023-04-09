@@ -44,100 +44,85 @@ layer_surface_needs_commit (LayerSurface *self)
 void
 layer_surface_remap (LayerSurface *self)
 {
-    GtkWidget *window_widget = GTK_WIDGET (self->gtk_window);
-    g_return_if_fail (window_widget);
-    gtk_widget_unrealize (window_widget);
-    gtk_window_present (window_widget);
+    gtk_widget_unrealize (GTK_WIDGET (self->gtk_window));
+    gtk_window_present (self->gtk_window);
 }
 
-/*
- * Sends the .set_size request if the current allocation differs from the last size sent
- * Needs to be called whenever current_allocation or anchors are changed
- * If .set_size is sent, it should trigger the compositor to send a .configure event
- */
+static void
+layer_surface_get_preferred_size (LayerSurface *self, int *width, int *height)
+{
+    gtk_window_get_default_size (self->gtk_window, width, height);
+
+    GtkRequisition natural;
+    gtk_widget_get_preferred_size (GTK_WIDGET (self->gtk_window), NULL, &natural);
+
+    if (!*width)
+        *width = natural.width;
+
+    if (!*height)
+        *height = natural.height;
+}
+
 static void
 layer_surface_send_set_size (LayerSurface *self)
 {
-    GtkRequisition request_size = self->current_allocation;
+    g_return_if_fail (self->layer_surface);
 
-    if ((self->anchors[GTK_LAYER_SHELL_EDGE_LEFT]) &&
-        (self->anchors[GTK_LAYER_SHELL_EDGE_RIGHT])) {
+    int width = gtk_widget_get_width (GTK_WIDGET (self->gtk_window));
+    int height = gtk_widget_get_height (GTK_WIDGET (self->gtk_window));
+    if (!width || !height)
+        layer_surface_get_preferred_size (self, &width, &height);
 
-        request_size.width = 0;
+    if (self->anchors[GTK_LAYER_SHELL_EDGE_LEFT] &&
+        self->anchors[GTK_LAYER_SHELL_EDGE_RIGHT]
+    ) {
+        width = 0;
     }
 
-    if ((self->anchors[GTK_LAYER_SHELL_EDGE_TOP]) &&
-        (self->anchors[GTK_LAYER_SHELL_EDGE_BOTTOM])) {
-
-        request_size.height = 0;
+    if (self->anchors[GTK_LAYER_SHELL_EDGE_TOP] &&
+        self->anchors[GTK_LAYER_SHELL_EDGE_BOTTOM]
+    ) {
+        height = 0;
     }
 
-    if (request_size.width != self->cached_layer_size.width ||
-        request_size.height != self->cached_layer_size.height) {
-
-        self->cached_layer_size = request_size;
-        if (self->layer_surface) {
-            zwlr_layer_surface_v1_set_size (self->layer_surface,
-                                            self->cached_layer_size.width,
-                                            self->cached_layer_size.height);
-        }
+    if (self->cached_layer_size_set.width != width ||
+        self->cached_layer_size_set.height != height
+    ) {
+        self->cached_layer_size_set = (GtkRequisition){width, height};
+        zwlr_layer_surface_v1_set_size (self->layer_surface, width, height);
     }
 }
 
-/*
- * Sets the window's geometry hints (used to force the window to be a specific size)
- * Needs to be called whenever last_configure_size or anchors are changed
- * Lets windows decide their own size along any axis the surface is not stretched along
- * Forces window (by setting the max and min hints) to be of configured size along axes they are stretched along
- */
 static void
-layer_surface_update_size (LayerSurface *self)
+layer_surface_configure_xdg_surface (LayerSurface *self, uint32_t optional_serial)
 {
-    gint width = -1;
-    gint height = -1;
+    g_return_if_fail (self->client_facing_xdg_surface && self->client_facing_xdg_toplevel);
 
-    if ((self->anchors[GTK_LAYER_SHELL_EDGE_LEFT]) &&
-        (self->anchors[GTK_LAYER_SHELL_EDGE_RIGHT])) {
+    int width, height;
+    layer_surface_get_preferred_size (self, &width, &height);
 
-        width = self->last_configure_size.width;
-    }
-    if ((self->anchors[GTK_LAYER_SHELL_EDGE_TOP]) &&
-        (self->anchors[GTK_LAYER_SHELL_EDGE_BOTTOM])) {
-
-        height = self->last_configure_size.height;
+    if (self->anchors[GTK_LAYER_SHELL_EDGE_LEFT] &&
+        self->anchors[GTK_LAYER_SHELL_EDGE_RIGHT] &&
+        self->last_layer_configured_size.width
+    ) {
+        width = self->last_layer_configured_size.width;
     }
 
-    /*
-    GdkGeometry hints;
-    hints.min_width = width;
-    hints.max_width = width;
-    hints.min_height = height;
-    hints.max_height = height;
+    if (self->anchors[GTK_LAYER_SHELL_EDGE_TOP] &&
+        self->anchors[GTK_LAYER_SHELL_EDGE_BOTTOM] &&
+        self->last_layer_configured_size.height
+    ) {
+        height = self->last_layer_configured_size.height;
+    }
 
-    gtk_window_set_geometry_hints (gtk_window,
-                                   NULL,
-                                   &hints,
-                                   GDK_HINT_MIN_SIZE | GDK_HINT_MAX_SIZE);
-    */
+    if (self->cached_xdg_configure_size.width != width ||
+        self->cached_xdg_configure_size.height != height ||
+        optional_serial
+    ) {
+        self->cached_xdg_configure_size = (GtkRequisition){width, height};
+        if (optional_serial)
+            self->pending_configure_serial = optional_serial;
 
-    // This will usually get called in a moment by the layer_surface_on_size_allocate () triggered by the above
-    // gtk_window_set_geometry_hints (). However in some cases (such as a streatching a window after a size request has
-    // been set), an allocate will not be triggered but the set size does need to change. For this reason we make the
-    // call here as well and let the later call clean up any mistakes this one makes. This makes the flicker problem
-    // worse, but I think it's more important that the end result is correct.
-    layer_surface_send_set_size (self);
-}
-
-static void
-layer_surface_handle_configure (void *data,
-                                struct zwlr_layer_surface_v1 *surface,
-                                uint32_t serial,
-                                uint32_t w,
-                                uint32_t h)
-{
-    LayerSurface *self = data;
-
-    if (self->client_facing_xdg_surface && self->client_facing_xdg_toplevel) {
         struct wl_array states;
         wl_array_init(&states);
         {
@@ -150,12 +135,13 @@ layer_surface_handle_configure (void *data,
             g_assert(state);
             *state = XDG_TOPLEVEL_STATE_MAXIMIZED;
         }
+
         DISPATCH_CLIENT_FACING_EVENT(
             xdg_toplevel_listener,
             self->client_facing_xdg_toplevel,
             configure,
             self->client_facing_xdg_toplevel,
-            w, h,
+            width, height,
             &states);
         wl_array_release(&states);
 
@@ -164,19 +150,20 @@ layer_surface_handle_configure (void *data,
             self->client_facing_xdg_surface,
             configure,
             self->client_facing_xdg_surface,
-            serial);
-    } else {
-        g_warning ("no XDG surface to configure");
+            optional_serial);
     }
+}
 
-    zwlr_layer_surface_v1_ack_configure (surface, serial);
-
-    self->last_configure_size = (GtkRequisition) {
-        .width = (gint)w,
-        .height = (gint)h,
-    };
-
-    layer_surface_update_size (self);
+static void
+layer_surface_handle_configure (void *data,
+                                struct zwlr_layer_surface_v1 *surface,
+                                uint32_t serial,
+                                uint32_t w,
+                                uint32_t h)
+{
+    LayerSurface *self = data;
+    self->last_layer_configured_size = (GtkRequisition){w, h};
+    layer_surface_configure_xdg_surface (self, serial);
 }
 
 static void
@@ -257,20 +244,13 @@ layer_surface_create_surface_object (LayerSurface *self)
                                                                  layer,
                                                                  name_space);
     g_return_if_fail (self->layer_surface);
+    zwlr_layer_surface_v1_add_listener (self->layer_surface, &layer_surface_listener, self);
 
     zwlr_layer_surface_v1_set_keyboard_interactivity (self->layer_surface, self->keyboard_mode);
     zwlr_layer_surface_v1_set_exclusive_zone (self->layer_surface, self->exclusive_zone);
     layer_surface_send_set_anchor (self);
     layer_surface_send_set_margin (self);
-    zwlr_layer_surface_v1_set_size (self->layer_surface, 300, 300);
-    /*
-    if (self->cached_layer_size.width >= 0 && self->cached_layer_size.height >= 0) {
-        zwlr_layer_surface_v1_set_size (self->layer_surface,
-                                        self->cached_layer_size.width,
-                                        self->cached_layer_size.height);
-    }
-    */
-    zwlr_layer_surface_v1_add_listener (self->layer_surface, &layer_surface_listener, self);
+    layer_surface_send_set_size (self);
 }
 
 static void
@@ -288,6 +268,11 @@ layer_surface_unmap (LayerSurface *super)
 
     self->client_facing_xdg_surface = NULL;
     self->client_facing_xdg_toplevel = NULL;
+
+    self->cached_xdg_configure_size = (GtkRequisition){0, 0};
+    self->cached_layer_size_set = (GtkRequisition){0, 0};
+    self->last_layer_configured_size = (GtkRequisition){0, 0};
+    self->pending_configure_serial = 0;
 }
 
 static void
@@ -312,14 +297,16 @@ layer_surface_update_auto_exclusive_zone (LayerSurface *self)
                      self->anchors[GTK_LAYER_SHELL_EDGE_BOTTOM]);
     int new_exclusive_zone = -1;
 
+    int window_width = gtk_widget_get_width (GTK_WIDGET (self->gtk_window));
+    int window_height = gtk_widget_get_height (GTK_WIDGET (self->gtk_window));
     if (horiz && !vert) {
-        new_exclusive_zone = self->current_allocation.height;
+        new_exclusive_zone = window_height;
         if (!self->anchors[GTK_LAYER_SHELL_EDGE_TOP])
             new_exclusive_zone += self->margins[GTK_LAYER_SHELL_EDGE_TOP];
         if (!self->anchors[GTK_LAYER_SHELL_EDGE_BOTTOM])
             new_exclusive_zone += self->margins[GTK_LAYER_SHELL_EDGE_BOTTOM];
     } else if (vert && !horiz) {
-        new_exclusive_zone = self->current_allocation.width;
+        new_exclusive_zone = window_width;
         if (!self->anchors[GTK_LAYER_SHELL_EDGE_LEFT])
             new_exclusive_zone += self->margins[GTK_LAYER_SHELL_EDGE_LEFT];
         if (!self->anchors[GTK_LAYER_SHELL_EDGE_RIGHT])
@@ -335,23 +322,10 @@ layer_surface_update_auto_exclusive_zone (LayerSurface *self)
 }
 
 static void
-layer_surface_on_size_allocate (GtkWidget *_gtk_window,
-                                GdkRectangle *allocation,
-                                LayerSurface *self)
+layer_surface_on_default_size_set(GtkWindow *_window, const GParamSpec *_pspec, LayerSurface *self)
 {
-    (void)_gtk_window;
-
-    if (self->current_allocation.width != allocation->width ||
-        self->current_allocation.height != allocation->height) {
-
-        self->current_allocation = (GtkRequisition) {
-            .width = allocation->width,
-            .height = allocation->height,
-        };
-
-        layer_surface_send_set_size (self);
-        layer_surface_update_auto_exclusive_zone (self);
-    }
+    (void)_window; (void)_pspec;
+    layer_surface_configure_xdg_surface (self, 0);
 }
 
 LayerSurface *
@@ -378,22 +352,12 @@ layer_surface_new (GtkWindow *gtk_window)
         layer_surface_on_window_realize (GTK_WIDGET (gtk_window), self);
     }
 
-    self->current_allocation = (GtkRequisition) {
-        .width = 0,
-        .height = 0,
-    };
-    self->cached_layer_size = self->current_allocation;
-    self->last_configure_size = self->current_allocation;
-    self->monitor = NULL;
     self->layer = GTK_LAYER_SHELL_LAYER_TOP;
-    self->name_space = NULL;
-    self->exclusive_zone = 0;
-    self->auto_exclusive_zone = FALSE;
     self->keyboard_mode = GTK_LAYER_SHELL_KEYBOARD_MODE_NONE;
-    self->layer_surface = NULL;
 
     gtk_window_set_decorated (gtk_window, FALSE);
-    g_signal_connect (gtk_window, "size-allocate", G_CALLBACK (layer_surface_on_size_allocate), self);
+    g_signal_connect (gtk_window, "notify::default-width", G_CALLBACK (layer_surface_on_default_size_set), self);
+    g_signal_connect (gtk_window, "notify::default-height", G_CALLBACK (layer_surface_on_default_size_set), self);
 
     return self;
 }
@@ -449,7 +413,8 @@ layer_surface_set_anchor (LayerSurface *self, GtkLayerShellEdge edge, gboolean a
         self->anchors[edge] = anchor_to_edge;
         if (self->layer_surface) {
             layer_surface_send_set_anchor (self);
-            layer_surface_update_size (self);
+            layer_surface_send_set_size (self);
+            layer_surface_configure_xdg_surface (self, 0);
             layer_surface_update_auto_exclusive_zone (self);
             layer_surface_needs_commit (self);
         }
@@ -567,6 +532,17 @@ stubbed_xdg_surface_handle_request (
     } else if (opcode == XDG_SURFACE_GET_POPUP) {
         g_critical ("XDG surface intercepted, but is now being used as popup");
         return create_client_facing_proxy (proxy, &xdg_popup_interface, version, NULL, NULL, NULL);
+    } else if (opcode == XDG_SURFACE_SET_WINDOW_GEOMETRY) {
+        layer_surface_send_set_size (self);
+        layer_surface_update_auto_exclusive_zone (self);
+        return NULL;
+    } else if (opcode == XDG_SURFACE_ACK_CONFIGURE) {
+        uint32_t serial = args[0].u;
+        if (serial && serial == self->pending_configure_serial) {
+            self->pending_configure_serial = 0;
+            zwlr_layer_surface_v1_ack_configure (self->layer_surface, serial);
+        }
+        return NULL;
     } else {
         return NULL;
     }

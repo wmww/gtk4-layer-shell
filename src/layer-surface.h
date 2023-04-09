@@ -32,10 +32,12 @@ struct _LayerSurface
 
     // Not set by user requests
     struct zwlr_layer_surface_v1 *layer_surface; // The actual layer surface Wayland object (can be NULL)
-    GtkRequisition current_allocation; // Last size allocation, or (0, 0) if there hasn't been one
-    GtkRequisition cached_layer_size; // Last size sent to zwlr_layer_surface_v1_set_size (starts as 0, 0)
-    GtkRequisition last_configure_size; // Last size received from a configure event
-
+    GtkRequisition cached_xdg_configure_size; // The last size we configured GTK's XDG surface with
+    GtkRequisition cached_layer_size_set; // The last size we set the layer surface to with the compositor
+    GtkRequisition last_layer_configured_size; // The last size our layer surface received from the compositor
+    uint32_t pending_configure_serial; // If non-zero our layer surface received a configure with this serial, we passed
+      // it on to GTK's XDG surface and will ack it once GTK acks it's configure. Otherwise this is zero, all acks from
+      // GTK can be ignored (they are for configures not originating from the compositor)
     struct xdg_surface *client_facing_xdg_surface;
     struct xdg_toplevel *client_facing_xdg_toplevel;
 };
