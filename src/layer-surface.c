@@ -76,7 +76,8 @@ layer_surface_send_set_size (LayerSurface *self)
 static void
 layer_surface_configure_xdg_surface (LayerSurface *self, uint32_t serial, gboolean send_even_if_size_unchanged)
 {
-    g_return_if_fail (self->client_facing_xdg_surface && self->client_facing_xdg_toplevel);
+    if (!self->client_facing_xdg_surface || !self->client_facing_xdg_toplevel)
+        return;
 
     int width, height;
     layer_surface_get_preferred_size (self, &width, &height);

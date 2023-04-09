@@ -1,10 +1,10 @@
 #include "integration-test-common.h"
 
-// Time in milliseconds for each callback to run
-static int step_time = 300;
+int step_time = 300;
 
 static int return_code = 0;
 static int callback_index = 0;
+static gboolean auto_continue = FALSE;
 
 static gboolean next_step(gpointer _data)
 {
@@ -14,12 +14,13 @@ static gboolean next_step(gpointer _data)
     if (test_callbacks[callback_index]) {
         test_callbacks[callback_index]();
         callback_index++;
-        return TRUE;
+        if (auto_continue)
+            g_timeout_add(step_time, next_step, NULL);
     } else {
         while (g_list_model_get_n_items(gtk_window_get_toplevels()) > 0)
             gtk_window_destroy(g_list_model_get_item(gtk_window_get_toplevels(), 0));
-        return FALSE;
     }
+    return FALSE;
 }
 
 GtkWindow* create_default_window()
@@ -63,15 +64,15 @@ int main(int argc, char** argv)
     if (argc == 1) {
         // Run with a debug mode window that lets the user advance manually
         create_debug_control_window();
-        next_step(NULL);
     } else if (argc == 2 && g_strcmp0(argv[1], "--auto") == 0) {
         // Run normally with a timeout
-        next_step(NULL);
-        g_timeout_add(step_time, next_step, NULL);
+        auto_continue = TRUE;
     } else {
         g_critical("Invalid arguments to integration test");
         return 1;
     }
+
+    next_step(NULL);
 
     while (g_list_model_get_n_items(gtk_window_get_toplevels()) > 0)
         g_main_context_iteration(NULL, TRUE);
