@@ -2,42 +2,18 @@
 
 const char *current_monitor_key = "current_layer_monitor";
 
+#include "gtk-layer-demo.h"
+
+#define MAX_MONIITORS 100
+const char *monitor_strs[MAX_MONIITORS] = {"Default", NULL};
+GdkMonitor *monitor_vals[MAX_MONIITORS] = {NULL};
+
 static void
-on_monitor_selected (GtkComboBox *combo_box, GtkWindow *layer_window)
+on_monitor_selected (GtkDropDown *dropdown, const GParamSpec *_pspec, GtkWindow *layer_window)
 {
-    int monitor_index = gtk_combo_box_get_active (combo_box) - 1; // 1st element is default monitor
-    GdkMonitor *monitor = NULL;
-    if (monitor_index >= 0) {
-        GListModel *monitors = gdk_display_get_monitors (gdk_display_get_default ()); // owned by display
-        g_return_if_fail ((unsigned)monitor_index < g_list_model_get_n_items (monitors));
-        monitor = g_list_model_get_item (monitors, monitor_index);
-    }
-    g_object_set_data (G_OBJECT (combo_box), current_monitor_key, monitor);
-    gtk_layer_set_monitor (layer_window, monitor);
-}
-
-void
-on_monitors_changed (GdkDisplay *display, GdkMonitor *_monitor, GtkComboBox *combo_box)
-{
-    (void)display; (void)_monitor;
-
-    gtk_combo_box_text_remove_all (GTK_COMBO_BOX_TEXT (combo_box));
-    gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo_box), "Default");
-    GdkMonitor *current_monitor = g_object_get_data (G_OBJECT (combo_box), current_monitor_key);
-    if (current_monitor == NULL) {
-        gtk_combo_box_set_active (GTK_COMBO_BOX (combo_box), 0);
-    }
-    GListModel *monitors = gdk_display_get_monitors (gdk_display_get_default ()); // owned by display
-    for (unsigned i = 0; i < g_list_model_get_n_items (monitors); i++) {
-        GdkMonitor *monitor = g_list_model_get_item (monitors, i);
-        GString *text = g_string_new ("");
-        g_string_printf (text, "%d. %s", i + 1, gdk_monitor_get_model (monitor));
-        gtk_combo_box_text_append_text (GTK_COMBO_BOX_TEXT (combo_box), text->str);
-        g_string_free (text, TRUE);
-        if (monitor == current_monitor) {
-            gtk_combo_box_set_active (GTK_COMBO_BOX (combo_box), i + 1);
-        }
-    }
+    (void)_pspec;
+    guint index = gtk_drop_down_get_selected (dropdown);
+    gtk_layer_set_monitor (layer_window, monitor_vals[index]);
 }
 
 GtkWidget *
@@ -45,17 +21,21 @@ monitor_selection_new (GtkWindow *layer_window)
 {
     GtkWidget *vbox = gtk_box_new (GTK_ORIENTATION_VERTICAL, 6);
     {
-        GtkWidget *combo_box = gtk_combo_box_text_new ();
-        gtk_widget_set_tooltip_text (combo_box, "Monitor");
-        gtk_combo_box_text_append (GTK_COMBO_BOX_TEXT (combo_box), NULL, "Default");
-        gtk_combo_box_set_active (GTK_COMBO_BOX (combo_box), 0);
-        GdkDisplay *display = gdk_display_get_default ();
-        g_signal_connect (display, "monitor-added", G_CALLBACK (on_monitors_changed), combo_box);
-        g_signal_connect (display, "monitor-removed", G_CALLBACK (on_monitors_changed), combo_box);
-        on_monitors_changed (display, NULL, GTK_COMBO_BOX (combo_box));
-        g_signal_connect (combo_box, "changed", G_CALLBACK (on_monitor_selected), layer_window);
-        gtk_box_append (GTK_BOX (vbox), combo_box);
+        GListModel *monitors = gdk_display_get_monitors (gdk_display_get_default ()); // owned by display
+        for (unsigned i = 0; i < g_list_model_get_n_items (monitors) && i < MAX_MONIITORS - 2; i++) {
+            GdkMonitor *monitor = g_list_model_get_item (monitors, i);
+            GString *text = g_string_new ("");
+            g_string_printf (text, "%d. %s", i + 1, gdk_monitor_get_model (monitor));
+            monitor_strs[i + 1] = g_strdup (text->str);
+            g_string_free (text, TRUE);
+            monitor_vals[i + 1] = g_object_ref (monitor);
+            monitor_strs[i + 2] = NULL;
+        }
+        GtkWidget *dropdown = gtk_drop_down_new_from_strings(monitor_strs);
+        gtk_widget_set_tooltip_text (dropdown, "Monitor");
+        gtk_drop_down_set_selected (GTK_DROP_DOWN (dropdown), 0);
+        g_signal_connect (dropdown, "notify::selected", G_CALLBACK (on_monitor_selected), layer_window);
+        gtk_box_append (GTK_BOX (vbox), dropdown);
     }
-
     return vbox;
 }

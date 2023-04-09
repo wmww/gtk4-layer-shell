@@ -16,7 +16,7 @@ set_up_menubar (GtkWindow *layer_window)
     GMenu *menubar = g_menu_new ();
     gtk_application_set_menubar (GTK_APPLICATION (gtk_window_get_application (layer_window)), G_MENU_MODEL (menubar));
     gtk_application_window_set_show_menubar (GTK_APPLICATION_WINDOW (layer_window), TRUE);
-    GMenuItem *menu_item = g_menu_item_new ("Menu", NULL);
+    GMenuItem *menu_item = g_menu_item_new ("GTK4 Layer Demo", NULL);
     g_menu_append_item (menubar, menu_item);
     GMenu *menu = g_menu_new ();
     GMenuItem *menu_item_quit = g_menu_item_new ("Quit", "app.quit");

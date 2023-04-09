@@ -2,7 +2,7 @@
 
 static GtkWindow *window;
 static GtkWidget *dropdown;
-static const char *options[] = {"Foo", "Bar", "Baz"};
+static const char *options[] = {"Foo", "Bar", "Baz", NULL};
 
 static void callback_0()
 {
