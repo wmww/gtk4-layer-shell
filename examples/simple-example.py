@@ -1,28 +1,37 @@
 import gi
-gi.require_version('Gtk', '3.0')
 
 try:
-    gi.require_version('GtkLayerShell', '0.1')
+    gi.require_version('Gtk4LayerShellPreload', '1.0')
+    gi.require_version('Gtk4LayerShell', '1.0')
 except ValueError:
     import sys
     raise RuntimeError('\n\n' +
-        'If you haven\'t installed GTK Layer Shell, you need to point Python to the\n' +
+        'If you haven\'t installed GTK4 Layer Shell, you need to point Python to the\n' +
         'library by setting GI_TYPELIB_PATH and LD_LIBRARY_PATH to <build-dir>/src/.\n' +
         'For example you might need to run:\n\n' +
         'GI_TYPELIB_PATH=build/src LD_LIBRARY_PATH=build/src python3 ' + ' '.join(sys.argv))
 
-from gi.repository import Gtk, GtkLayerShell
+from gi.repository import Gtk4LayerShellPreload
+Gtk4LayerShellPreload.is_supported()
+from gi.repository import Gtk4LayerShell
 
-window = Gtk.Window()
-label = Gtk.Label(label='GTK Layer Shell with Python!')
-window.add(label)
+gi.require_version("Gtk", "4.0")
+from gi.repository import Gtk
 
-GtkLayerShell.init_for_window(window)
-GtkLayerShell.auto_exclusive_zone_enable(window)
-GtkLayerShell.set_margin(window, GtkLayerShell.Edge.TOP, 10)
-GtkLayerShell.set_margin(window, GtkLayerShell.Edge.BOTTOM, 10)
-GtkLayerShell.set_anchor(window, GtkLayerShell.Edge.BOTTOM, 1)
+def on_activate(app):
+    win = Gtk.Window(application=app)
+    win.set_default_size(300, 200)
 
-window.show_all()
-window.connect('destroy', Gtk.main_quit)
-Gtk.main()
+    Gtk4LayerShell.init_for_window(win)
+    Gtk4LayerShell.set_layer(win, Gtk4LayerShell.Layer.TOP)
+    Gtk4LayerShell.set_anchor(win, Gtk4LayerShell.Edge.TOP, True)
+    Gtk4LayerShell.auto_exclusive_zone_enable(win)
+
+    btn = Gtk.Button(label="Click me!")
+    btn.connect('clicked', lambda x: win.close())
+    win.set_child(btn)
+    win.present()
+
+app = Gtk.Application(application_id='org.gtk.Example')
+app.connect('activate', on_activate)
+app.run(None)

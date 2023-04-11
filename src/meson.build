@@ -23,6 +23,14 @@ pkg_config_name = 'gtk4-layer-shell-0'
 
 # GObject introspection file used to interface with other languages
 if get_option('introspection')
+    preload_gir = gnome.generate_gir(
+        gtk_layer_shell_lib,
+        sources: files('../src/gir-preload-header.h'),
+        namespace: 'Gtk4LayerShellPreload',
+        nsversion: '1.0',
+        symbol_prefix: 'gtk_layer',
+        install: true)
+
     gir = gnome.generate_gir(
         gtk_layer_shell_lib,
         dependencies: [gtk],
@@ -33,7 +41,7 @@ if get_option('introspection')
         symbol_prefix: 'gtk_layer',
         export_packages: pkg_config_name,
         includes: [ 'Gtk-4.0' ],
-        header: 'gtk4-layer-shell/gtk4-layer-shell.h',
+        header: 'gtk4-layer-shell.h',
         install: true)
 
     if get_option('vapi')
