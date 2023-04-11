@@ -6,9 +6,11 @@
 /**
  * SECTION:gtk4-layer-shell
  * @title: GTK4 Layer Shell
- * @short_description: A library to write GTK Applications using Layer Shell
+ * @short_description: A library to use the Layer Shell Wayland protocol with GTK4
  *
- * insert more general verbiage here
+ * # Linking against this library and libwayland
+ * If you link against libwayland you must link this library before libwayland. See
+ * [linking.md](https://github.com/wmww/gtk4-layer-shell/blob/main/linking.md) for details.
  *
  * # Setting Window Size
  * If you wish to force your layer surface window to be a different size than it
@@ -17,9 +19,9 @@
  *   gtk_window_set_default_size (layer_gtk_window, width, height);
  * ]|
  * If width or height is 0, the default is used for that axis. If the window is
- * anchored to opposite edges of the output (see gtk_layer_set_anchor ()), the 
- * size request is ignored. If you later wish to use the default window size,
- * simply repeat the call with both width and height as 0.
+ * anchored to opposite edges of the output (see gtk_layer_set_anchor ()), the
+ * size requested here is ignored. If you later wish to use the default window size
+ * repeat the call with both width and height as 0.
  */
 
 G_BEGIN_DECLS

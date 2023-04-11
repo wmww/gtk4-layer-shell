@@ -307,6 +307,7 @@ layer_surface_new (GtkWindow *gtk_window)
         g_warning ("Failed to initialize layer surface, GTK4 Layer Shell may have been linked after libwayland.");
         g_message ("Move gtk4-layer-shell before libwayland-client in the linker options.");
         g_message ("You may be able to fix with without recompiling by setting LD_PRELOAD=/path/to/libgtk4-layer-shell.so");
+        g_message ("See https://github.com/wmww/gtk4-layer-shell/blob/main/linking.md for more info");
         return NULL;
     }
 
