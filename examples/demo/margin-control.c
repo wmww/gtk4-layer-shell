@@ -49,14 +49,6 @@ margin_spin_button_new (GtkWindow *layer_window,
     return button;
 }
 
-static void
-on_open_clicked (GtkWidget *_button, GtkWidget *popover)
-{
-    (void)_button;
-
-    gtk_popover_popup (GTK_POPOVER (popover));
-}
-
 GtkWidget *
 margin_control_new (GtkWindow *layer_window, const int default_margins[GTK_LAYER_SHELL_EDGE_ENTRY_NUMBER])
 {
@@ -88,14 +80,11 @@ margin_control_new (GtkWindow *layer_window, const int default_margins[GTK_LAYER
         }
     }
 
-    GtkWidget *open_button = gtk_button_new_with_label ("Set margin");
-    gtk_widget_set_tooltip_text (open_button, "Space to leave empty around surface");
     GtkWidget *popover = gtk_popover_new ();
-    gtk_popover_set_default_widget (GTK_POPOVER (popover), open_button);
-    gtk_popover_set_autohide (GTK_POPOVER (popover), TRUE);
-    gtk_popover_set_position (GTK_POPOVER (popover), GTK_POS_BOTTOM);
     gtk_popover_set_child (GTK_POPOVER (popover), switch_box);
-    gtk_widget_set_visible (switch_box, TRUE);
-    g_signal_connect (open_button, "clicked", G_CALLBACK (on_open_clicked), popover);
+    GtkWidget *open_button = gtk_menu_button_new ();
+    gtk_menu_button_set_label (GTK_MENU_BUTTON (open_button), "Set margin");
+    gtk_menu_button_set_popover (GTK_MENU_BUTTON (open_button), popover);
+    gtk_widget_set_tooltip_text (open_button, "Space to leave empty around surface");
     return open_button;
 }
