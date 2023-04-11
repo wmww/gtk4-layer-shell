@@ -23,10 +23,10 @@ activate (GtkApplication* app, void *_data)
 
     // The margins are the gaps around the window's edges
     // Margins and anchors can be set like this...
-    //gtk_layer_set_margin (gtk_window, GTK_LAYER_SHELL_EDGE_LEFT, 40);
-    //gtk_layer_set_margin (gtk_window, GTK_LAYER_SHELL_EDGE_RIGHT, 40);
-    //gtk_layer_set_margin (gtk_window, GTK_LAYER_SHELL_EDGE_TOP, 20);
-    // gtk_layer_set_margin (gtk_window, GTK_LAYER_SHELL_EDGE_BOTTOM, 0); // 0 is default
+    gtk_layer_set_margin (gtk_window, GTK_LAYER_SHELL_EDGE_LEFT, 40);
+    gtk_layer_set_margin (gtk_window, GTK_LAYER_SHELL_EDGE_RIGHT, 40);
+    gtk_layer_set_margin (gtk_window, GTK_LAYER_SHELL_EDGE_TOP, 20);
+    gtk_layer_set_margin (gtk_window, GTK_LAYER_SHELL_EDGE_BOTTOM, 0); // 0 is default
 
     // ... or like this
     // Anchors are if the window is pinned to each edge of the output

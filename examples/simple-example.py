@@ -1,7 +1,7 @@
 # To run this script without installing the library, set GI_TYPELIB_PATH and LD_LIBRARY_PATH to the build/src directory
 # GI_TYPELIB_PATH=build/src LD_LIBRARY_PATH=build/src python3 examples/simple-example.py
 
-# For GTK4 Layer Shell to get linked before libwayland-client we must explicitly load it before using gi
+# For GTK4 Layer Shell to get linked before libwayland-client we must explicitly load it before importing with gi
 from ctypes import CDLL
 CDLL('libgtk4-layer-shell.so')
 
