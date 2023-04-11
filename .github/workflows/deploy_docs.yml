@@ -1,4 +1,4 @@
-name: 'Build docs and push to GH Pages'
+name: 'Deploy docs'
 
 on:
   # Runs on pushes targeting the default branch
@@ -34,11 +34,11 @@ jobs:
     - name: Install depends
       run: sudo apt install meson libwayland-dev libgtk-4-dev gobject-introspection libgirepository1.0-dev valac gtk-doc-tools
     - name: Meson
-      run: meson build -Dexamples=false -Ddocs=true -Dtests=false --prefix .
+      run: meson build -Dexamples=false -Ddocs=true -Dtests=false --prefix /usr
     - name: Build Install
       run: ninja -C build install
     - name: Move files into place
-      run: mv ./share/gtk-doc/html/gtk-layer-shell ./_site
+      run: mv /usr/share/gtk-doc/html/gtk-layer-shell ./_site
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v1
 
