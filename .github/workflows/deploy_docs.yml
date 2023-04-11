@@ -32,13 +32,13 @@ jobs:
     - name: Apt update
       run: sudo apt update
     - name: Install depends
-      run: sudo apt install meson libwayland-dev libgtk-4-dev gobject-introspection libgirepository1.0-dev valac gtk-doc-tools
+      run: sudo apt install meson libwayland-dev libgtk-4-dev gtk-doc-tools
     - name: Meson
-      run: meson build -Dexamples=false -Ddocs=true -Dtests=false --prefix /usr
+      run: meson build -Dexamples=false -Ddocs=true -Dtests=false --prefix $HOME
     - name: Build Install
       run: ninja -C build install
     - name: Move files into place
-      run: mv /usr/share/gtk-doc/html/gtk-layer-shell ./_site
+      run: mv /usr/share/gtk-doc/html/gtk-layer-shell $HOME/_site
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v1
 
