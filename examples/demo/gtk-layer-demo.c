@@ -13,7 +13,7 @@ static gboolean default_fixed_size = FALSE; // always set by command line option
 static gboolean no_layer_shell = FALSE; // always set by command line option
 static gboolean show_version_and_exit = FALSE; // always set by command line option
 
-const char *prog_name = "gtk-layer-demo";
+const char *prog_name = "gtk4-layer-demo";
 const char *prog_summary = "A GTK application for demonstrating the functionality of the Layer Shell Wayland protocol";
 const char *prog_details = "See https://github.com/wmww/gtk-layer-shell for more information, and to report bugs";
 

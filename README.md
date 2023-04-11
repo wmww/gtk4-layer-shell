@@ -20,7 +20,7 @@ Layer shell __is not supported__ on:
 
 ## Using the Library
 ### Demo
-`gtk-layer-demo` is built if examples are enabled. It's useful for testing layer shell support in compositors. Its code can be found in [examples/demo/](examples/demo/).
+`gtk4-layer-demo` is built if examples are enabled. It's useful for testing layer shell support in compositors. Its code can be found in [examples/demo/](examples/demo/).
 
 ### C/C++
 The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-0` pkg-config package. Refer to your build system or the pkg-config docs for further instructions. [examples/simple-example.c](examples/simple-example.c) is a minimal complete app written in C. __If you link against libwayland, you must link libwayland after gtk4-layer-shell__. See [linking.md](linking.md) for details.
@@ -56,7 +56,7 @@ sudo apt install meson libwayland-dev libgtk-4-dev gobject-introspection libgire
 ```
 
 ### Meson Options
-* `-Dexamples` (default `false`): If to build the example C apps; gtk-layer-demo is installed if examples are built; The Vala example is never built with the rest of the project
+* `-Dexamples` (default `false`): If to build the example C apps; gtk4-layer-demo is installed if examples are built; The Vala example is never built with the rest of the project
 * `-Ddocs` (default `false`): If to generate the docs
 * `-Dtests` (default `false`): If to build the tests
 * `-Dintrospection` (default: `true`): If to build GObject Introspection data (used for bindings to languages other than C/C++)
