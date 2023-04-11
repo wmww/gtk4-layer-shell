@@ -38,7 +38,9 @@ jobs:
     - name: Build Install
       run: ninja -C build install
     - name: Move files into place
-      run: mv $HOME/share/gtk-doc/html/gtk-layer-shell ./_site
+      run: |
+        mv $HOME/share/gtk-doc/html/gtk-layer-shell ./_site
+        cp ./_site/gtk-layer-shell-GTK4-Layer-Shell.html ./_site/index.html
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v1
 
