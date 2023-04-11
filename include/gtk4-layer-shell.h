@@ -60,11 +60,11 @@ typedef enum {
 
 /**
  * GtkLayerShellKeyboardMode:
- * GTK_LAYER_SHELL_KEYBOARD_MODE_NONE: This window should not receive keyboard events.
- * GTK_LAYER_SHELL_KEYBOARD_MODE_EXCLUSIVE: This window should have exclusive focus if it is on the top or overlay layer.
- * GTK_LAYER_SHELL_KEYBOARD_MODE_ON_DEMAND: The user should be able to focus and unfocues this window in an implementation
+ * @GTK_LAYER_SHELL_KEYBOARD_MODE_NONE: This window should not receive keyboard events.
+ * @GTK_LAYER_SHELL_KEYBOARD_MODE_EXCLUSIVE: This window should have exclusive focus if it is on the top or overlay layer.
+ * @GTK_LAYER_SHELL_KEYBOARD_MODE_ON_DEMAND: The user should be able to focus and unfocues this window in an implementation
  * defined way. Not supported for protocol version < 4.
- * GTK_LAYER_SHELL_KEYBOARD_MODE_ENTRY_NUMBER: Should not be used except to get the number of entries. (NOTE: may change in
+ * @GTK_LAYER_SHELL_KEYBOARD_MODE_ENTRY_NUMBER: Should not be used except to get the number of entries. (NOTE: may change in
  * future releases as more entries are added)
  */
 typedef enum {
@@ -229,6 +229,7 @@ void gtk_layer_set_anchor (GtkWindow *window, GtkLayerShellEdge edge, gboolean a
 /**
  * gtk_layer_get_anchor:
  * @window: A layer surface.
+ * @edge: the edge to which the surface may or may not be anchored
  *
  * Returns: if this surface is anchored to the given edge.
  */
@@ -250,6 +251,7 @@ void gtk_layer_set_margin (GtkWindow *window, GtkLayerShellEdge edge, int margin
 /**
  * gtk_layer_get_margin:
  * @window: A layer surface.
+ * @edge: the margin edge to get
  *
  * Returns: the size of the margin for the given edge.
  */

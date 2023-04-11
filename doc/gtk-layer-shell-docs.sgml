@@ -56,7 +56,7 @@
     </legalnotice>
   </bookinfo>
 
-  <part id="gtk-layer-shell">
+  <part id="gtk4-layer-shell">
     <title>API Reference</title>
     <partintro>
       <para>
@@ -74,7 +74,7 @@
         for any bugs you come across.
       </para>
     </partintro>
-    <xi:include href="xml/gtk-layer-shell.xml"/>
+    <xi:include href="xml/gtk4-layer-shell.xml"/>
   </part>
 
   <index id="api-index-full">
