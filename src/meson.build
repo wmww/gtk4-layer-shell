@@ -23,14 +23,6 @@ pkg_config_name = 'gtk4-layer-shell-0'
 
 # GObject introspection file used to interface with other languages
 if get_option('introspection')
-    preload_gir = gnome.generate_gir(
-        gtk_layer_shell_lib,
-        sources: files('../src/gir-preload-header.h'),
-        namespace: 'Gtk4LayerShellPreload',
-        nsversion: '1.0',
-        symbol_prefix: 'gtk_layer',
-        install: true)
-
     gir = gnome.generate_gir(
         gtk_layer_shell_lib,
         dependencies: [gtk],

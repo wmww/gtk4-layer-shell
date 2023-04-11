@@ -1,37 +1,33 @@
+# To run this script without installing the library, set GI_TYPELIB_PATH and LD_LIBRARY_PATH to the build/src directory
+# GI_TYPELIB_PATH=build/src LD_LIBRARY_PATH=build/src python3 examples/simple-example.py
+
+# For GTK4 Layer Shell to get linked before libwayland-client we must explicitly load it before using gi
+from ctypes import CDLL
+CDLL('libgtk4-layer-shell.so')
+
 import gi
-
-try:
-    gi.require_version('Gtk4LayerShellPreload', '1.0')
-    gi.require_version('Gtk4LayerShell', '1.0')
-except ValueError:
-    import sys
-    raise RuntimeError('\n\n' +
-        'If you haven\'t installed GTK4 Layer Shell, you need to point Python to the\n' +
-        'library by setting GI_TYPELIB_PATH and LD_LIBRARY_PATH to <build-dir>/src/.\n' +
-        'For example you might need to run:\n\n' +
-        'GI_TYPELIB_PATH=build/src LD_LIBRARY_PATH=build/src python3 ' + ' '.join(sys.argv))
-
-from gi.repository import Gtk4LayerShellPreload
-Gtk4LayerShellPreload.is_supported()
-from gi.repository import Gtk4LayerShell
-
 gi.require_version("Gtk", "4.0")
+gi.require_version('Gtk4LayerShell', '1.0')
+
 from gi.repository import Gtk
+from gi.repository import Gtk4LayerShell as LayerShell
 
 def on_activate(app):
-    win = Gtk.Window(application=app)
-    win.set_default_size(300, 200)
+    window = Gtk.Window(application=app)
+    window.set_default_size(400, 70)
 
-    Gtk4LayerShell.init_for_window(win)
-    Gtk4LayerShell.set_layer(win, Gtk4LayerShell.Layer.TOP)
-    Gtk4LayerShell.set_anchor(win, Gtk4LayerShell.Edge.TOP, True)
-    Gtk4LayerShell.auto_exclusive_zone_enable(win)
+    LayerShell.init_for_window(window)
+    LayerShell.set_layer(window, LayerShell.Layer.TOP)
+    LayerShell.set_anchor(window, LayerShell.Edge.BOTTOM, True)
+    LayerShell.set_margin(window, LayerShell.Edge.BOTTOM, 20)
+    LayerShell.set_margin(window, LayerShell.Edge.TOP, 20)
+    LayerShell.auto_exclusive_zone_enable(window)
 
-    btn = Gtk.Button(label="Click me!")
-    btn.connect('clicked', lambda x: win.close())
-    win.set_child(btn)
-    win.present()
+    button = Gtk.Button(label="GTK4 Layer Shell with Python")
+    button.connect('clicked', lambda x: window.close())
+    window.set_child(button)
+    window.present()
 
-app = Gtk.Application(application_id='org.gtk.Example')
+app = Gtk.Application(application_id='com.github.wmww.gtk4-layer-shell.py-example')
 app.connect('activate', on_activate)
 app.run(None)
