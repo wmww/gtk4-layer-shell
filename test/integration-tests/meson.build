@@ -29,4 +29,5 @@ integration_tests = [
     'test-set-monitor',
     'test-create-xdg-toplevel',
     'test-hide-and-show',
+    'test-init-after-window-created',
 ]
