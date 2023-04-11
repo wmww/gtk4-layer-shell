@@ -152,6 +152,7 @@ libwayland_shim_create_client_proxy (
     allocation->proxy.refcount = 1;
     allocation->proxy.version = version;
     allocation->proxy.object.id = client_facing_proxy_id;
+    wl_list_init(&allocation->proxy.queue_link);
     allocation->handler = handler;
     allocation->destroy = destroy;
     allocation->data = data;

@@ -27,6 +27,7 @@ struct wl_proxy {
 	wl_dispatcher_func_t dispatcher;
 	uint32_t version;
 	const char * const *tag;
+	struct wl_list queue_link; // appears in wayland 1.22
 };
 
 typedef struct wl_proxy *(*libwayland_shim_client_proxy_handler_func_t) (
