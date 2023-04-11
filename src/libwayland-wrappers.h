@@ -40,6 +40,8 @@ typedef void (*client_facing_proxy_destroy_func_t) (
     void* data,
     struct wl_proxy *proxy);
 
+gboolean libwayland_wrappers_has_initialized ();
+
 struct wl_proxy *create_client_facing_proxy (
     struct wl_proxy *factory,
     const struct wl_interface *interface,

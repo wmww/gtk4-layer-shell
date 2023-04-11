@@ -1,5 +1,6 @@
 #include "wayland-utils.h"
 #include "layer-surface.h"
+#include "libwayland-wrappers.h"
 
 #include <gdk/wayland/gdkwayland.h>
 
@@ -24,10 +25,8 @@ gtk_layer_get_micro_version ()
 gboolean
 gtk_layer_is_supported ()
 {
-    if (!GDK_IS_WAYLAND_DISPLAY (gdk_display_get_default ()))
-        return FALSE;
     gtk_wayland_init_if_needed ();
-    return gtk_wayland_get_layer_shell_global () != NULL;
+    return libwayland_wrappers_has_initialized () && gtk_wayland_get_layer_shell_global () != NULL;
 }
 
 guint
@@ -58,10 +57,7 @@ void
 gtk_layer_init_for_window (GtkWindow *window)
 {
     gtk_wayland_init_if_needed ();
-    LayerSurface* layer_surface = layer_surface_new (window);
-    if (!layer_surface) {
-        g_warning ("Shell does not support Layer Shell. Falling back to default GTK behavior");
-    }
+    layer_surface_new (window);
 }
 
 gboolean

@@ -298,9 +298,27 @@ layer_surface_on_default_size_set(GtkWindow *_window, const GParamSpec *_pspec, 
 LayerSurface *
 layer_surface_new (GtkWindow *gtk_window)
 {
-    g_return_val_if_fail (gtk_wayland_get_layer_shell_global (), NULL);
-    g_return_val_if_fail (gtk_window, NULL);
-    g_return_val_if_fail (!gtk_widget_get_mapped (GTK_WIDGET (gtk_window)), NULL);
+    if (!GDK_IS_WAYLAND_DISPLAY (gdk_display_get_default ())) {
+        g_warning ("Failed to initialize layer surface, not on Wayland");
+        return NULL;
+    }
+
+    if (!libwayland_wrappers_has_initialized ()) {
+        g_warning ("Failed to initialize layer surface, GTK4 Layer Shell may have been linked after libwayland.");
+        g_message ("Move gtk4-layer-shell before libwayland-client in the linker options.");
+        g_message ("You may be able to fix with without recompiling by setting LD_PRELOAD=/path/to/libgtk4-layer-shell.so");
+        return NULL;
+    }
+
+    if (!gtk_wayland_get_layer_shell_global ()) {
+        g_warning ("Failed to initialize layer surface, it appears your Wayland compositor doesn't support Layer Shell");
+        return NULL;
+    }
+
+    if (!gtk_window) {
+        g_warning ("Failed to initialize layer surface, provided window is null");
+        return NULL;
+    }
 
     LayerSurface *self = g_new0 (LayerSurface, 1);
     self->cached_xdg_configure_size = (GtkRequisition){-1, -1};
@@ -320,6 +338,10 @@ layer_surface_new (GtkWindow *gtk_window)
     gtk_window_set_decorated (gtk_window, FALSE);
     g_signal_connect (gtk_window, "notify::default-width", G_CALLBACK (layer_surface_on_default_size_set), self);
     g_signal_connect (gtk_window, "notify::default-height", G_CALLBACK (layer_surface_on_default_size_set), self);
+
+    if (gtk_widget_get_mapped (GTK_WIDGET (gtk_window))) {
+        layer_surface_remap (self);
+    }
 
     return self;
 }

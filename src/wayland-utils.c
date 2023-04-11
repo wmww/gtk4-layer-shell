@@ -54,6 +54,7 @@ gtk_wayland_init_if_needed ()
     if (has_initialized)
         return;
 
+    gtk_init ();
     GdkDisplay *gdk_display = gdk_display_get_default ();
     g_return_if_fail (gdk_display);
     g_return_if_fail (GDK_IS_WAYLAND_DISPLAY (gdk_display));

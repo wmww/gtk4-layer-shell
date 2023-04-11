@@ -19,10 +19,16 @@ int (*real_wl_proxy_add_dispatcher)(struct wl_proxy *proxy,
 			wl_dispatcher_func_t dispatcher_func,
 			const void * dispatcher_data, void *data) = NULL;
 
+gboolean
+libwayland_wrappers_has_initialized ()
+{
+    return real_wl_proxy_marshal_array_flags != NULL;
+}
+
 static void
 libwayland_wrappers_init ()
 {
-    if (real_wl_proxy_marshal_array_flags && real_wl_proxy_destroy)
+    if (libwayland_wrappers_has_initialized ())
         return;
 
     void *handle = dlopen("libwayland-client.so", RTLD_LAZY);
