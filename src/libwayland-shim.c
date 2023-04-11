@@ -1,11 +1,10 @@
 #include <dlfcn.h>
 #include <stdlib.h>
-#include <glib.h>
-#include "libwayland-wrappers.h"
+#include "libwayland-shim.h"
 #include "layer-surface.h"
 #include "wayland-utils.h"
 
-struct wl_proxy *(*real_wl_proxy_marshal_array_flags) (
+struct wl_proxy *(*libwayland_shim_real_wl_proxy_marshal_array_flags) (
     struct wl_proxy *proxy,
     uint32_t opcode,
     const struct wl_interface *interface,
@@ -13,22 +12,22 @@ struct wl_proxy *(*real_wl_proxy_marshal_array_flags) (
     uint32_t flags,
     union wl_argument *args) = NULL;
 
-void (*real_wl_proxy_destroy) (struct wl_proxy *proxy) = NULL;
+void (*libwayland_shim_real_wl_proxy_destroy) (struct wl_proxy *proxy) = NULL;
 
-int (*real_wl_proxy_add_dispatcher)(struct wl_proxy *proxy,
+int (*libwayland_shim_real_wl_proxy_add_dispatcher)(struct wl_proxy *proxy,
 			wl_dispatcher_func_t dispatcher_func,
 			const void * dispatcher_data, void *data) = NULL;
 
 gboolean
-libwayland_wrappers_has_initialized ()
+libwayland_shim_has_initialized ()
 {
-    return real_wl_proxy_marshal_array_flags != NULL;
+    return libwayland_shim_real_wl_proxy_marshal_array_flags != NULL;
 }
 
 static void
-libwayland_wrappers_init ()
+libwayland_shim_init ()
 {
-    if (libwayland_wrappers_has_initialized ())
+    if (libwayland_shim_has_initialized ())
         return;
 
     void *handle = dlopen("libwayland-client.so", RTLD_LAZY);
@@ -36,7 +35,7 @@ libwayland_wrappers_init ()
         g_error ("failed to dlopen libwayland");
     }
 
-#define INIT_SYM(name) if (!(real_##name = dlsym(handle, #name))) {\
+#define INIT_SYM(name) if (!(libwayland_shim_real_##name = dlsym(handle, #name))) {\
     g_error ("dlsym failed to load %s", #name); }
 
     INIT_SYM(wl_proxy_marshal_array_flags);
@@ -128,8 +127,8 @@ wl_argument_from_va_list(const char *signature, union wl_argument *args,
 
 struct wrapped_proxy {
     struct wl_proxy proxy;
-    client_facing_proxy_handler_func_t handler;
-    client_facing_proxy_destroy_func_t destroy;
+    libwayland_shim_client_proxy_handler_func_t handler;
+    libwayland_shim_client_proxy_destroy_func_t destroy;
     void* data;
 };
 
@@ -137,12 +136,12 @@ struct wrapped_proxy {
 const uint32_t client_facing_proxy_id = 6942069;
 
 struct wl_proxy *
-create_client_facing_proxy (
+libwayland_shim_create_client_proxy (
     struct wl_proxy *factory,
     const struct wl_interface *interface,
     uint32_t version,
-    client_facing_proxy_handler_func_t handler,
-    client_facing_proxy_destroy_func_t destroy,
+    libwayland_shim_client_proxy_handler_func_t handler,
+    libwayland_shim_client_proxy_destroy_func_t destroy,
     void* data)
 {
     struct wrapped_proxy* allocation = g_new0 (struct wrapped_proxy, 1);
@@ -160,7 +159,7 @@ create_client_facing_proxy (
 }
 
 void
-clear_client_facing_proxy_data (struct wl_proxy *proxy)
+libwayland_shim_clear_client_proxy_data (struct wl_proxy *proxy)
 {
     if (!proxy) {
         return;
@@ -173,7 +172,7 @@ clear_client_facing_proxy_data (struct wl_proxy *proxy)
 }
 
 void *
-get_client_facing_proxy_data (struct wl_proxy *proxy, void* expected_handler)
+libwayland_shim_get_client_proxy_data (struct wl_proxy *proxy, void* expected_handler)
 {
     if (proxy && proxy->object.id == client_facing_proxy_id) {
         struct wrapped_proxy *wrapper = (struct wrapped_proxy *)proxy;
@@ -191,7 +190,7 @@ get_client_facing_proxy_data (struct wl_proxy *proxy, void* expected_handler)
 void
 wl_proxy_destroy (struct wl_proxy *proxy)
 {
-    libwayland_wrappers_init ();
+    libwayland_shim_init ();
     if (proxy->object.id == client_facing_proxy_id) {
         struct wrapped_proxy *wrapper = (struct wrapped_proxy *)proxy;
         if (wrapper->destroy) {
@@ -201,7 +200,7 @@ wl_proxy_destroy (struct wl_proxy *proxy)
         // functions that never see client facing objects
         g_free (proxy);
     } else {
-        real_wl_proxy_destroy (proxy);
+        libwayland_shim_real_wl_proxy_destroy (proxy);
     }
 }
 
@@ -215,7 +214,7 @@ wl_proxy_marshal_array_flags (
     uint32_t flags,
     union wl_argument *args)
 {
-    libwayland_wrappers_init ();
+    libwayland_shim_init ();
     if (proxy->object.id == client_facing_proxy_id) {
         struct wrapped_proxy *wrapper = (struct wrapped_proxy *)proxy;
         struct wl_proxy *result = NULL;
@@ -338,9 +337,9 @@ wl_proxy_add_dispatcher(struct wl_proxy *proxy,
 			wl_dispatcher_func_t dispatcher_func,
 			const void * dispatcher_data, void *data)
 {
-    libwayland_wrappers_init ();
+    libwayland_shim_init ();
     if (proxy->object.id == client_facing_proxy_id) {
         g_critical ("wl_proxy_add_dispatcher () not supported for client-facing proxies");
     }
-    return real_wl_proxy_add_dispatcher(proxy, dispatcher_func, dispatcher_data, data);
+    return libwayland_shim_real_wl_proxy_add_dispatcher(proxy, dispatcher_func, dispatcher_data, data);
 }

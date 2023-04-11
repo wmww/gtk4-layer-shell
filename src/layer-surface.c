@@ -1,7 +1,7 @@
 #include "layer-surface.h"
 
 #include "wayland-utils.h"
-#include "libwayland-wrappers.h"
+#include "libwayland-shim.h"
 
 #include "wlr-layer-shell-unstable-v1-client.h"
 #include "xdg-shell-client.h"
@@ -117,7 +117,7 @@ layer_surface_configure_xdg_surface (LayerSurface *self, uint32_t serial, gboole
             *state = XDG_TOPLEVEL_STATE_MAXIMIZED;
         }
 
-        DISPATCH_CLIENT_FACING_EVENT(
+        LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(
             xdg_toplevel_listener,
             self->client_facing_xdg_toplevel,
             configure,
@@ -126,7 +126,7 @@ layer_surface_configure_xdg_surface (LayerSurface *self, uint32_t serial, gboole
             &states);
         wl_array_release(&states);
 
-        DISPATCH_CLIENT_FACING_EVENT(
+        LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(
             xdg_surface_listener,
             self->client_facing_xdg_surface,
             configure,
@@ -230,8 +230,8 @@ layer_surface_unmap (LayerSurface *super)
         self->layer_surface = NULL;
     }
 
-    clear_client_facing_proxy_data((struct wl_proxy *)self->client_facing_xdg_surface);
-    clear_client_facing_proxy_data((struct wl_proxy *)self->client_facing_xdg_toplevel);
+    libwayland_shim_clear_client_proxy_data((struct wl_proxy *)self->client_facing_xdg_surface);
+    libwayland_shim_clear_client_proxy_data((struct wl_proxy *)self->client_facing_xdg_toplevel);
 
     self->client_facing_xdg_surface = NULL;
     self->client_facing_xdg_toplevel = NULL;
@@ -303,7 +303,7 @@ layer_surface_new (GtkWindow *gtk_window)
         return NULL;
     }
 
-    if (!libwayland_wrappers_has_initialized ()) {
+    if (!libwayland_shim_has_initialized ()) {
         g_warning ("Failed to initialize layer surface, GTK4 Layer Shell may have been linked after libwayland.");
         g_message ("Move gtk4-layer-shell before libwayland-client in the linker options.");
         g_message ("You may be able to fix with without recompiling by setting LD_PRELOAD=/path/to/libgtk4-layer-shell.so");
@@ -492,7 +492,7 @@ stubbed_xdg_surface_handle_request (
     (void)interface; (void)flags;
     LayerSurface *self = (LayerSurface *)data;
     if (opcode == XDG_SURFACE_GET_TOPLEVEL) {
-        struct wl_proxy *toplevel = create_client_facing_proxy (
+        struct wl_proxy *toplevel = libwayland_shim_create_client_proxy (
             proxy,
             &xdg_toplevel_interface,
             version,
@@ -503,7 +503,7 @@ stubbed_xdg_surface_handle_request (
         return toplevel;
     } else if (opcode == XDG_SURFACE_GET_POPUP) {
         g_critical ("XDG surface intercepted, but is now being used as popup");
-        return create_client_facing_proxy (proxy, &xdg_popup_interface, version, NULL, NULL, NULL);
+        return libwayland_shim_create_client_proxy (proxy, &xdg_popup_interface, version, NULL, NULL, NULL);
     } else if (opcode == XDG_SURFACE_SET_WINDOW_GEOMETRY) {
         layer_surface_send_set_size (self);
         layer_surface_update_auto_exclusive_zone (self);
@@ -553,7 +553,7 @@ layer_surface_handle_request (
             GList *layer_surface_entry = g_list_find_custom (all_layer_surfaces, wl_surface, find_layer_surface_with_wl_surface);
             if (layer_surface_entry) {
                 LayerSurface *self = layer_surface_entry->data;
-                struct wl_proxy *xdg_surface = create_client_facing_proxy (
+                struct wl_proxy *xdg_surface = libwayland_shim_create_client_proxy (
                     proxy,
                     &xdg_surface_interface,
                     version,
@@ -567,7 +567,7 @@ layer_surface_handle_request (
         }
     } else if (strcmp(type, xdg_surface_interface.name) == 0) {
         if (opcode == XDG_SURFACE_GET_POPUP) {
-            LayerSurface *self = get_client_facing_proxy_data ((struct wl_proxy *)args[1].o, stubbed_xdg_surface_handle_request);
+            LayerSurface *self = libwayland_shim_get_client_proxy_data ((struct wl_proxy *)args[1].o, stubbed_xdg_surface_handle_request);
             if (self) {
                 if (self->layer_surface) {
                     struct xdg_popup *xdg_popup = xdg_surface_get_popup (
@@ -578,10 +578,10 @@ layer_surface_handle_request (
                     return (struct wl_proxy *)xdg_popup;
                 } else {
                     g_critical ("tried to create popup before layer shell surface");
-                    return create_client_facing_proxy (proxy, &xdg_popup_interface, version, NULL, NULL, NULL);
+                    return libwayland_shim_create_client_proxy (proxy, &xdg_popup_interface, version, NULL, NULL, NULL);
                 }
             }
         }
     }
-    return real_wl_proxy_marshal_array_flags (proxy, opcode, interface, version, flags, args);
+    return libwayland_shim_real_wl_proxy_marshal_array_flags (proxy, opcode, interface, version, flags, args);
 }

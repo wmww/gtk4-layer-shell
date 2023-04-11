@@ -1,6 +1,6 @@
 srcs = files(
     'api.c',
-    'libwayland-wrappers.c',
+    'libwayland-shim.c',
     'layer-surface.c',
     'wayland-utils.c')
 

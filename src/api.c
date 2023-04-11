@@ -1,6 +1,6 @@
 #include "wayland-utils.h"
 #include "layer-surface.h"
-#include "libwayland-wrappers.h"
+#include "libwayland-shim.h"
 
 #include <gdk/wayland/gdkwayland.h>
 
@@ -26,7 +26,7 @@ gboolean
 gtk_layer_is_supported ()
 {
     gtk_wayland_init_if_needed ();
-    return libwayland_wrappers_has_initialized () && gtk_wayland_get_layer_shell_global () != NULL;
+    return libwayland_shim_has_initialized () && gtk_wayland_get_layer_shell_global () != NULL;
 }
 
 guint
