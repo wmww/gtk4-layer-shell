@@ -31,6 +31,9 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 ### Vala
 [examples/vala-standalone](examples/vala-standalone) contains a minimal working standalone Vala project, see [the readme](examples/vala-standalone/README.md) for details.
 
+### Rust
+[@pentamassiv](https://github.com/pentamassiv) maintains [safe Rust bindings](https://github.com/pentamassiv/gtk4-layer-shell-gir) and the [crates.io crate](https://crates.io/crates/gtk4-layer-shell/). Rust examples can be found [here](https://github.com/pentamassiv/gtk4-layer-shell-gir/tree/main/gtk4-layer-shell/examples).
+
 ## Distro Packages
 [![List of distros GTK Layer Shell is packaged for](https://repology.org/badge/vertical-allrepos/gtk4-layer-shell.svg)](https://repology.org/project/gtk4-layer-shell/versions)
 
