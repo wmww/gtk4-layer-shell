@@ -34,7 +34,7 @@ jobs:
     - name: Install depends
       run: sudo apt install meson libwayland-dev libgtk-4-dev gobject-introspection libgirepository1.0-dev valac gtk-doc-tools
     - name: Meson
-      run: meson build -Dexamples=false -Ddocs=true -Dtests=false --prefix $HOME
+      run: meson setup -Dexamples=false -Ddocs=true -Dtests=false --prefix $HOME build
     - name: Build Install
       run: ninja -C build install
     - name: Move files into place
