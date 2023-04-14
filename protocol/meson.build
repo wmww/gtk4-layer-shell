@@ -1,5 +1,5 @@
 if wayland_scanner.found()
-    prog_wayland_scanner = find_program(wayland_scanner.get_pkgconfig_variable('wayland_scanner'))
+    prog_wayland_scanner = find_program(wayland_scanner.get_variable(pkgconfig: 'wayland_scanner'))
 else
     prog_wayland_scanner = find_program('wayland-scanner')
 endif
@@ -10,7 +10,7 @@ protocols = [
 
 if wayland_protocols.found()
     protocols += join_paths(
-        wayland_protocols.get_pkgconfig_variable('pkgdatadir'),
+        wayland_protocols.get_variable(pkgconfig: 'pkgdatadir'),
         'stable/xdg-shell/xdg-shell.xml')
 else
     # use bundled xdg-shell.xml
@@ -27,8 +27,7 @@ gen_server_header = generator(prog_wayland_scanner,
 
 gen_private_code = generator(prog_wayland_scanner,
     output: ['@BASENAME@.c'],
-    arguments: ['-c', 'code', '@INPUT@', '@BUILD_DIR@/@BASENAME@.c'])
-# 'code' is deprecated, and can be replaced with 'private-code' when all platforms have a new enough wayland-scanner
+    arguments: ['-c', 'private-code', '@INPUT@', '@BUILD_DIR@/@BASENAME@.c'])
 
 client_protocol_srcs = []
 server_protocol_srcs = []
