@@ -16,7 +16,7 @@ jobs:
     - name: Install depends
       run: sudo apt install meson libwayland-dev libgtk-4-dev gobject-introspection libgirepository1.0-dev valac gtk-doc-tools
     - name: Meson
-      run: meson build -Dexamples=true -Ddocs=true -Dtests=true
+      run: meson setup -Dexamples=true -Ddocs=true -Dtests=true build
       env:
         CFLAGS: -Werror
     - name: Build
