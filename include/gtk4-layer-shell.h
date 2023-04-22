@@ -154,7 +154,7 @@ struct zwlr_layer_surface_v1 *gtk_layer_get_zwlr_layer_surface_v1 (GtkWindow *wi
  * ownership of original. If the window is currently mapped, it will get remapped so
  * the change can take effect.
  *
- * Default is "gtk-layer-shell" (which will be used if set to %NULL)
+ * Default is "gtk4-layer-shell" (which will be used if set to %NULL)
  */
 void gtk_layer_set_namespace (GtkWindow *window, char const* name_space);
 
@@ -166,7 +166,7 @@ void gtk_layer_set_namespace (GtkWindow *window, char const* name_space);
  * Future calls into the library may invalidate the returned string.
  *
  * Returns: a reference to the namespace property. If namespace is unset, returns the
- * default namespace ("gtk-layer-shell"). Never returns %NULL.
+ * default namespace ("gtk4-layer-shell"). Never returns %NULL.
  */
 const char *gtk_layer_get_namespace (GtkWindow *window);
 
@@ -290,7 +290,7 @@ int gtk_layer_get_exclusive_zone (GtkWindow *window);
  * exclusive zone to 0 or any other fixed value.
  *
  * NOTE: you can control the auto exclusive zone by changing the margin on the non-anchored
- * edge. This behavior is specific to gtk-layer-shell and not part of the underlying protocol
+ * edge. This behavior is specific to gtk4-layer-shell and not part of the underlying protocol
  */
 void gtk_layer_auto_exclusive_zone_enable (GtkWindow *window);
 

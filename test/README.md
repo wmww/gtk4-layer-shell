@@ -1,5 +1,5 @@
 # GTK Layer Shell tests
-This directory is home to the gtk-layer-shell test suite.
+This directory is home to the gtk4-layer-shell test suite.
 
 ## To run tests
 `ninja -C build test` (where `build` is the path to your build directory).

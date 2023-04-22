@@ -469,7 +469,7 @@ layer_surface_get_namespace (LayerSurface *self)
     if (self && self->name_space)
         return self->name_space;
     else
-        return "gtk-layer-shell";
+        return "gtk4-layer-shell";
 }
 
 static void

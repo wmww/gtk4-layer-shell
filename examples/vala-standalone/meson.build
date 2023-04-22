@@ -1,4 +1,4 @@
-project('vala-gtk-layer-shell-example',
+project('vala-gtk4-layer-shell-example',
     ['vala', 'c'],
     version: '0.1.0',
     license: 'MIT',

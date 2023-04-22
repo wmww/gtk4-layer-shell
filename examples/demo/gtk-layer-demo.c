@@ -96,7 +96,7 @@ static const GOptionEntry options[] = {
         .flags = G_OPTION_FLAG_NONE,
         .arg = G_OPTION_ARG_NONE,
         .arg_data = &no_layer_shell,
-        .description = "Disable gtk-layer-shell, create a normal shell surface instead",
+        .description = "Disable gtk4-layer-shell, create a normal shell surface instead",
         .arg_description = NULL,
     },
     { NULL, 0, 0, 0, NULL, NULL, NULL }
@@ -250,7 +250,7 @@ process_args (int *argc, char ***argv)
     if (show_version_and_exit)
     {
         g_print (
-            "%s on gtk-layer-shell v%d.%d.%d\n",
+            "%s on gtk4-layer-shell v%d.%d.%d\n",
             prog_name,
             gtk_layer_get_major_version (),
             gtk_layer_get_minor_version (),
