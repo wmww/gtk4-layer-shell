@@ -2,10 +2,14 @@ subdir('test-common')
 subdir('mock-server')
 subdir('integration-test-common')
 subdir('integration-tests')
+subdir('smoke-tests')
 subdir('unit-tests')
 
 py = find_program('python3')
 run_test_script = files(meson.current_source_dir() + '/run-integration-test.py')
+
+env = environment()
+env.set('GTK4_LAYER_SHELL_BUILD', meson.build_root())
 
 foreach integration_test : integration_tests
     integration_test_srcs = files('integration-tests/' + integration_test + '.c')
@@ -13,15 +17,26 @@ foreach integration_test : integration_tests
         integration_test,
         integration_test_srcs,
         dependencies: [gtk, wayland_client, gtk_layer_shell, integration_test_common])
-    expect_fail = integration_test.endswith('expect-fail')
     test(
-        integration_test,
+        'integration-' + integration_test,
         py,
-        should_fail: expect_fail,
         workdir: meson.current_source_dir(),
+        env: env,
         args: [
             run_test_script,
             meson.current_build_dir() + '/' + integration_test,
+        ])
+endforeach
+
+foreach smoke_test : smoke_tests
+    test(
+        'smoke-' + smoke_test,
+        py,
+        workdir: meson.current_source_dir(),
+        env: env,
+        args: [
+            run_test_script,
+            meson.current_source_dir() + '/smoke-tests/' + smoke_test + '.py',
         ])
 endforeach
 

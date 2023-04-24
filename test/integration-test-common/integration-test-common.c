@@ -59,6 +59,8 @@ static void create_debug_control_window()
 
 int main(int argc, char** argv)
 {
+    EXPECT_MESSAGE(wl_display .get_registry);
+
     gtk_init();
 
     if (argc == 1) {
