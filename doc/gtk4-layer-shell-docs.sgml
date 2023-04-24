@@ -60,7 +60,7 @@
     <title>API Reference</title>
     <partintro>
       <para>
-        Gtk-layer-shell is a library to write <ulink type ="http" url="https://www.gtk.org/">GTK</ulink>
+        gtk4-layer-shell is a library to write <ulink type ="http" url="https://www.gtk.org/">GTK</ulink>
          applications that use <ulink type="https" url="https://github.com/swaywm/wlr-protocols/blob/master/unstable/wlr-layer-shell-unstable-v1.xml">Layer Shell</ulink>.
          Layer Shell is a Wayland protocol for desktop shell components,
          such as panels, notifications and wallpapers. You can use it to anchor
