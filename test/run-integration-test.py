@@ -212,7 +212,8 @@ def line_contains(line: str, tokens: List[str]) -> bool:
 
 def verify_result(lines: List[str]):
     '''Runs through the output of a client and verifies that all expectations pass, see the test README.md details'''
-    assertions = []
+    assertions: List[List[str]] = []
+    negative_assertions: List[List[str]] = []
     section_start = 0
     set_expectation = False
     checked_expectation = False
@@ -220,9 +221,16 @@ def verify_result(lines: List[str]):
         if line.startswith('EXPECT: '):
             assertions.append(line.split()[1:])
             set_expectation = True
+        elif line.startswith('DONT_EXPECT: '):
+            negative_assertions.append(line.split()[1:])
+            set_expectation = True
         elif line.startswith('[') and line.endswith(')') and '@' in line:
             if assertions and line_contains(line, assertions[0]):
                 assertions = assertions[1:]
+            for negative_assertion in negative_assertions:
+                if line_contains(line, negative_assertion):
+                    section = format_stream('relevant section', '\n'.join(lines[section_start:i + 1]))
+                    raise TestError(section + '\n\nunexpected message matching "' + ' '.join(negative_assertion) + '"')
         elif line == 'CHECK EXPECTATIONS COMPLETED' or i == len(lines) - 1:
             checked_expectation = True
             if assertions:

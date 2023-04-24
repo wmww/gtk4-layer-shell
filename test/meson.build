@@ -16,11 +16,9 @@ foreach integration_test : integration_tests
         integration_test,
         integration_test_srcs,
         dependencies: [gtk, wayland_client, gtk_layer_shell, integration_test_common])
-    expect_fail = integration_test.endswith('expect-fail')
     test(
         'integration-' + integration_test,
         py,
-        should_fail: expect_fail,
         workdir: meson.current_source_dir(),
         env: env,
         args: [

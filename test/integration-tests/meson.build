@@ -1,6 +1,6 @@
 integration_tests = [
     'test-is-supported-true',
-    'test-expect-fail',
+    'test-layer-surface-not-created',
     'test-creation-properties',
     'test-is-layer-window',
     'test-single-anchors',
