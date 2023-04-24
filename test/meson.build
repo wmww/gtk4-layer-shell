@@ -2,6 +2,7 @@ subdir('test-common')
 subdir('mock-server')
 subdir('integration-test-common')
 subdir('integration-tests')
+subdir('smoke-tests')
 subdir('unit-tests')
 
 py = find_program('python3')
@@ -24,6 +25,18 @@ foreach integration_test : integration_tests
         args: [
             run_test_script,
             meson.current_build_dir() + '/' + integration_test,
+        ])
+endforeach
+
+foreach smoke_test : smoke_tests
+    test(
+        'smoke-' + smoke_test,
+        py,
+        workdir: meson.current_source_dir(),
+        env: env,
+        args: [
+            run_test_script,
+            meson.current_source_dir() + '/smoke-tests/' + smoke_test + '.py',
         ])
 endforeach
 
