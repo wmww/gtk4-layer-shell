@@ -203,17 +203,24 @@ def verify_result(lines: List[str]):
     '''Runs through the output of a client and verifies that all expectations pass, see the test README.md details'''
     assertions = []
     section_start = 0
+    set_expectation = False
+    checked_expectation = False
     for i, line in enumerate(lines):
         if line.startswith('EXPECT: '):
             assertions.append(line.split()[1:])
+            set_expectation = True
         elif line.startswith('[') and line.endswith(')') and '@' in line:
             if assertions and line_contains(line, assertions[0]):
                 assertions = assertions[1:]
         elif line == 'CHECK EXPECTATIONS COMPLETED' or i == len(lines) - 1:
+            checked_expectation = True
             if assertions:
                 section = format_stream('relevant section', '\n'.join(lines[section_start:i]))
                 raise TestError(section + '\n\ndid not find "' + ' '.join(assertions[0]) + '"')
             section_start = i + 1
+    if not set_expectation or not checked_expectation:
+        # If the test didn't use the right expectation format or something we don't want to silently pass
+        raise TestError('test did not correctly set and check an expectation')
 
 def main():
     client_bin = sys.argv[1]
