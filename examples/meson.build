@@ -1,5 +1,4 @@
 subdir('demo')
-# vala-standalone is it's own meson project, so do not subdir() it
 
 executable(
     'gtk4-layer-demo',
@@ -14,3 +13,12 @@ executable(
     build_by_default: get_option('examples'),
     dependencies: [gtk, gtk_layer_shell],
     install: false)
+
+if get_option('vapi')
+    add_languages('vala')
+    executable(
+        'simple-example-vala',
+        files('simple-example.vala'),
+        dependencies: [gtk, gtk_layer_shell, vapi],
+        install: false)
+endif
