@@ -225,9 +225,13 @@ def verify_result(lines: List[str]):
 def main():
     client_bin = sys.argv[1]
     name = path.basename(client_bin)
-    server_bin = path.join(path.dirname(client_bin), 'mock-server', 'mock-server')
+    build_dir = os.environ.get('GTK4_LAYER_SHELL_BUILD')
+    assert build_dir, 'GTK4_LAYER_SHELL_BUILD environment variable not set'
+    server_bin = path.join(build_dir, 'test', 'mock-server', 'mock-server')
     assert path.exists(client_bin), 'Could not find client at ' + client_bin
+    assert os.access(client_bin, os.X_OK), client_bin + ' is not executable'
     assert path.exists(server_bin), 'Could not find server at ' + server_bin
+    assert os.access(server_bin, os.X_OK), server_bin + ' is not executable'
     wayland_display = 'wayland-test'
     xdg_runtime = get_xdg_runtime_dir()
 
