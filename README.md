@@ -29,7 +29,7 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 [examples/simple-example.py](examples/simple-example.py) contains sample Python code.
 
 ### Vala
-[examples/vala-standalone](examples/vala-standalone) contains a minimal working standalone Vala project, see [the readme](examples/vala-standalone/README.md) for details.
+[examples/simple-example.vala](examples/simple-example.vala) contains a minimal working Vala app.
 
 ### Rust
 [@pentamassiv](https://github.com/pentamassiv) maintains [safe Rust bindings](https://github.com/pentamassiv/gtk4-layer-shell-gir) and the [crates.io crate](https://crates.io/crates/gtk4-layer-shell/). Rust examples can be found [here](https://github.com/pentamassiv/gtk4-layer-shell-gir/tree/main/gtk4-layer-shell/examples).
@@ -63,7 +63,7 @@ sudo apt install meson libwayland-dev libgtk-4-dev gobject-introspection libgire
 * `-Ddocs` (default `false`): If to generate the docs
 * `-Dtests` (default `false`): If to build the tests
 * `-Dintrospection` (default: `true`): If to build GObject Introspection data (used for bindings to languages other than C/C++)
-* `-Dvapi` (default: `true`): If to build VAPI data (allows this library to be used in Vala). Requires `-Dintrospection=true`
+* `-Dvapi` (default: `true`): If to build VAPI data and Vala example. The VAPI file allows this library to be used in Vala. Requires `-Dintrospection=true`
 
 ### Running the Tests
 * `ninja -C build test`

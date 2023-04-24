@@ -37,7 +37,7 @@ if get_option('introspection')
         install: true)
 
     if get_option('vapi')
-        gnome.generate_vapi(
+        vapi = gnome.generate_vapi(
             pkg_config_name,
             sources: gir[0],
             packages: 'gtk4',

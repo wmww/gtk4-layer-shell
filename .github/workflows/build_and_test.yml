@@ -25,7 +25,3 @@ jobs:
       run: ninja -C build test
     - name: Install
       run: sudo ninja -C build install
-    - name: Meson Vala example
-      run: cd examples/vala-standalone && meson ../../vala-build
-    - name: Build Vala example
-      run: ninja -C vala-build
