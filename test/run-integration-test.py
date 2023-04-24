@@ -176,11 +176,22 @@ def run_test(name: str, server_args: List[str], client_args: List[str], xdg_runt
         raise TestError(server.format_output() + '\n\n' + str(e))
 
     client = Program(name, client_args, env)
-    client.finish(timeout=10)
-    server.finish(timeout=1)
 
-    server.check_returncode()
-    client.check_returncode()
+    errors: List[str] = []
+    try:
+        client.finish(timeout=10)
+        client.check_returncode()
+    except TestError as e:
+        errors.append(str(e))
+
+    try:
+        server.finish(timeout=1)
+        server.check_returncode()
+    except TestError as e:
+        errors.append(str(e))
+
+    if errors:
+        raise TestError('\n\n'.join(errors))
 
     client_stdout, client_stderr = client.collect_output()
 
