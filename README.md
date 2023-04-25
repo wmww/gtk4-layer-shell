@@ -49,9 +49,12 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 * [Meson](https://mesonbuild.com/) (>=0.45.1)
 * [libwayland](https://gitlab.freedesktop.org/wayland/wayland) (>=1.10.0)
 * [GTK4](https://www.gtk.org/)
-* [GObject introspection](https://gitlab.gnome.org/GNOME/gobject-introspection/)
-* [GTK Doc](https://www.gtk.org/gtk-doc/) (only required if docs are enabled)
-* [Vala](https://wiki.gnome.org/Projects/Vala) (only required if vapi is enabled)
+* __If `introspection` enabled:__ [GObject introspection](https://gitlab.gnome.org/GNOME/gobject-introspection/)
+* __If `docs` enabled:__ [GTK Doc](https://www.gtk.org/gtk-doc/)
+* __If `tests` enabled:__ [Python3](https://www.python.org/)
+* __If `vapi` enabled:__ [Vala](https://wiki.gnome.org/Projects/Vala)
+- __If `smoke-tests` enabled:__ [LuaJIT](https://luajit.org/)
+- __If `smoke-tests` enabled:__ [LGI](https://github.com/lgi-devs/lgi)
 
 To install these dependencies on Ubuntu 18.04 and later:
 ```
@@ -62,6 +65,7 @@ sudo apt install meson libwayland-dev libgtk-4-dev gobject-introspection libgire
 * `-Dexamples` (default `false`): If to build the example C apps; gtk4-layer-demo is installed if examples are built; The Vala example is never built with the rest of the project
 * `-Ddocs` (default `false`): If to generate the docs
 * `-Dtests` (default `false`): If to build the tests
+* `-Dsmoke-tests` (default: `true`): If to test that all examples can run (disable if you don't want to install the various languages and dependencies required)
 * `-Dintrospection` (default: `true`): If to build GObject Introspection data (used for bindings to languages other than C/C++)
 * `-Dvapi` (default: `true`): If to build VAPI data and Vala example. The VAPI file allows this library to be used in Vala. Requires `-Dintrospection=true`
 
