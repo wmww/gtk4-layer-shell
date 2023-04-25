@@ -2,10 +2,6 @@ smoke_tests = [
     'test-c-example',
     'test-c-demo',
     'test-python-example',
+    'test-lua-example',
+    'test-vala-example',
 ]
-
-if get_option('vapi')
-    smoke_tests += [
-        'test-vala-example',
-    ]
-endif

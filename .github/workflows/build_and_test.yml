@@ -14,13 +14,16 @@ jobs:
     - name: Apt update
       run: sudo apt update
     - name: Install depends
-      run: sudo apt install meson libwayland-dev libgtk-4-dev gobject-introspection libgirepository1.0-dev valac gtk-doc-tools
+      run: sudo apt install meson libwayland-dev libgtk-4-dev gobject-introspection libgirepository1.0-dev valac luajit luarocks gtk-doc-tools
     - name: Meson
       run: meson setup -Dexamples=true -Ddocs=true -Dtests=true build
       env:
         CFLAGS: -Werror
     - name: Build
       run: ninja -C build
+    - name: Install Lua LGI
+      run: sudo luarocks install https://raw.githubusercontent.com/lgi-devs/lgi/master/lgi-scm-1.rockspec
+      # From https://github.com/lgi-devs/lgi/pull/305#issue-1459493105
     - name: Test
       run: ninja -C build test
     - name: Install
