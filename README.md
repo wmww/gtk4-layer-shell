@@ -28,6 +28,9 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 ### Python
 [examples/simple-example.py](examples/simple-example.py) contains sample Python code.
 
+### Lua
+[examples/simple-example.py](examples/simple-example.py) contains sample Lua code. It uses [FFI](https://luajit.org/ext_ffi.html) which requires [LuaJIT](https://luajit.org/).
+
 ### Vala
 [examples/simple-example.vala](examples/simple-example.vala) contains a minimal working Vala app.
 
