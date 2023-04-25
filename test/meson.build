@@ -2,7 +2,6 @@ subdir('test-common')
 subdir('mock-server')
 subdir('integration-test-common')
 subdir('integration-tests')
-subdir('smoke-tests')
 subdir('unit-tests')
 
 py = find_program('python3')
@@ -28,17 +27,20 @@ foreach integration_test : integration_tests
         ])
 endforeach
 
-foreach smoke_test : smoke_tests
-    test(
-        'smoke-' + smoke_test,
-        py,
-        workdir: meson.current_source_dir(),
-        env: env,
-        args: [
-            run_test_script,
-            meson.current_source_dir() + '/smoke-tests/' + smoke_test + '.py',
-        ])
-endforeach
+if get_option('smoke-tests')
+    subdir('smoke-tests')
+    foreach smoke_test : smoke_tests
+        test(
+            'smoke-' + smoke_test,
+            py,
+            workdir: meson.current_source_dir(),
+            env: env,
+            args: [
+                run_test_script,
+                meson.current_source_dir() + '/smoke-tests/' + smoke_test + '.py',
+            ])
+    endforeach
+endif
 
 check_tests_in_meson_script = files(meson.current_source_dir() + '/check-all-tests-are-in-meson.py')
 test('check-all-tests-are-in-meson', py, args: [check_tests_in_meson_script])
