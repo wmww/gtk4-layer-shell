@@ -20,8 +20,8 @@ app.on_activate = function()
       application = app
    }
    layer_shell.init_for_window(win)
-   layer_shell.set_layer(win, 2)
-   layer_shell.set_anchor(win, 1)
+   layer_shell.set_layer(win, layer_shell.Layer.TOP)
+   layer_shell.set_anchor(win, layer_shell.Edge.BOTTOM, true)
    layer_shell.set_exclusive_zone(win, 0)
    local button = Gtk.Button {
       label = "Gtk4 Layer Shell Example",
