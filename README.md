@@ -8,6 +8,9 @@ A library for using the [Layer Shell](https://gitlab.freedesktop.org/wlroots/wlr
 
 [GTK3 version](https://github.com/wmww/gtk-layer-shell)
 
+## Reporting Bugs
+To report a crash or other problem using this library open a new [issue on Github](https://github.com/wmww/gtk4-layer-shell/issues). Try to include a minimum reproducer if possible (ideally in C). **DO NOT REPORT GTK4 LAYER SHELL BUGS TO UPSTREAM GTK**. If you can reproduce the problem without including or linking to the gtk4-layer-shell library **at all** then and only then report it to GTK instead of here.
+
 ## Supported Desktops
 This library only works on Wayland, and only on Wayland compositors that support the Layer Shell protocol. Layer shell __is supported__ on:
 - wlroots based compositors (such as __Sway__)
