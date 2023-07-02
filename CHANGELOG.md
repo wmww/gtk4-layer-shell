@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [1.0.1] - 1 Jul 2023
+- Add lua example
+- Add links to Rust and Ruby bindings
+- Fix doc name conflicts with GTK3 library version
+- Add smoke tests
+
 ## [1.0.0] - 11 Apr 2023
 - Port library and examples from GTK3 to GTK4
 - Remove deprecated functions `gtk_layer_set_keyboard_interactivity()` and `gtk_layer_get_keyboard_interactivity()` (`gtk_layer_set_keyboard_mode()` and `gtk_layer_get_keyboard_mode()` can be used instead)
