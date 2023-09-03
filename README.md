@@ -56,6 +56,7 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 
 ### Build Dependencies
 * [Meson](https://mesonbuild.com/) (>=0.45.1)
+* [Ninja](https://ninja-build.org/) (>=1.8.2)
 * [libwayland](https://gitlab.freedesktop.org/wayland/wayland) (>=1.10.0)
 * [GTK4](https://www.gtk.org/)
 * __If `introspection` enabled:__ [GObject introspection](https://gitlab.gnome.org/GNOME/gobject-introspection/)
@@ -67,7 +68,12 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 
 To install these dependencies on Ubuntu 18.04 and later:
 ```
-sudo apt install meson libwayland-dev libgtk-4-dev gobject-introspection libgirepository1.0-dev gtk-doc-tools valac
+sudo apt install meson ninja-build libwayland-dev libgtk-4-dev gobject-introspection libgirepository1.0-dev gtk-doc-tools python3 valac
+```
+
+To install on Arch Linux:
+```
+pacman -S --needed meson ninja gtk4 wayland gobject-introspection libgirepository gtk-doc python vala
 ```
 
 ### Meson Options
