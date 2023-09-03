@@ -61,7 +61,7 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 * [libwayland](https://gitlab.freedesktop.org/wayland/wayland) (>=1.10.0)
 * [GTK4](https://www.gtk.org/)
 * __If `introspection` enabled:__ [GObject introspection](https://gitlab.gnome.org/GNOME/gobject-introspection/)
-* __If `docs` enabled:__ [GTK Doc](https://www.gtk.org/gtk-doc/)
+* __If `docs` enabled:__ [GTK Doc](https://wiki.gnome.org/DocumentationProject/GtkDoc)
 * __If `tests` enabled:__ [Python3](https://www.python.org/)
 * __If `vapi` enabled:__ [Vala](https://wiki.gnome.org/Projects/Vala)
 - __If `smoke-tests` enabled:__ [LuaJIT](https://luajit.org/)
