@@ -14,8 +14,9 @@ To report a crash or other problem using this library open a new [issue on Githu
 ## Supported Desktops
 This library only works on Wayland, and only on Wayland compositors that support the Layer Shell protocol. Layer shell __is supported__ on:
 - wlroots based compositors (such as __Sway__)
+- Smithay based compositors (such as __COSMIC__)
+- __Mir__ based compositors (some may not enable the protocol by default. It can be enabled with `--add-wayland-extension zwlr_layer_shell_v1`)
 - __KDE Plasma__ on wayland
-- __Mir__-based compositors (some may not enable the protocol by default. It can be enabled with `--add-wayland-extension zwlr_layer_shell_v1`)
 
 Layer shell __is not supported__ on:
 - Gnome-on-Wayland
