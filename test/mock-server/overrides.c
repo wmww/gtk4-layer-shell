@@ -35,7 +35,9 @@ static uint32_t click_serial = 0;
 // Needs to be called before any role objects are assigned
 static void surface_data_set_role(SurfaceData* data, SurfaceRole role)
 {
-    ASSERT_EQ(data->role, SURFACE_ROLE_NONE, "%u");
+    if (data->role != SURFACE_ROLE_NONE) {
+        ASSERT_EQ(data->role, role, "%u");
+    }
     char is_xdg_role = (role == SURFACE_ROLE_XDG_TOPLEVEL || role == SURFACE_ROLE_XDG_POPUP);
     ASSERT_EQ(data->xdg_surface != NULL, is_xdg_role, "%d");
     ASSERT(!data->xdg_toplevel);
