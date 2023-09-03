@@ -24,8 +24,8 @@ gtk_window_get_layer_surface (GtkWindow *gtk_window)
 static void
 layer_surface_remap (LayerSurface *self)
 {
-    gtk_widget_set_visible (GTK_WIDGET (self->gtk_window), FALSE);
-    gtk_widget_set_visible (GTK_WIDGET (self->gtk_window), TRUE);
+    gtk_widget_unrealize (GTK_WIDGET (self->gtk_window));
+    gtk_widget_map (GTK_WIDGET (self->gtk_window));
 }
 
 static void
