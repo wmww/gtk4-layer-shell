@@ -197,6 +197,7 @@ wl_proxy_destroy (struct wl_proxy *proxy)
         if (wrapper->destroy) {
             wrapper->destroy(wrapper->data, proxy);
         }
+        wl_list_remove(&proxy->queue_link);
         // No need to worry about the refcount since it's only accessibly within libwayland, and it's only used by
         // functions that never see client facing objects
         g_free (proxy);
