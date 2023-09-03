@@ -14,8 +14,9 @@ To report a crash or other problem using this library open a new [issue on Githu
 ## Supported Desktops
 This library only works on Wayland, and only on Wayland compositors that support the Layer Shell protocol. Layer shell __is supported__ on:
 - wlroots based compositors (such as __Sway__)
+- Smithay based compositors (such as __COSMIC__)
+- __Mir__ based compositors (some may not enable the protocol by default. It can be enabled with `--add-wayland-extension zwlr_layer_shell_v1`)
 - __KDE Plasma__ on wayland
-- __Mir__-based compositors (some may not enable the protocol by default. It can be enabled with `--add-wayland-extension zwlr_layer_shell_v1`)
 
 Layer shell __is not supported__ on:
 - Gnome-on-Wayland
@@ -56,10 +57,11 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 
 ### Build Dependencies
 * [Meson](https://mesonbuild.com/) (>=0.45.1)
+* [Ninja](https://ninja-build.org/) (>=1.8.2)
 * [libwayland](https://gitlab.freedesktop.org/wayland/wayland) (>=1.10.0)
 * [GTK4](https://www.gtk.org/)
 * __If `introspection` enabled:__ [GObject introspection](https://gitlab.gnome.org/GNOME/gobject-introspection/)
-* __If `docs` enabled:__ [GTK Doc](https://www.gtk.org/gtk-doc/)
+* __If `docs` enabled:__ [GTK Doc](https://wiki.gnome.org/DocumentationProject/GtkDoc)
 * __If `tests` enabled:__ [Python3](https://www.python.org/)
 * __If `vapi` enabled:__ [Vala](https://wiki.gnome.org/Projects/Vala)
 - __If `smoke-tests` enabled:__ [LuaJIT](https://luajit.org/)
@@ -67,7 +69,12 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 
 To install these dependencies on Ubuntu 18.04 and later:
 ```
-sudo apt install meson libwayland-dev libgtk-4-dev gobject-introspection libgirepository1.0-dev gtk-doc-tools valac
+sudo apt install meson ninja-build libwayland-dev libgtk-4-dev gobject-introspection libgirepository1.0-dev gtk-doc-tools python3 valac
+```
+
+To install on Arch Linux:
+```
+pacman -S --needed meson ninja gtk4 wayland gobject-introspection libgirepository gtk-doc python vala
 ```
 
 ### Meson Options

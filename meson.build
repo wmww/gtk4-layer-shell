@@ -48,7 +48,6 @@ if get_option('tests')
     subdir('test')
 else
     # Add a single always-failing test to tell the user to reconfigure with tests enabled
-    py = find_program('python3')
-    tests_not_enabled_script = files(meson.current_source_dir() + '/test/tests-not-enabled.py')
-    test('Tests not enabled', py, args: [tests_not_enabled_script])
+    test('Tests not enabled', find_program('sh'), args: ['-c',
+        'echo \'you must run `meson setup --reconfigure -Dtests=true build` in order to run the tests (where build is the path to your build directory)\'; exit 1'])
 endif
