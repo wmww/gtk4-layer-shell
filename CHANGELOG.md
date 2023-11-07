@@ -1,6 +1,10 @@
 # Changelog
 
 ## [Unreleased]
+## [1.0.2] - 7 Nov 2023
+- Fix tests on Arch
+- Realize and unrealize on remap instead of setting visibility
+- Fix major use-after-free bug causing many crashes
 
 ## [1.0.1] - 1 Jul 2023
 - Add lua example
