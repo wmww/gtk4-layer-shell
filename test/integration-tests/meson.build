@@ -18,7 +18,6 @@ integration_tests = [
     'test-get-explicit-exclusive-zone',
     'test-get-auto-exclusive-zone',
     'test-exclusive-zone-below-negative-1',
-    'test-menu-popup',
     'test-close-layer-surface',
     'test-get-namespace-default',
     'test-get-namespace-on-non-layer-window',

@@ -6,7 +6,7 @@ static const char *options[] = {"Foo", "Bar", "Baz", NULL};
 
 static void callback_0()
 {
-    EXPECT_MESSAGE(zwlr_layer_shell_v1 .get_layer_surface);
+    EXPECT_MESSAGE(zwlr_layer_shell_v1 .get_layer_surface wl_output#);
 
     // The popup is weirdly slow to open, so slow the tests down
     step_time = 600;

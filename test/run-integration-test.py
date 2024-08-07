@@ -224,7 +224,7 @@ def verify_result(lines: List[str]):
         elif line.startswith('DONT_EXPECT: '):
             negative_assertions.append(line.split()[1:])
             set_expectation = True
-        elif line.startswith('[') and line.endswith(')') and '@' in line:
+        elif line.startswith('[') and line.endswith(')') and '#' in line:
             if assertions and line_contains(line, assertions[0]):
                 assertions = assertions[1:]
             for negative_assertion in negative_assertions:

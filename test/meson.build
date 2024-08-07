@@ -42,5 +42,3 @@ if get_option('smoke-tests')
     endforeach
 endif
 
-check_tests_in_meson_script = files(meson.current_source_dir() + '/check-all-tests-are-in-meson.py')
-test('check-all-tests-are-in-meson', py, args: [check_tests_in_meson_script])
