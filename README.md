@@ -50,7 +50,7 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 ## Building From Source
 1. Clone this repo
 2. Install build dependencies (see below)
-3. `$ meson setup -Dexamples=true -Ddocs=true -Dtests=true build`
+3. `$ meson setup -Dexamples=true -Ddocs=true -Dtests=true build` (NOTE: `--prefix=/usr` may be needed on Arch Linux)
 4. `$ ninja -C build`
 5. `$ sudo ninja -C build install`
 6. `$ sudo ldconfig`
