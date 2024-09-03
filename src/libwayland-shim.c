@@ -30,7 +30,10 @@ libwayland_shim_init ()
     if (libwayland_shim_has_initialized ())
         return;
 
-    void *handle = dlopen("libwayland-client.so", RTLD_LAZY);
+    void *handle = dlopen("libwayland-client.so.0", RTLD_LAZY);
+    if (handle == NULL) {
+        handle = dlopen("libwayland-client.so", RTLD_LAZY);
+    }
     if (handle == NULL) {
         g_error ("failed to dlopen libwayland");
     }
