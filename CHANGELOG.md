@@ -1,6 +1,11 @@
 # Changelog
 
 ## [Unreleased]
+## [1.0.3] - 10 Sep 2024
+- Tests: make tests compatible with new libwayland format
+- Tests: fix `integration-test-menu-popup` by sending wl_buffer.release in mock server
+- Fix: dlopen `libwayland-client.so.0` in addition to `libwayland-client.so`, fixes [#39](https://github.com/wmww/gtk4-layer-shell/issues/39)
+
 ## [1.0.2] - 7 Nov 2023
 - Fix tests on Arch
 - Realize and unrealize on remap instead of setting visibility
