@@ -96,6 +96,13 @@ layer_surface_configure_xdg_surface (LayerSurface *self, uint32_t serial, gboole
         height = self->last_layer_configured_size.height;
     }
 
+    if (!self->has_initial_layer_shell_configure) {
+        // skip sending xdg_toplevel and xdg_surface configure to GTK
+        // since layer shell surface has not been configured yet and
+        // attaching a buffer to an unconfigured surface is a protocol error
+        return;
+    }
+
     if (self->cached_xdg_configure_size.width != width ||
         self->cached_xdg_configure_size.height != height ||
         send_even_if_size_unchanged
@@ -152,6 +159,7 @@ layer_surface_handle_configure (void *data,
     (void)surface;
     LayerSurface *self = data;
     self->last_layer_configured_size = (GtkRequisition){w, h};
+    self->has_initial_layer_shell_configure = true;
     layer_surface_configure_xdg_surface (self, serial, TRUE);
 }
 
@@ -205,6 +213,7 @@ layer_surface_create_surface_object (LayerSurface *self, struct wl_surface *wl_s
     }
 
     enum zwlr_layer_shell_v1_layer layer = gtk_layer_shell_layer_get_zwlr_layer_shell_v1_layer(self->layer);
+    self->has_initial_layer_shell_configure = false;
     self->layer_surface = zwlr_layer_shell_v1_get_layer_surface (layer_shell_global,
                                                                  wl_surface,
                                                                  output,
@@ -235,6 +244,7 @@ layer_surface_unmap (LayerSurface *super)
 
     self->client_facing_xdg_surface = NULL;
     self->client_facing_xdg_toplevel = NULL;
+    self->has_initial_layer_shell_configure = false;
 
     self->cached_xdg_configure_size = (GtkRequisition){-1, -1};
     self->cached_layer_size_set = (GtkRequisition){-1, -1};
@@ -324,6 +334,7 @@ layer_surface_new (GtkWindow *gtk_window)
     LayerSurface *self = g_new0 (LayerSurface, 1);
     self->cached_xdg_configure_size = (GtkRequisition){-1, -1};
     self->cached_layer_size_set = (GtkRequisition){-1, -1};
+    self->has_initial_layer_shell_configure = false;
     all_layer_surfaces = g_list_append (all_layer_surfaces, self);
 
     self->gtk_window = gtk_window;
