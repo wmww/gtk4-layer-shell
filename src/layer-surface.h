@@ -39,6 +39,7 @@ struct _LayerSurface
       // GTK can be ignored (they are for configures not originating from the compositor)
     struct xdg_surface *client_facing_xdg_surface;
     struct xdg_toplevel *client_facing_xdg_toplevel;
+    bool has_initial_layer_shell_configure;
 };
 
 LayerSurface *layer_surface_new (GtkWindow *gtk_window);
