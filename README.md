@@ -32,9 +32,6 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 ### Python
 [examples/simple-example.py](examples/simple-example.py) contains sample Python code.
 
-### Lua
-[examples/simple-example.lua](examples/simple-example.lua) contains sample Lua code. It uses [FFI](https://luajit.org/ext_ffi.html) which requires [LuaJIT](https://luajit.org/).
-
 ### Vala
 [examples/simple-example.vala](examples/simple-example.vala) contains a minimal working Vala app.
 
@@ -64,7 +61,6 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 * __If `docs` enabled:__ [GTK Doc](https://wiki.gnome.org/DocumentationProject/GtkDoc)
 * __If `tests` enabled:__ [Python3](https://www.python.org/)
 * __If `vapi` enabled:__ [Vala](https://wiki.gnome.org/Projects/Vala)
-- __If `smoke-tests` enabled:__ [LuaJIT](https://luajit.org/)
 - __If `smoke-tests` enabled:__ [LGI](https://github.com/lgi-devs/lgi)
 
 To install these dependencies on Ubuntu 18.04 and later:
