@@ -61,7 +61,6 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 * __If `docs` enabled:__ [GTK Doc](https://wiki.gnome.org/DocumentationProject/GtkDoc)
 * __If `tests` enabled:__ [Python3](https://www.python.org/)
 * __If `vapi` enabled:__ [Vala](https://wiki.gnome.org/Projects/Vala)
-- __If `smoke-tests` enabled:__ [LGI](https://github.com/lgi-devs/lgi)
 
 To install these dependencies on Ubuntu 18.04 and later:
 ```
