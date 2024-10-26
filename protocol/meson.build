@@ -5,17 +5,11 @@ else
 endif
 
 protocols = [
-    'wlr-layer-shell-unstable-v1.xml'
-]
-
-if wayland_protocols.found()
-    protocols += join_paths(
+    'wlr-layer-shell-unstable-v1.xml',
+    join_paths(
         wayland_protocols.get_variable(pkgconfig: 'pkgdatadir'),
-        'stable/xdg-shell/xdg-shell.xml')
-else
-    # use bundled xdg-shell.xml
-    protocols += 'xdg-shell.xml'
-endif
+        'stable/xdg-shell/xdg-shell.xml'),
+]
 
 gen_client_header = generator(prog_wayland_scanner,
     output: ['@BASENAME@-client.h'],
