@@ -56,6 +56,7 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 * [Meson](https://mesonbuild.com/) (>=0.45.1)
 * [Ninja](https://ninja-build.org/) (>=1.8.2)
 * [libwayland](https://gitlab.freedesktop.org/wayland/wayland) (>=1.10.0)
+* [wayland-protocols](https://gitlab.freedesktop.org/wayland/wayland-protocols) (>=1.16.0)
 * [GTK4](https://www.gtk.org/)
 * __If `introspection` enabled:__ [GObject introspection](https://gitlab.gnome.org/GNOME/gobject-introspection/)
 * __If `docs` enabled:__ [GTK Doc](https://wiki.gnome.org/DocumentationProject/GtkDoc)
