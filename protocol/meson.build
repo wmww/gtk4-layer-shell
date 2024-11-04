@@ -6,6 +6,7 @@ endif
 
 protocols = [
     'wlr-layer-shell-unstable-v1.xml',
+    'xdg-dialog-v1.xml',
     join_paths(
         wayland_protocols.get_variable(pkgconfig: 'pkgdatadir'),
         'stable/xdg-shell/xdg-shell.xml'),
