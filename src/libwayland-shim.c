@@ -190,6 +190,58 @@ libwayland_shim_get_client_proxy_data (struct wl_proxy *proxy, void* expected_ha
     }
 }
 
+// Returns true if any arguments are proxies created by us (not known to libwayland)
+gboolean
+args_contains_client_facing_proxy (
+    struct wl_proxy *proxy,
+    uint32_t opcode,
+    const struct wl_interface *interface,
+    union wl_argument *args)
+{
+    (void)interface;
+    const char *sig_iter = proxy->object.interface->methods[opcode].signature;
+    int i = 0;
+    while (true) {
+        struct argument_details arg;
+        sig_iter = get_next_argument(sig_iter, &arg);
+        switch (arg.type) {
+            case 'o':
+                if (args[i].o && args[i].o->id == client_facing_proxy_id) {
+                    return TRUE;
+                }
+                break;
+
+            case '\0':
+                return FALSE;
+        }
+        i++;
+    }
+}
+
+// Returns the interface of the proxy object that this request is supposed to create, or NULL if none
+const struct wl_interface*
+get_interface_of_object_created_by_request (
+    struct wl_proxy *proxy,
+    uint32_t opcode,
+    const struct wl_interface *interface)
+{
+    const char *sig_iter = proxy->object.interface->methods[opcode].signature;
+    int i = 0;
+    while (true) {
+        struct argument_details arg;
+        sig_iter = get_next_argument(sig_iter, &arg);
+        switch (arg.type) {
+            case 'n':
+                g_assert(interface[i].name);
+                return interface + i;
+
+            case '\0':
+                return NULL;
+        }
+        i++;
+    }
+}
+
 // Overrides the function in wayland-client.c in libwayland
 void
 wl_proxy_destroy (struct wl_proxy *proxy)
@@ -221,6 +273,8 @@ wl_proxy_marshal_array_flags (
 {
     libwayland_shim_init ();
     if (proxy->object.id == client_facing_proxy_id) {
+        // libwayland doesn't know about the object this request is on. It must not find out about this object. If it
+        // finds out it will be very upset.
         struct wrapped_proxy *wrapper = (struct wrapped_proxy *)proxy;
         struct wl_proxy *result = NULL;
         if (wrapper->handler)
@@ -231,8 +285,22 @@ wl_proxy_marshal_array_flags (
     } else {
         struct wl_proxy *ret_proxy = NULL;
         if (layer_surface_handle_request (proxy, opcode, interface, version, flags, args, &ret_proxy)) {
+            // The behavior of the request has been overridden
             return ret_proxy;
+        } else if (args_contains_client_facing_proxy (proxy, opcode, interface, args)) {
+            // We can't do the normal thing because one of the arguments is an object libwayand doesn't know about, but
+            // no override behavior was taken. Hopefully we can safely ignore this request.
+            const struct wl_interface *created = get_interface_of_object_created_by_request(proxy, opcode, interface);
+            if (created) {
+                // We need to create a stub object to make the client happy, it will ignore all requests and represents
+                // nothing in libwayland/the server
+               return libwayland_shim_create_client_proxy (proxy, created, created->version, NULL, NULL, NULL);
+            } else {
+                // Ignore the request
+                return NULL;
+            }
         } else {
+            // Forward the request on to libwayland without modification, this is the most common path
             return libwayland_shim_real_wl_proxy_marshal_array_flags (proxy, opcode, interface, version, flags, args);
         }
     }
