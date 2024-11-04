@@ -21,9 +21,6 @@ jobs:
         CFLAGS: -Werror
     - name: Build
       run: ninja -C build
-    - name: Install Lua LGI
-      run: sudo luarocks install https://raw.githubusercontent.com/lgi-devs/lgi/master/lgi-scm-1.rockspec
-      # From https://github.com/lgi-devs/lgi/pull/305#issue-1459493105
     - name: Test
       run: ninja -C build test
     - name: Install
