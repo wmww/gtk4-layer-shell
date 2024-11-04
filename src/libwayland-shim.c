@@ -229,7 +229,12 @@ wl_proxy_marshal_array_flags (
             wl_proxy_destroy(proxy);
         return result;
     } else {
-        return layer_surface_handle_request (proxy, opcode, interface, version, flags, args);
+        struct wl_proxy *ret_proxy = NULL;
+        if (layer_surface_handle_request (proxy, opcode, interface, version, flags, args, &ret_proxy)) {
+            return ret_proxy;
+        } else {
+            return libwayland_shim_real_wl_proxy_marshal_array_flags (proxy, opcode, interface, version, flags, args);
+        }
     }
 }
 
