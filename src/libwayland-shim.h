@@ -57,12 +57,4 @@ void libwayland_shim_clear_client_proxy_data (struct wl_proxy *proxy);
 
 void *libwayland_shim_get_client_proxy_data (struct wl_proxy *proxy, void* expected_handler);
 
-extern struct wl_proxy * (*libwayland_shim_real_wl_proxy_marshal_array_flags) (
-    struct wl_proxy *proxy,
-    uint32_t opcode,
-    const struct wl_interface *interface,
-    uint32_t version,
-    uint32_t flags,
-    union wl_argument *args);
-
 #endif // LIBWAYLAND_SHIM_H

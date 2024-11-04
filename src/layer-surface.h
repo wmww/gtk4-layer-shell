@@ -62,12 +62,13 @@ void layer_surface_set_keyboard_mode (LayerSurface *self, GtkLayerShellKeyboardM
 const char* layer_surface_get_namespace (LayerSurface *self);
 
 // Used by libwayland wrappers
-struct wl_proxy *layer_surface_handle_request (
+gboolean layer_surface_handle_request (
     struct wl_proxy *proxy,
     uint32_t opcode,
     const struct wl_interface *interface,
     uint32_t version,
     uint32_t flags,
-    union wl_argument *args);
+    union wl_argument *args,
+    struct wl_proxy **ret_proxy);
 
 #endif // LAYER_SHELL_SURFACE_H

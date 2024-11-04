@@ -549,15 +549,18 @@ gint find_layer_surface_with_wl_surface (gconstpointer layer_surface, gconstpoin
     return wl_surface == needle ? 0 : 1;
 }
 
-struct wl_proxy *
+gboolean
 layer_surface_handle_request (
     struct wl_proxy *proxy,
     uint32_t opcode,
     const struct wl_interface *interface,
     uint32_t version,
     uint32_t flags,
-    union wl_argument *args)
+    union wl_argument *args,
+    struct wl_proxy **ret_proxy)
 {
+    (void)interface;
+    (void)flags;
     const char* type = proxy->object.interface->name;
     if (strcmp(type, xdg_wm_base_interface.name) == 0) {
         if (opcode == XDG_WM_BASE_GET_XDG_SURFACE) {
@@ -574,7 +577,8 @@ layer_surface_handle_request (
                     self);
                 self->client_facing_xdg_surface = (struct xdg_surface *)xdg_surface;
                 layer_surface_create_surface_object(self, wl_surface);
-                return xdg_surface;
+                *ret_proxy = xdg_surface;
+                return TRUE;
             }
         }
     } else if (strcmp(type, xdg_surface_interface.name) == 0) {
@@ -587,13 +591,15 @@ layer_surface_handle_request (
                         NULL,
                         (struct xdg_positioner *)args[2].o);
                     zwlr_layer_surface_v1_get_popup (self->layer_surface, xdg_popup);
-                    return (struct wl_proxy *)xdg_popup;
+                    *ret_proxy = (struct wl_proxy *)xdg_popup;
+                    return TRUE;
                 } else {
                     g_critical ("tried to create popup before layer shell surface");
-                    return libwayland_shim_create_client_proxy (proxy, &xdg_popup_interface, version, NULL, NULL, NULL);
+                    *ret_proxy = libwayland_shim_create_client_proxy (proxy, &xdg_popup_interface, version, NULL, NULL, NULL);
+                    return TRUE;
                 }
             }
         }
     }
-    return libwayland_shim_real_wl_proxy_marshal_array_flags (proxy, opcode, interface, version, flags, args);
+    return FALSE;
 }
