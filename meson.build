@@ -15,6 +15,11 @@ add_project_arguments(
     ],
     language: 'c')
 
+glib = dependency('glib-2.0', required: true) # Just needed for version check
+if glib.version().version_compare('<2.74')
+    add_project_arguments('-DG_APPLICATION_DEFAULT_FLAGS=G_APPLICATION_FLAGS_NONE', language: 'c')
+endif
+
 gtk = dependency('gtk4')
 wayland_client = dependency('wayland-client', version: '>=1.10.0')
 

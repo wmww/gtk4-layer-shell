@@ -4,7 +4,7 @@ using GtkLayerShell;
 int main(string[] argv) {
     var app = new Gtk.Application (
         "com.github.wmww.gtk4-layer-shell.vala-example",
-        GLib.ApplicationFlags.FLAGS_NONE);
+        GLib.ApplicationFlags.DEFAULT_FLAGS);
 
     app.activate.connect (() => {
         var window = new Gtk.ApplicationWindow (app);
