@@ -1,6 +1,14 @@
 # Changelog
 
 ## [Unreleased]
+## [1.0.4] - 4 Nov 2024
+- Fix protocol error on Wayfire, due to sending zwlr_layer_shell_surface_v1->configure too early
+- Fix crash when hovering over a tooltip on Hyprland, due to using an old copy of xdg-shell.xml
+- Fix protocol error on GTK4 >=4.16 on KDE and Hyprland, due to request arguments including references to client-only objects
+- Add xdg-dialog-v1 to the mock server used by the tests, so the invalid argument bug is regression tested
+- Drop Lua example and smoke test (the library should work with Lua just as well as before, but this is no longer tested or officially supported)
+- Fix and suppress various warnings
+
 ## [1.0.3] - 10 Sep 2024
 - Tests: make tests compatible with new libwayland format
 - Tests: fix `integration-test-menu-popup` by sending wl_buffer.release in mock server
