@@ -20,5 +20,11 @@ if get_option('vapi')
         'simple-example-vala',
         files('simple-example.vala'),
         dependencies: [gtk, gtk_layer_shell, vapi],
+        c_args: [
+            '-Wno-unused-but-set-variable',
+            '-Wno-unused-parameter',
+            '-Wno-cast-function-type',
+            '-Wno-deprecated-declarations',
+        ],
         install: false)
 endif

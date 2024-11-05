@@ -419,7 +419,7 @@ main (int argc, char **argv)
                   g_cclosure_marshal_VOID__INT,
                   G_TYPE_NONE, 1, G_TYPE_INT);
 
-    GtkApplication * app = gtk_application_new ("com.github.wmww.gtk4-layer-shell.demo", G_APPLICATION_FLAGS_NONE);
+    GtkApplication * app = gtk_application_new ("com.github.wmww.gtk4-layer-shell.demo", G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
     int status = g_application_run (G_APPLICATION (app), argc, argv);
     g_object_unref (app);
