@@ -2,8 +2,7 @@
 
 static GtkWindow* window;
 
-static void callback_0()
-{
+static void callback_0() {
     window = create_default_window();
     gtk_window_set_default_size(window, 300, 200);
     gtk_layer_init_for_window(window);
@@ -15,14 +14,12 @@ static void callback_0()
     gtk_window_present(window);
 }
 
-static void callback_1()
-{
+static void callback_1() {
     ASSERT_EQ(gtk_layer_get_exclusive_zone(window), 200, "%d");
     gtk_window_set_default_size(window, 320, 240);
 }
 
-static void callback_2()
-{
+static void callback_2() {
     ASSERT_EQ(gtk_layer_get_exclusive_zone(window), 240, "%d");
 
     ASSERT(gtk_layer_auto_exclusive_zone_is_enabled(window));

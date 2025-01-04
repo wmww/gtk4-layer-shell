@@ -2,8 +2,7 @@
 
 static GtkWindow* window;
 
-static void callback_0()
-{
+static void callback_0() {
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .set_exclusive_zone -1);
     EXPECT_MESSAGE(wl_surface .commit);
 

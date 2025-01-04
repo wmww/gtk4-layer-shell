@@ -2,8 +2,7 @@
 
 static GtkWindow* window;
 
-static void callback_0()
-{
+static void callback_0() {
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .set_exclusive_zone 240);
 
     window = create_default_window();
@@ -15,8 +14,7 @@ static void callback_0()
     gtk_window_present(window);
 }
 
-static void callback_1()
-{
+static void callback_1() {
     // Bottom margin should have no effect on exclusive zone but top margin should
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .set_exclusive_zone 250);
 

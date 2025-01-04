@@ -16,10 +16,10 @@
  * If you wish to force your layer surface window to be a different size than it
  * is by default:
  * |[<!-- language="C" -->
- *   gtk_window_set_default_size (layer_gtk_window, width, height);
+ *   gtk_window_set_default_size(layer_gtk_window, width, height);
  * ]|
  * If width or height is 0, the default is used for that axis. If the window is
- * anchored to opposite edges of the output (see gtk_layer_set_anchor ()), the
+ * anchored to opposite edges of the output(see gtk_layer_set_anchor()), the
  * size requested here is ignored. If you later wish to use the default window size
  * repeat the call with both width and height as 0.
  */
@@ -81,21 +81,21 @@ typedef enum {
  *
  * Returns: the major version number of the GTK Layer Shell library
  */
-guint gtk_layer_get_major_version ();
+guint gtk_layer_get_major_version();
 
 /**
  * gtk_layer_get_minor_version:
  *
  * Returns: the minor version number of the GTK Layer Shell library
  */
-guint gtk_layer_get_minor_version ();
+guint gtk_layer_get_minor_version();
 
 /**
  * gtk_layer_get_micro_version:
  *
  * Returns: the micro/patch version number of the GTK Layer Shell library
  */
-guint gtk_layer_get_micro_version ();
+guint gtk_layer_get_micro_version();
 
 /**
  * gtk_layer_is_supported:
@@ -105,7 +105,7 @@ guint gtk_layer_get_micro_version ();
  * Returns: %TRUE if the platform is Wayland and Wayland compositor supports the
  * zwlr_layer_shell_v1 protocol.
  */
-gboolean gtk_layer_is_supported ();
+gboolean gtk_layer_is_supported();
 
 /**
  * gtk_layer_get_protocol_version:
@@ -115,7 +115,7 @@ gboolean gtk_layer_is_supported ();
  * Returns: version of the zwlr_layer_shell_v1 protocol supported by the
  * compositor or 0 if the protocol is not supported.
  */
-guint gtk_layer_get_protocol_version ();
+guint gtk_layer_get_protocol_version();
 
 /**
  * gtk_layer_init_for_window:
@@ -124,7 +124,7 @@ guint gtk_layer_get_protocol_version ();
  * Set the @window up to be a layer surface once it is mapped. this must be called before
  * the @window is realized.
  */
-void gtk_layer_init_for_window (GtkWindow *window);
+void gtk_layer_init_for_window(GtkWindow* window);
 
 /**
  * gtk_layer_is_layer_window:
@@ -132,7 +132,7 @@ void gtk_layer_init_for_window (GtkWindow *window);
  *
  * Returns: if @window has been initialized as a layer surface.
  */
-gboolean gtk_layer_is_layer_window (GtkWindow *window);
+gboolean gtk_layer_is_layer_window(GtkWindow* window);
 
 /**
  * gtk_layer_get_zwlr_layer_surface_v1:
@@ -140,7 +140,7 @@ gboolean gtk_layer_is_layer_window (GtkWindow *window);
  *
  * Returns: The underlying layer surface Wayland object
  */
-struct zwlr_layer_surface_v1 *gtk_layer_get_zwlr_layer_surface_v1 (GtkWindow *window);
+struct zwlr_layer_surface_v1* gtk_layer_get_zwlr_layer_surface_v1(GtkWindow* window);
 
 /**
  * gtk_layer_set_namespace:
@@ -156,7 +156,7 @@ struct zwlr_layer_surface_v1 *gtk_layer_get_zwlr_layer_surface_v1 (GtkWindow *wi
  *
  * Default is "gtk4-layer-shell" (which will be used if set to %NULL)
  */
-void gtk_layer_set_namespace (GtkWindow *window, char const* name_space);
+void gtk_layer_set_namespace(GtkWindow* window, char const* name_space);
 
 /**
  * gtk_layer_get_namespace:
@@ -166,22 +166,22 @@ void gtk_layer_set_namespace (GtkWindow *window, char const* name_space);
  * Future calls into the library may invalidate the returned string.
  *
  * Returns: a reference to the namespace property. If namespace is unset, returns the
- * default namespace ("gtk4-layer-shell"). Never returns %NULL.
+ * default namespace("gtk4-layer-shell"). Never returns %NULL.
  */
-const char *gtk_layer_get_namespace (GtkWindow *window);
+const char* gtk_layer_get_namespace(GtkWindow* window);
 
 /**
  * gtk_layer_set_layer:
  * @window: A layer surface.
  * @layer: The layer on which this surface appears.
  *
- * Set the "layer" on which the surface appears (controls if it is over top of or below other surfaces). The layer may
+ * Set the "layer" on which the surface appears(controls if it is over top of or below other surfaces). The layer may
  * be changed on-the-fly in the current version of the layer shell protocol, but on compositors that only support an
  * older version the @window is remapped so the change can take effect.
  *
  * Default is %GTK_LAYER_SHELL_LAYER_TOP
  */
-void gtk_layer_set_layer (GtkWindow *window, GtkLayerShellLayer layer);
+void gtk_layer_set_layer(GtkWindow* window, GtkLayerShellLayer layer);
 
 /**
  * gtk_layer_get_layer:
@@ -189,19 +189,19 @@ void gtk_layer_set_layer (GtkWindow *window, GtkLayerShellLayer layer);
  *
  * Returns: the current layer.
  */
-GtkLayerShellLayer gtk_layer_get_layer (GtkWindow *window);
+GtkLayerShellLayer gtk_layer_get_layer(GtkWindow* window);
 
 /**
  * gtk_layer_set_monitor:
  * @window: A layer surface.
- * @monitor: The output this layer surface will be placed on (%NULL to let the compositor decide).
+ * @monitor: The output this layer surface will be placed on(%NULL to let the compositor decide).
  *
  * Set the output for the window to be placed on, or %NULL to let the compositor choose.
  * If the window is currently mapped, it will get remapped so the change can take effect.
  *
  * Default is %NULL
  */
-void gtk_layer_set_monitor (GtkWindow *window, GdkMonitor *monitor);
+void gtk_layer_set_monitor(GtkWindow* window, GdkMonitor* monitor);
 
 /**
  * gtk_layer_get_monitor:
@@ -212,7 +212,7 @@ void gtk_layer_set_monitor (GtkWindow *window, GdkMonitor *monitor);
  *
  * Returns: (transfer none): the monitor this surface will/has requested to be on, can be %NULL.
  */
-GdkMonitor *gtk_layer_get_monitor (GtkWindow *window);
+GdkMonitor* gtk_layer_get_monitor(GtkWindow* window);
 
 /**
  * gtk_layer_set_anchor:
@@ -226,7 +226,7 @@ GdkMonitor *gtk_layer_get_monitor (GtkWindow *window);
  *
  * Default is %FALSE for each #GtkLayerShellEdge
  */
-void gtk_layer_set_anchor (GtkWindow *window, GtkLayerShellEdge edge, gboolean anchor_to_edge);
+void gtk_layer_set_anchor(GtkWindow* window, GtkLayerShellEdge edge, gboolean anchor_to_edge);
 
 /**
  * gtk_layer_get_anchor:
@@ -235,7 +235,7 @@ void gtk_layer_set_anchor (GtkWindow *window, GtkLayerShellEdge edge, gboolean a
  *
  * Returns: if this surface is anchored to the given edge.
  */
-gboolean gtk_layer_get_anchor (GtkWindow *window, GtkLayerShellEdge edge);
+gboolean gtk_layer_get_anchor(GtkWindow* window, GtkLayerShellEdge edge);
 
 /**
  * gtk_layer_set_margin:
@@ -244,11 +244,11 @@ gboolean gtk_layer_get_anchor (GtkWindow *window, GtkLayerShellEdge edge);
  * @margin_size: The margin for @edge to be set.
  *
  * Set the margin for a specific @edge of a @window. Effects both surface's distance from
- * the edge and its exclusive zone size (if auto exclusive zone enabled).
+ * the edge and its exclusive zone size(if auto exclusive zone enabled).
  *
  * Default is 0 for each #GtkLayerShellEdge
  */
-void gtk_layer_set_margin (GtkWindow *window, GtkLayerShellEdge edge, int margin_size);
+void gtk_layer_set_margin(GtkWindow* window, GtkLayerShellEdge edge, int margin_size);
 
 /**
  * gtk_layer_get_margin:
@@ -257,7 +257,7 @@ void gtk_layer_set_margin (GtkWindow *window, GtkLayerShellEdge edge, int margin
  *
  * Returns: the size of the margin for the given edge.
  */
-int gtk_layer_get_margin (GtkWindow *window, GtkLayerShellEdge edge);
+int gtk_layer_get_margin(GtkWindow* window, GtkLayerShellEdge edge);
 
 /**
  * gtk_layer_set_exclusive_zone:
@@ -271,15 +271,15 @@ int gtk_layer_get_margin (GtkWindow *window, GtkLayerShellEdge edge);
  *
  * Default is 0
  */
-void gtk_layer_set_exclusive_zone (GtkWindow *window, int exclusive_zone);
+void gtk_layer_set_exclusive_zone(GtkWindow* window, int exclusive_zone);
 
 /**
  * gtk_layer_get_exclusive_zone:
  * @window: A layer surface.
  *
- * Returns: the window's exclusive zone (which may have been set manually or automatically)
+ * Returns: the window's exclusive zone(which may have been set manually or automatically)
  */
-int gtk_layer_get_exclusive_zone (GtkWindow *window);
+int gtk_layer_get_exclusive_zone(GtkWindow* window);
 
 /**
  * gtk_layer_auto_exclusive_zone_enable:
@@ -292,7 +292,7 @@ int gtk_layer_get_exclusive_zone (GtkWindow *window);
  * NOTE: you can control the auto exclusive zone by changing the margin on the non-anchored
  * edge. This behavior is specific to gtk4-layer-shell and not part of the underlying protocol
  */
-void gtk_layer_auto_exclusive_zone_enable (GtkWindow *window);
+void gtk_layer_auto_exclusive_zone_enable(GtkWindow* window);
 
 /**
  * gtk_layer_auto_exclusive_zone_is_enabled:
@@ -300,7 +300,7 @@ void gtk_layer_auto_exclusive_zone_enable (GtkWindow *window);
  *
  * Returns: if the surface's exclusive zone is set to change based on the window's size
  */
-gboolean gtk_layer_auto_exclusive_zone_is_enabled (GtkWindow *window);
+gboolean gtk_layer_auto_exclusive_zone_is_enabled(GtkWindow* window);
 
 /**
  * gtk_layer_set_keyboard_mode:
@@ -312,7 +312,7 @@ gboolean gtk_layer_auto_exclusive_zone_is_enabled (GtkWindow *window);
  *
  * Default is %GTK_LAYER_SHELL_KEYBOARD_MODE_NONE
  */
-void gtk_layer_set_keyboard_mode (GtkWindow *window, GtkLayerShellKeyboardMode mode);
+void gtk_layer_set_keyboard_mode(GtkWindow* window, GtkLayerShellKeyboardMode mode);
 
 /**
  * gtk_layer_get_keyboard_mode:
@@ -320,7 +320,7 @@ void gtk_layer_set_keyboard_mode (GtkWindow *window, GtkLayerShellKeyboardMode m
  *
  * Returns: current keyboard interactivity mode for @window.
  */
-GtkLayerShellKeyboardMode gtk_layer_get_keyboard_mode (GtkWindow *window);
+GtkLayerShellKeyboardMode gtk_layer_get_keyboard_mode(GtkWindow* window);
 
 G_END_DECLS
 

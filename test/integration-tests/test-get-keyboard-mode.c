@@ -2,8 +2,7 @@
 
 static GtkWindow* window;
 
-static void callback_0()
-{
+static void callback_0() {
     window = create_default_window();
     gtk_layer_init_for_window(window);
     ASSERT_EQ(gtk_layer_get_keyboard_mode(window), GTK_LAYER_SHELL_KEYBOARD_MODE_NONE, "%d");

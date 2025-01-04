@@ -2,8 +2,7 @@
 
 static GtkWindow* window;
 
-static void callback_0()
-{
+static void callback_0() {
     window = create_default_window();
 
     gtk_layer_init_for_window(window);
@@ -23,8 +22,7 @@ static void callback_0()
     ASSERT_EQ(gtk_layer_get_margin(window, GTK_LAYER_SHELL_EDGE_LEFT), 14, "%d");
 }
 
-static void callback_1()
-{
+static void callback_1() {
     gtk_layer_set_margin(window, GTK_LAYER_SHELL_EDGE_TOP, 5);
     gtk_layer_set_margin(window, GTK_LAYER_SHELL_EDGE_RIGHT, 10);
     gtk_layer_set_margin(window, GTK_LAYER_SHELL_EDGE_BOTTOM, 25);
