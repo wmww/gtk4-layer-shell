@@ -61,6 +61,7 @@ const char* layer_surface_get_namespace(LayerSurface* self);
 
 // Used by libwayland wrappers
 gboolean layer_surface_handle_request(
+    const char* type_name,
     struct wl_proxy* proxy,
     uint32_t opcode,
     const struct wl_interface* interface,

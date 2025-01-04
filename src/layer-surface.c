@@ -500,20 +500,25 @@ gint find_layer_surface_with_wl_surface(gconstpointer layer_surface, gconstpoint
 }
 
 gboolean layer_surface_handle_request(
+    const char* type_name,
     struct wl_proxy* proxy,
     uint32_t opcode,
     const struct wl_interface* interface,
     uint32_t version,
     uint32_t flags,
     union wl_argument* args,
-    struct wl_proxy **ret_proxy) {
+    struct wl_proxy **ret_proxy
+) {
     (void)interface;
     (void)flags;
-    const char* type = proxy->object.interface->name;
-    if (strcmp(type, xdg_wm_base_interface.name) == 0) {
+    if (strcmp(type_name, xdg_wm_base_interface.name) == 0) {
         if (opcode == XDG_WM_BASE_GET_XDG_SURFACE) {
             struct wl_surface* wl_surface = (struct wl_surface*)args[1].o;
-            GList* layer_surface_entry = g_list_find_custom(all_layer_surfaces, wl_surface, find_layer_surface_with_wl_surface);
+            GList* layer_surface_entry = g_list_find_custom(
+                all_layer_surfaces,
+                wl_surface,
+                find_layer_surface_with_wl_surface
+            );
             if (layer_surface_entry) {
                 LayerSurface* self = layer_surface_entry->data;
                 struct wl_proxy* xdg_surface = libwayland_shim_create_client_proxy(
@@ -530,9 +535,12 @@ gboolean layer_surface_handle_request(
                 return TRUE;
             }
         }
-    } else if (strcmp(type, xdg_surface_interface.name) == 0) {
+    } else if (strcmp(type_name, xdg_surface_interface.name) == 0) {
         if (opcode == XDG_SURFACE_GET_POPUP) {
-            LayerSurface* self = libwayland_shim_get_client_proxy_data((struct wl_proxy*)args[1].o, stubbed_xdg_surface_handle_request);
+            LayerSurface* self = libwayland_shim_get_client_proxy_data(
+                (struct wl_proxy*)args[1].o,
+                stubbed_xdg_surface_handle_request
+            );
             if (self) {
                 if (self->layer_surface) {
                     struct xdg_popup* xdg_popup = xdg_surface_get_popup(
@@ -545,7 +553,12 @@ gboolean layer_surface_handle_request(
                     return TRUE;
                 } else {
                     g_critical("tried to create popup before layer shell surface");
-                    *ret_proxy = libwayland_shim_create_client_proxy(proxy, &xdg_popup_interface, version, NULL, NULL, NULL);
+                    *ret_proxy = libwayland_shim_create_client_proxy(
+                        proxy,
+                        &xdg_popup_interface,
+                        version,
+                        NULL, NULL, NULL
+                    );
                     return TRUE;
                 }
             }

@@ -4,35 +4,13 @@
 #include <glib.h>
 
 #define LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(listener, proxy, event, ...) \
-    if (((struct wl_proxy*)proxy)->object.implementation) { \
-        ((struct listener *) \
-            ((struct wl_proxy*)proxy)->object.implementation \
-        )->event( \
-            ((struct wl_proxy*)proxy)->user_data, \
-            __VA_ARGS__ \
-        ); \
+    if (libwayland_shim_proxy_get_implementation((struct wl_proxy*)proxy)) { \
+        ((struct listener*)libwayland_shim_proxy_get_implementation((struct wl_proxy*)proxy)) \
+            ->event( \
+                libwayland_shim_proxy_get_user_data((struct wl_proxy*)proxy), \
+                __VA_ARGS__ \
+            ); \
     }
-
-// From wayland-private.h in libwayland
-struct wl_object {
-	const struct wl_interface *interface;
-	const void *implementation;
-	uint32_t id;
-};
-
-// From wayland-client.c in libwayland
-struct wl_proxy {
-	struct wl_object object;
-	struct wl_display *display;
-	struct wl_event_queue *queue;
-	uint32_t flags;
-	int refcount;
-	void *user_data;
-	wl_dispatcher_func_t dispatcher;
-	uint32_t version;
-	const char * const *tag;
-	struct wl_list queue_link; // appears in wayland 1.22
-};
 
 typedef struct wl_proxy* (*libwayland_shim_client_proxy_handler_func_t)(
     void* data,
@@ -46,7 +24,6 @@ typedef struct wl_proxy* (*libwayland_shim_client_proxy_handler_func_t)(
 typedef void (*libwayland_shim_client_proxy_destroy_func_t)(void* data, struct wl_proxy *proxy);
 
 gboolean libwayland_shim_has_initialized();
-
 struct wl_proxy* libwayland_shim_create_client_proxy(
     struct wl_proxy* factory,
     const struct wl_interface* interface,
@@ -55,7 +32,7 @@ struct wl_proxy* libwayland_shim_create_client_proxy(
     libwayland_shim_client_proxy_destroy_func_t destroy,
     void* data
 );
-
 void libwayland_shim_clear_client_proxy_data(struct wl_proxy* proxy);
-
 void* libwayland_shim_get_client_proxy_data(struct wl_proxy* proxy, void* expected_handler);
+void const* libwayland_shim_proxy_get_implementation(struct wl_proxy* proxy);
+void* libwayland_shim_proxy_get_user_data(struct wl_proxy* proxy);
