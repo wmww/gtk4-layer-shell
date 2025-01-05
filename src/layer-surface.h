@@ -58,15 +58,3 @@ void layer_surface_set_keyboard_mode(LayerSurface* self, GtkLayerShellKeyboardMo
 
 // Returns the effective namespace(default if unset). Does not return ownership. Never returns NULL. Handles NULL self.
 const char* layer_surface_get_namespace(LayerSurface* self);
-
-// Used by libwayland wrappers
-gboolean layer_surface_handle_request(
-    const char* type_name,
-    struct wl_proxy* proxy,
-    uint32_t opcode,
-    const struct wl_interface* interface,
-    uint32_t version,
-    uint32_t flags,
-    union wl_argument* args,
-    struct wl_proxy **ret_proxy
-);

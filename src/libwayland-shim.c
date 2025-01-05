@@ -1,8 +1,20 @@
 #include <dlfcn.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
 #include "libwayland-shim.h"
-#include "layer-surface.h"
 #include "stolen-from-libwayland.h"
+
+bool layer_surface_handle_request(
+    const char* type_name,
+    struct wl_proxy* proxy,
+    uint32_t opcode,
+    const struct wl_interface* interface,
+    uint32_t version,
+    uint32_t flags,
+    union wl_argument* args,
+    struct wl_proxy **ret_proxy
+);
 
 static void* real_libwayland_handle = NULL;
 
@@ -23,7 +35,7 @@ static int (*real_wl_proxy_add_dispatcher)(
     const void* dispatcher_data, void* data
 ) = NULL;
 
-gboolean libwayland_shim_has_initialized() {
+bool libwayland_shim_has_initialized() {
     return real_libwayland_handle != NULL;
 }
 
@@ -35,12 +47,12 @@ static void libwayland_shim_init() {
         real_libwayland_handle = dlopen("libwayland-client.so", RTLD_LAZY);
     }
     if (real_libwayland_handle == NULL) {
-        g_error ("failed to dlopen libwayland");
+        fprintf(stderr, "libwayland_shim: failed to dlopen libwayland");
     }
 
 #define INIT_SYM(name) \
     if (!(real_##name = dlsym(real_libwayland_handle, #name))) {\
-        g_error("dlsym failed to load %s", #name); \
+        fprintf(stderr, "libwayland_shim: dlsym failed to load %s", #name); \
     }
 
     INIT_SYM(wl_proxy_marshal_array_flags);
@@ -79,8 +91,8 @@ struct wl_proxy* libwayland_shim_create_client_proxy(
     libwayland_shim_client_proxy_destroy_func_t destroy,
     void* data
 ) {
-    struct wrapped_proxy* allocation = g_new0(struct wrapped_proxy, 1);
-    g_assert(allocation);
+    struct wrapped_proxy* allocation = calloc(1, sizeof(struct wrapped_proxy));
+    assert(allocation);
     allocation->proxy.object.interface = interface;
     allocation->proxy.display = factory->display;
     allocation->proxy.queue = factory->queue;
@@ -96,7 +108,7 @@ struct wl_proxy* libwayland_shim_create_client_proxy(
 
 void libwayland_shim_clear_client_proxy_data(struct wl_proxy* proxy) {
     if (!proxy) return;
-    g_assert(proxy->object.id == client_facing_proxy_id);
+    assert(proxy->object.id == client_facing_proxy_id);
     struct wrapped_proxy* wrapper = (struct wrapped_proxy*)proxy;
     wrapper->data = NULL;
     wrapper->destroy = NULL;
@@ -117,7 +129,7 @@ void* libwayland_shim_get_client_proxy_data(struct wl_proxy* proxy, void* expect
 }
 
 // Returns true if any arguments are proxies created by us(not known to libwayland)
-gboolean args_contains_client_facing_proxy(
+static bool args_contains_client_facing_proxy(
     struct wl_proxy* proxy,
     uint32_t opcode,
     const struct wl_interface* interface,
@@ -132,12 +144,12 @@ gboolean args_contains_client_facing_proxy(
         switch (arg.type) {
             case 'o':
                 if (args[i].o && args[i].o->id == client_facing_proxy_id) {
-                    return TRUE;
+                    return true;
                 }
                 break;
 
             case '\0':
-                return FALSE;
+                return false;
         }
         i++;
     }
@@ -156,7 +168,7 @@ const struct wl_interface* get_interface_of_object_created_by_request(
         sig_iter = get_next_argument(sig_iter, &arg);
         switch (arg.type) {
             case 'n':
-                g_assert(interface[i].name);
+                assert(interface[i].name);
                 return interface + i;
 
             case '\0':
@@ -177,7 +189,7 @@ void wl_proxy_destroy(struct wl_proxy* proxy) {
         wl_list_remove(&proxy->queue_link);
         // No need to worry about the refcount since it's only accessibly within libwayland, and it's only used by
         // functions that never see client facing objects
-        g_free(proxy);
+        free(proxy);
     } else {
         real_wl_proxy_destroy(proxy);
     }
@@ -239,7 +251,7 @@ int wl_proxy_add_dispatcher(
 ) {
     libwayland_shim_init();
     if (proxy->object.id == client_facing_proxy_id) {
-        g_critical("wl_proxy_add_dispatcher() not supported for client-facing proxies");
+        fprintf(stderr, "libwayland_shim: wl_proxy_add_dispatcher() not supported for client-facing proxies");
     }
     return real_wl_proxy_add_dispatcher(proxy, dispatcher_func, dispatcher_data, data);
 }

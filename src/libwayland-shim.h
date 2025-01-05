@@ -1,7 +1,7 @@
 #pragma once
 
 #include <wayland-client-core.h>
-#include <glib.h>
+#include <stdbool.h>
 
 #define LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(listener, proxy, event, ...) \
     if (libwayland_shim_proxy_get_implementation((struct wl_proxy*)proxy)) { \
@@ -23,7 +23,7 @@ typedef struct wl_proxy* (*libwayland_shim_client_proxy_handler_func_t)(
 
 typedef void (*libwayland_shim_client_proxy_destroy_func_t)(void* data, struct wl_proxy *proxy);
 
-gboolean libwayland_shim_has_initialized();
+bool libwayland_shim_has_initialized();
 struct wl_proxy* libwayland_shim_create_client_proxy(
     struct wl_proxy* factory,
     const struct wl_interface* interface,

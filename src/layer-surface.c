@@ -499,7 +499,7 @@ gint find_layer_surface_with_wl_surface(gconstpointer layer_surface, gconstpoint
     return wl_surface == needle ? 0 : 1;
 }
 
-gboolean layer_surface_handle_request(
+bool layer_surface_handle_request(
     const char* type_name,
     struct wl_proxy* proxy,
     uint32_t opcode,
