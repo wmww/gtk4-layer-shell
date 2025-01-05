@@ -155,29 +155,6 @@ static bool args_contains_client_facing_proxy(
     }
 }
 
-// Returns the interface of the proxy object that this request is supposed to create, or NULL if none
-const struct wl_interface* get_interface_of_object_created_by_request(
-    struct wl_proxy* proxy,
-    uint32_t opcode,
-    const struct wl_interface* interface
-) {
-    const char* sig_iter = proxy->object.interface->methods[opcode].signature;
-    int i = 0;
-    while (true) {
-        struct argument_details arg;
-        sig_iter = get_next_argument(sig_iter, &arg);
-        switch (arg.type) {
-            case 'n':
-                assert(interface[i].name);
-                return interface + i;
-
-            case '\0':
-                return NULL;
-        }
-        i++;
-    }
-}
-
 // Overrides the function in wayland-client.c in libwayland
 void wl_proxy_destroy(struct wl_proxy* proxy) {
     libwayland_shim_init();
@@ -226,11 +203,10 @@ struct wl_proxy* wl_proxy_marshal_array_flags(
         } else if (args_contains_client_facing_proxy(proxy, opcode, interface, args)) {
             // We can't do the normal thing because one of the arguments is an object libwayand doesn't know about, but
             // no override behavior was taken. Hopefully we can safely ignore this request.
-            const struct wl_interface* created = get_interface_of_object_created_by_request(proxy, opcode, interface);
-            if (created) {
+            if (interface) {
                 // We need to create a stub object to make the client happy, it will ignore all requests and represents
                 // nothing in libwayland/the server
-               return libwayland_shim_create_client_proxy(proxy, created, created->version, NULL, NULL, NULL);
+               return libwayland_shim_create_client_proxy(proxy, interface, interface->version, NULL, NULL, NULL);
             } else {
                 // Ignore the request
                 return NULL;
