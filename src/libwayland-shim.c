@@ -50,6 +50,17 @@ static void libwayland_shim_init() {
 #undef INIT_SYM
 }
 
+__attribute__((destructor))
+static void libwayland_shim_uninit() {
+    if (real_libwayland_handle) {
+        dlclose(real_libwayland_handle);
+        real_libwayland_handle = NULL;
+        real_wl_proxy_marshal_array_flags = NULL;
+        real_wl_proxy_destroy = NULL;
+        real_wl_proxy_add_dispatcher = NULL;
+    }
+}
+
 struct wrapped_proxy {
     struct wl_proxy proxy;
     libwayland_shim_client_proxy_handler_func_t handler;
