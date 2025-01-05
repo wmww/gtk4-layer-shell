@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "libwayland-shim.h"
 #include "layer-surface.h"
+#include "session-lock.h"
 #include "wayland-utils.h"
 
 struct wl_proxy *(*libwayland_shim_real_wl_proxy_marshal_array_flags) (
@@ -285,7 +286,10 @@ wl_proxy_marshal_array_flags (
     } else {
         struct wl_proxy *ret_proxy = NULL;
         if (layer_surface_handle_request (proxy, opcode, interface, version, flags, args, &ret_proxy)) {
-            // The behavior of the request has been overridden
+            // The behavior of the request has been overridden by a layer surface
+            return ret_proxy;
+        } else if (session_lock_surface_handle_request (proxy, opcode, interface, version, flags, args, &ret_proxy)) {
+            // The behavior of the request has been overridden by a session lock surface
             return ret_proxy;
         } else if (args_contains_client_facing_proxy (proxy, opcode, interface, args)) {
             // We can't do the normal thing because one of the arguments is an object libwayand doesn't know about, but

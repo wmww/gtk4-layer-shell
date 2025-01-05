@@ -322,6 +322,28 @@ void gtk_layer_set_keyboard_mode (GtkWindow *window, GtkLayerShellKeyboardMode m
  */
 GtkLayerShellKeyboardMode gtk_layer_get_keyboard_mode (GtkWindow *window);
 
+G_DECLARE_FINAL_TYPE(GtkLayerShellSessionLock, gtk_layer_session_lock, GTK_LAYER_SESSION_LOCK, SESSION_LOCK, GObject)
+
+GtkLayerShellSessionLock * gtk_layer_session_lock_new ();
+
+void gtk_layer_session_lock_lock (GtkLayerShellSessionLock *self);
+
+void gtk_layer_session_lock_destroy (GtkLayerShellSessionLock *self);
+
+void gtk_layer_session_lock_unlock_and_destroy (GtkLayerShellSessionLock *self);
+
+void gtk_layer_session_lock_create_surface_for_window (GtkLayerShellSessionLock *self, GtkWindow *gtk_window, GdkMonitor *gdk_monitor);
+
+/**
+ * gtk_layer_session_lock_is_supported:
+ *
+ * May block for a Wayland roundtrip the first time it's called.
+ *
+ * Returns: %TRUE if the platform is Wayland and Wayland compositor supports the
+ * ext_session_lock_v1 protocol.
+ */
+gboolean gtk_layer_session_lock_is_supported ();
+
 G_END_DECLS
 
 #endif // GTK_LAYER_SHELL_H

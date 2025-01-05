@@ -1,5 +1,6 @@
 #include "wayland-utils.h"
 #include "layer-surface.h"
+#include "session-lock.h"
 #include "libwayland-shim.h"
 
 #include <gdk/wayland/gdkwayland.h>
@@ -202,4 +203,43 @@ gtk_layer_get_keyboard_mode (GtkWindow *window)
     LayerSurface *layer_surface = gtk_window_get_layer_surface_or_warn (window);
     if (!layer_surface) return GTK_LAYER_SHELL_KEYBOARD_MODE_NONE;
     return layer_surface->keyboard_mode;
+}
+
+
+GtkLayerShellSessionLock *
+gtk_layer_session_lock_new ()
+{
+    gtk_wayland_init_if_needed ();
+    return g_object_new (gtk_layer_session_lock_get_type (), NULL);
+}
+
+void
+gtk_layer_session_lock_lock (GtkLayerShellSessionLock *self)
+{
+    session_lock_lock (self);
+}
+
+void
+gtk_layer_session_lock_destroy (GtkLayerShellSessionLock *self)
+{
+    session_lock_destroy (self);
+}
+
+void
+gtk_layer_session_lock_unlock_and_destroy (GtkLayerShellSessionLock *self)
+{
+    session_lock_unlock_and_destroy (self);
+}
+
+void
+gtk_layer_session_lock_create_surface_for_window (GtkLayerShellSessionLock *self, GtkWindow *gtk_window, GdkMonitor *gdk_monitor)
+{
+    session_lock_create_surface_for_window (self, gtk_window, gdk_monitor);
+}
+
+gboolean
+gtk_layer_session_lock_is_supported ()
+{
+    gtk_wayland_init_if_needed ();
+    return libwayland_shim_has_initialized () && gtk_wayland_get_session_lock_manager_global () != NULL;
 }

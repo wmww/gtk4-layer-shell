@@ -14,6 +14,13 @@ executable(
     dependencies: [gtk, gtk_layer_shell],
     install: false)
 
+executable(
+    'session-lock-c',
+    files('session-lock.c'),
+    build_by_default: get_option('examples'),
+    dependencies: [gtk, gtk_layer_shell],
+    install: false)
+
 if get_option('vapi')
     add_languages('vala')
     executable(

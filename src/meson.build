@@ -2,6 +2,7 @@ srcs = files(
     'api.c',
     'libwayland-shim.c',
     'layer-surface.c',
+    'session-lock.c',
     'wayland-utils.c')
 
 version_args = [

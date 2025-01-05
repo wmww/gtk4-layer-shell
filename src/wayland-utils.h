@@ -3,12 +3,14 @@
 
 #include "xdg-shell-client.h"
 #include "wlr-layer-shell-unstable-v1-client.h"
+#include "ext-session-lock-v1-client.h"
 #include "gtk4-layer-shell.h"
 #include <gdk/gdk.h>
 #include <gdk/gdk.h>
 
 void gtk_wayland_init_if_needed (void);
 struct zwlr_layer_shell_v1 *gtk_wayland_get_layer_shell_global (void);
+struct ext_session_lock_manager_v1 *gtk_wayland_get_session_lock_manager_global (void);
 
 enum zwlr_layer_shell_v1_layer gtk_layer_shell_layer_get_zwlr_layer_shell_v1_layer (GtkLayerShellLayer layer);
 uint32_t gtk_layer_shell_edge_array_get_zwlr_layer_shell_v1_anchor (gboolean edges[GTK_LAYER_SHELL_EDGE_ENTRY_NUMBER]);

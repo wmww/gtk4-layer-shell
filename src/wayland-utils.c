@@ -5,6 +5,7 @@
 
 static struct wl_registry *wl_registry_global = NULL;
 static struct zwlr_layer_shell_v1 *layer_shell_global = NULL;
+static struct ext_session_lock_manager_v1 *session_lock_manager_global = NULL;
 
 static gboolean has_initialized = FALSE;
 
@@ -12,6 +13,12 @@ struct zwlr_layer_shell_v1 *
 gtk_wayland_get_layer_shell_global ()
 {
     return layer_shell_global;
+}
+
+struct ext_session_lock_manager_v1 *
+gtk_wayland_get_session_lock_manager_global ()
+{
+    return session_lock_manager_global;
 }
 
 static void
@@ -30,6 +37,14 @@ wl_registry_handle_global (void *_data,
                                                id,
                                                &zwlr_layer_shell_v1_interface,
                                                MIN((uint32_t)zwlr_layer_shell_v1_interface.version, version));
+    }
+
+    if (strcmp (interface, ext_session_lock_manager_v1_interface.name) == 0) {
+        g_warn_if_fail (ext_session_lock_manager_v1_interface.version >= 1);
+        session_lock_manager_global = wl_registry_bind (registry,
+                                                        id,
+                                                        &ext_session_lock_manager_v1_interface,
+                                                        MIN((uint32_t)ext_session_lock_manager_v1_interface.version, version));
     }
 }
 
