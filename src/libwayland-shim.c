@@ -9,8 +9,8 @@ bool layer_surface_handle_request(
     const char* type_name,
     struct wl_proxy* proxy,
     uint32_t opcode,
-    const struct wl_interface* interface,
-    uint32_t version,
+    const struct wl_interface* created_interface,
+    uint32_t created_version,
     uint32_t flags,
     union wl_argument* args,
     struct wl_proxy **ret_proxy
@@ -21,8 +21,8 @@ static void* real_libwayland_handle = NULL;
 static struct wl_proxy* (*real_wl_proxy_marshal_array_flags)(
     struct wl_proxy* proxy,
     uint32_t opcode,
-    const struct wl_interface* interface,
-    uint32_t version,
+    const struct wl_interface* created_interface,
+    uint32_t created_version,
     uint32_t flags,
     union wl_argument* args
 ) = NULL;
@@ -132,10 +132,8 @@ void* libwayland_shim_get_client_proxy_data(struct wl_proxy* proxy, void* expect
 static bool args_contains_client_facing_proxy(
     struct wl_proxy* proxy,
     uint32_t opcode,
-    const struct wl_interface* interface,
     union wl_argument* args
 ) {
-    (void)interface;
     const char* sig_iter = proxy->object.interface->methods[opcode].signature;
     int i = 0;
     while (true) {
@@ -176,8 +174,8 @@ void wl_proxy_destroy(struct wl_proxy* proxy) {
 struct wl_proxy* wl_proxy_marshal_array_flags(
     struct wl_proxy* proxy,
     uint32_t opcode,
-    const struct wl_interface* interface,
-    uint32_t version,
+    const struct wl_interface* create_interface,
+    uint32_t create_version,
     uint32_t flags,
     union wl_argument* args)
 {
@@ -188,7 +186,7 @@ struct wl_proxy* wl_proxy_marshal_array_flags(
         struct wrapped_proxy* wrapper = (struct wrapped_proxy*)proxy;
         struct wl_proxy* result = NULL;
         if (wrapper->handler) {
-            result = wrapper->handler(wrapper->data, proxy, opcode, interface, version, flags, args);
+            result = wrapper->handler(wrapper->data, proxy, opcode, create_interface, create_version, flags, args);
         }
         if (flags & WL_MARSHAL_FLAG_DESTROY) {
             wl_proxy_destroy(proxy);
@@ -197,23 +195,23 @@ struct wl_proxy* wl_proxy_marshal_array_flags(
     } else {
         struct wl_proxy* ret_proxy = NULL;
         const char* type_name = proxy->object.interface->name;
-        if (layer_surface_handle_request(type_name, proxy, opcode, interface, version, flags, args, &ret_proxy)) {
+        if (layer_surface_handle_request(type_name, proxy, opcode, create_interface, create_version, flags, args, &ret_proxy)) {
             // The behavior of the request has been overridden
             return ret_proxy;
-        } else if (args_contains_client_facing_proxy(proxy, opcode, interface, args)) {
+        } else if (args_contains_client_facing_proxy(proxy, opcode, args)) {
             // We can't do the normal thing because one of the arguments is an object libwayand doesn't know about, but
             // no override behavior was taken. Hopefully we can safely ignore this request.
-            if (interface) {
+            if (create_interface) {
                 // We need to create a stub object to make the client happy, it will ignore all requests and represents
                 // nothing in libwayland/the server
-               return libwayland_shim_create_client_proxy(proxy, interface, interface->version, NULL, NULL, NULL);
+               return libwayland_shim_create_client_proxy(proxy, create_interface, create_version, NULL, NULL, NULL);
             } else {
                 // Ignore the request
                 return NULL;
             }
         } else {
             // Forward the request on to libwayland without modification, this is the most common path
-            return real_wl_proxy_marshal_array_flags(proxy, opcode, interface, version, flags, args);
+            return real_wl_proxy_marshal_array_flags(proxy, opcode, create_interface, create_version, flags, args);
         }
     }
 }

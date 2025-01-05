@@ -503,13 +503,13 @@ bool layer_surface_handle_request(
     const char* type_name,
     struct wl_proxy* proxy,
     uint32_t opcode,
-    const struct wl_interface* interface,
-    uint32_t version,
+    const struct wl_interface* create_interface,
+    uint32_t create_version,
     uint32_t flags,
     union wl_argument* args,
     struct wl_proxy **ret_proxy
 ) {
-    (void)interface;
+    (void)create_interface;
     (void)flags;
     if (strcmp(type_name, xdg_wm_base_interface.name) == 0) {
         if (opcode == XDG_WM_BASE_GET_XDG_SURFACE) {
@@ -524,7 +524,7 @@ bool layer_surface_handle_request(
                 struct wl_proxy* xdg_surface = libwayland_shim_create_client_proxy(
                     proxy,
                     &xdg_surface_interface,
-                    version,
+                    create_version,
                     stubbed_xdg_surface_handle_request,
                     stubbed_xdg_surface_handle_destroy,
                     self
@@ -556,7 +556,7 @@ bool layer_surface_handle_request(
                     *ret_proxy = libwayland_shim_create_client_proxy(
                         proxy,
                         &xdg_popup_interface,
-                        version,
+                        create_version,
                         NULL, NULL, NULL
                     );
                     return TRUE;

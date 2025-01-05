@@ -16,8 +16,8 @@ typedef struct wl_proxy* (*libwayland_shim_client_proxy_handler_func_t)(
     void* data,
     struct wl_proxy *proxy,
     uint32_t opcode,
-    const struct wl_interface *interface,
-    uint32_t version,
+    const struct wl_interface *created_interface,
+    uint32_t created_version,
     uint32_t flags,
     union wl_argument *args);
 
