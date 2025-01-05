@@ -4,7 +4,9 @@
 #include "layer-surface.h"
 #include "stolen-from-libwayland.h"
 
-struct wl_proxy* (*libwayland_shim_real_wl_proxy_marshal_array_flags)(
+static void* real_libwayland_handle = NULL;
+
+static struct wl_proxy* (*real_wl_proxy_marshal_array_flags)(
     struct wl_proxy* proxy,
     uint32_t opcode,
     const struct wl_interface* interface,
@@ -13,31 +15,31 @@ struct wl_proxy* (*libwayland_shim_real_wl_proxy_marshal_array_flags)(
     union wl_argument* args
 ) = NULL;
 
-void (*libwayland_shim_real_wl_proxy_destroy)(struct wl_proxy* proxy) = NULL;
+static void (*real_wl_proxy_destroy)(struct wl_proxy* proxy) = NULL;
 
-int (*libwayland_shim_real_wl_proxy_add_dispatcher)(
+static int (*real_wl_proxy_add_dispatcher)(
     struct wl_proxy* proxy,
     wl_dispatcher_func_t dispatcher_func,
     const void* dispatcher_data, void* data
 ) = NULL;
 
 gboolean libwayland_shim_has_initialized() {
-    return libwayland_shim_real_wl_proxy_marshal_array_flags != NULL;
+    return real_libwayland_handle != NULL;
 }
 
 static void libwayland_shim_init() {
-    if (libwayland_shim_has_initialized()) return;
+    if (real_libwayland_handle) return;
 
-    void* handle = dlopen("libwayland-client.so.0", RTLD_LAZY);
-    if (handle == NULL) {
-        handle = dlopen("libwayland-client.so", RTLD_LAZY);
+    real_libwayland_handle = dlopen("libwayland-client.so.0", RTLD_LAZY);
+    if (real_libwayland_handle == NULL) {
+        real_libwayland_handle = dlopen("libwayland-client.so", RTLD_LAZY);
     }
-    if (handle == NULL) {
+    if (real_libwayland_handle == NULL) {
         g_error ("failed to dlopen libwayland");
     }
 
 #define INIT_SYM(name) \
-    if (!(libwayland_shim_real_##name = dlsym(handle, #name))) {\
+    if (!(real_##name = dlsym(real_libwayland_handle, #name))) {\
         g_error("dlsym failed to load %s", #name); \
     }
 
@@ -46,8 +48,6 @@ static void libwayland_shim_init() {
     INIT_SYM(wl_proxy_add_dispatcher);
 
 #undef INIT_SYM
-
-    //dlclose(handle);
 }
 
 struct wrapped_proxy {
@@ -168,7 +168,7 @@ void wl_proxy_destroy(struct wl_proxy* proxy) {
         // functions that never see client facing objects
         g_free(proxy);
     } else {
-        libwayland_shim_real_wl_proxy_destroy(proxy);
+        real_wl_proxy_destroy(proxy);
     }
 }
 
@@ -214,7 +214,7 @@ struct wl_proxy* wl_proxy_marshal_array_flags(
             }
         } else {
             // Forward the request on to libwayland without modification, this is the most common path
-            return libwayland_shim_real_wl_proxy_marshal_array_flags(proxy, opcode, interface, version, flags, args);
+            return real_wl_proxy_marshal_array_flags(proxy, opcode, interface, version, flags, args);
         }
     }
 }
@@ -230,7 +230,7 @@ int wl_proxy_add_dispatcher(
     if (proxy->object.id == client_facing_proxy_id) {
         g_critical("wl_proxy_add_dispatcher() not supported for client-facing proxies");
     }
-    return libwayland_shim_real_wl_proxy_add_dispatcher(proxy, dispatcher_func, dispatcher_data, data);
+    return real_wl_proxy_add_dispatcher(proxy, dispatcher_func, dispatcher_data, data);
 }
 
 void const* libwayland_shim_proxy_get_implementation(struct wl_proxy* proxy) {
