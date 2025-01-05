@@ -4,31 +4,6 @@
 #define WL_CLOSURE_MAX_ARGS 20
 
 // connection.c
-const char *
-get_next_argument(const char *signature, struct argument_details *details)
-{
-	details->nullable = 0;
-	for(; *signature; ++signature) {
-		switch(*signature) {
-		case 'i':
-		case 'u':
-		case 'f':
-		case 's':
-		case 'o':
-		case 'n':
-		case 'a':
-		case 'h':
-			details->type = *signature;
-			return signature + 1;
-		case '?':
-			details->nullable = 1;
-		}
-	}
-	details->type = '\0';
-	return signature;
-}
-
-// connection.c
 static void
 wl_argument_from_va_list(const char *signature, union wl_argument *args,
 			 int count, va_list ap)
