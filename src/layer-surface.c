@@ -500,70 +500,103 @@ gint find_layer_surface_with_wl_surface(gconstpointer layer_surface, gconstpoint
     return wl_surface == needle ? 0 : 1;
 }
 
-bool layer_surface_handle_request(
-    const char* type_name,
+static bool xdg_wm_base_get_xdg_surface_hook(
+    void* data,
     struct wl_proxy* proxy,
     uint32_t opcode,
     const struct wl_interface* create_interface,
     uint32_t create_version,
     uint32_t flags,
     union wl_argument* args,
-    struct wl_proxy **ret_proxy
+    struct wl_proxy** ret_proxy
 ) {
+    (void)data;
+    (void)opcode;
     (void)create_interface;
     (void)flags;
-    if (strcmp(type_name, xdg_wm_base_interface.name) == 0) {
-        if (opcode == XDG_WM_BASE_GET_XDG_SURFACE) {
-            struct wl_surface* wl_surface = (struct wl_surface*)args[1].o;
-            GList* layer_surface_entry = g_list_find_custom(
-                all_layer_surfaces,
-                wl_surface,
-                find_layer_surface_with_wl_surface
-            );
-            if (layer_surface_entry) {
-                LayerSurface* self = layer_surface_entry->data;
-                struct wl_proxy* xdg_surface = libwayland_shim_create_client_proxy(
-                    proxy,
-                    &xdg_surface_interface,
-                    create_version,
-                    stubbed_xdg_surface_handle_request,
-                    stubbed_xdg_surface_handle_destroy,
-                    self
-                );
-                self->client_facing_xdg_surface = (struct xdg_surface*)xdg_surface;
-                layer_surface_create_surface_object(self, wl_surface);
-                *ret_proxy = xdg_surface;
-                return TRUE;
-            }
-        }
-    } else if (strcmp(type_name, xdg_surface_interface.name) == 0) {
-        if (opcode == XDG_SURFACE_GET_POPUP) {
-            LayerSurface* self = libwayland_shim_get_client_proxy_data(
-                (struct wl_proxy*)args[1].o,
-                stubbed_xdg_surface_handle_request
-            );
-            if (self) {
-                if (self->layer_surface) {
-                    struct xdg_popup* xdg_popup = xdg_surface_get_popup(
-                        (struct xdg_surface*)proxy,
-                        NULL,
-                        (struct xdg_positioner*)args[2].o
-                    );
-                    zwlr_layer_surface_v1_get_popup(self->layer_surface, xdg_popup);
-                    *ret_proxy = (struct wl_proxy*)xdg_popup;
-                    return TRUE;
-                } else {
-                    g_critical("tried to create popup before layer shell surface");
-                    *ret_proxy = libwayland_shim_create_client_proxy(
-                        proxy,
-                        &xdg_popup_interface,
-                        create_version,
-                        NULL, NULL, NULL
-                    );
-                    return TRUE;
-                }
-            }
-        }
+
+    struct wl_surface* wl_surface = (struct wl_surface*)args[1].o;
+    GList* layer_surface_entry = g_list_find_custom(
+        all_layer_surfaces,
+        wl_surface,
+        find_layer_surface_with_wl_surface
+    );
+
+    if (layer_surface_entry) {
+        LayerSurface* self = layer_surface_entry->data;
+        struct wl_proxy* xdg_surface = libwayland_shim_create_client_proxy(
+            proxy,
+            &xdg_surface_interface,
+            create_version,
+            stubbed_xdg_surface_handle_request,
+            stubbed_xdg_surface_handle_destroy,
+            self
+        );
+        self->client_facing_xdg_surface = (struct xdg_surface*)xdg_surface;
+        layer_surface_create_surface_object(self, wl_surface);
+        *ret_proxy = xdg_surface;
+        return true;
+    } else {
+        return false;
     }
-    return FALSE;
+}
+
+static bool xdg_surface_get_popup_hook(
+    void* data,
+    struct wl_proxy* proxy,
+    uint32_t opcode,
+    const struct wl_interface* create_interface,
+    uint32_t create_version,
+    uint32_t flags,
+    union wl_argument* args,
+    struct wl_proxy** ret_proxy
+) {
+    (void)data;
+    (void)opcode;
+    (void)create_interface;
+    (void)flags;
+
+    LayerSurface* self = libwayland_shim_get_client_proxy_data(
+        (struct wl_proxy*)args[1].o,
+        stubbed_xdg_surface_handle_request
+    );
+
+    if (self) {
+        if (self->layer_surface) {
+            struct xdg_popup* xdg_popup = xdg_surface_get_popup(
+                (struct xdg_surface*)proxy,
+                NULL,
+                (struct xdg_positioner*)args[2].o
+            );
+            zwlr_layer_surface_v1_get_popup(self->layer_surface, xdg_popup);
+            *ret_proxy = (struct wl_proxy*)xdg_popup;
+        } else {
+            g_critical("tried to create popup before layer shell surface");
+            *ret_proxy = libwayland_shim_create_client_proxy(
+                proxy,
+                &xdg_popup_interface,
+                create_version,
+                NULL, NULL, NULL
+            );
+        }
+        return true;
+    } else {
+        return false;
+    }
+}
+
+__attribute__((constructor))
+static void init_hooks() {
+    libwayland_shim_install_hook(
+        &xdg_wm_base_interface,
+        XDG_WM_BASE_GET_XDG_SURFACE,
+        xdg_wm_base_get_xdg_surface_hook,
+        NULL
+    );
+    libwayland_shim_install_hook(
+        &xdg_surface_interface,
+        XDG_SURFACE_GET_POPUP,
+        xdg_surface_get_popup_hook,
+        NULL
+    );
 }

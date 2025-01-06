@@ -6,16 +6,19 @@
 #include "libwayland-shim.h"
 #include "stolen-from-libwayland.h"
 
-bool layer_surface_handle_request(
-    const char* type_name,
-    struct wl_proxy* proxy,
-    uint32_t opcode,
-    const struct wl_interface* created_interface,
-    uint32_t created_version,
-    uint32_t flags,
-    union wl_argument* args,
-    struct wl_proxy **ret_proxy
-);
+struct wrapped_proxy {
+    struct wl_proxy proxy;
+    libwayland_shim_request_handler_func_t handler;
+    libwayland_shim_destroy_handler_func_t destroy;
+    void* data;
+};
+
+struct request_hook {
+    const char* interface_name;
+    uint32_t opcode;
+    libwayland_shim_request_handler_func_t handler;
+    void* data;
+};
 
 static bool has_initialized = NULL;
 
@@ -29,6 +32,10 @@ static struct wl_proxy* (*real_wl_proxy_marshal_array_flags)(
 ) = NULL;
 
 static void (*real_wl_proxy_destroy)(struct wl_proxy* proxy) = NULL;
+
+#define MAX_REQUEST_HOOKS 100
+static int request_hook_count = 0;
+static struct request_hook request_hooks[MAX_REQUEST_HOOKS];
 
 bool libwayland_shim_has_initialized() {
     return has_initialized;
@@ -51,12 +58,21 @@ static void libwayland_shim_init() {
     has_initialized = true;
 }
 
-struct wrapped_proxy {
-    struct wl_proxy proxy;
-    libwayland_shim_request_handler_func_t handler;
-    libwayland_shim_destroy_handler_func_t destroy;
-    void* data;
-};
+void libwayland_shim_install_hook(
+    struct wl_interface const* interface,
+    uint32_t opcode,
+    libwayland_shim_request_handler_func_t handler,
+    void* data
+) {
+    assert(request_hook_count < MAX_REQUEST_HOOKS);
+    request_hooks[request_hook_count] = (struct request_hook){
+        .interface_name = interface->name,
+        .opcode = opcode,
+        .handler = handler,
+        .data = data,
+    };
+    request_hook_count++;
+}
 
 // The ID for ALL proxies that are created by us and not managed by the real libwayland
 const uint32_t client_facing_proxy_id = 6942069;
@@ -254,21 +270,26 @@ struct wl_proxy* wl_proxy_marshal_array_flags(
 
         return handled ? ret_proxy : fallback_handle_request(proxy, create_interface, create_version);
     } else {
-        struct wl_proxy* ret_proxy = NULL;
-        const char* type_name = proxy->object.interface->name;
-        if (layer_surface_handle_request(
-            type_name,
-            proxy,
-            opcode,
-            create_interface,
-            create_version,
-            flags,
-            args,
-            &ret_proxy)
-        ) {
-            // The behavior of the request has been overridden
-            return validate_request_result(ret_proxy, proxy, opcode, create_interface, create_version);
-        } else if (args_contains_client_facing_proxy(proxy, opcode, args)) {
+        const char* interface_name = proxy->object.interface->name;
+        for (int i = 0; i < request_hook_count; i++) {
+            if (strcmp(request_hooks[i].interface_name, interface_name) == 0 && request_hooks[i].opcode == opcode) {
+                struct wl_proxy* ret_proxy = NULL;
+                if (request_hooks[i].handler(
+                    request_hooks[i].data,
+                    proxy,
+                    opcode,
+                    create_interface,
+                    create_version,
+                    flags,
+                    args,
+                    &ret_proxy
+                )) {
+                    return validate_request_result(ret_proxy, proxy, opcode, create_interface, create_version);
+                }
+            }
+        }
+
+        if (args_contains_client_facing_proxy(proxy, opcode, args)) {
             // We can't do the normal thing because one of the arguments is an object libwayand doesn't know about, but
             // no override behavior was taken. Hopefully we can safely ignore this request.
             return fallback_handle_request(proxy, create_interface, create_version);

@@ -24,6 +24,15 @@ typedef void (*libwayland_shim_destroy_handler_func_t)(void* data, struct wl_pro
 // display. If this is false it may indicate the program was linked incorrectly.
 bool libwayland_shim_has_initialized();
 
+// The handler will be called and can optionally handle all matching requests. There is no way to uninstall a hook, and
+// installing too many hooks may hurt performance.
+void libwayland_shim_install_hook(
+    struct wl_interface const* interface,
+    uint32_t opcode,
+    libwayland_shim_request_handler_func_t handler,
+    void* data
+);
+
 // Create a "fake" wl_proxy the client program (our process) can interact with, but libwayland doesn't know about
 // factory: the proxy this proxy was created from (for example an xdg_surface if the created proxy is an xdg_toplevel)
 // interface: the type of this proxy, these structs are declared in wayland client headers
