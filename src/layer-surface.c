@@ -445,18 +445,20 @@ static void stubbed_xdg_toplevel_handle_destroy(void* data, struct wl_proxy* pro
     layer_surface_unmap(self);
 }
 
-static struct wl_proxy* stubbed_xdg_surface_handle_request(
+static bool stubbed_xdg_surface_handle_request(
     void* data,
     struct wl_proxy* proxy,
     uint32_t opcode,
     const struct wl_interface* interface,
     uint32_t version,
     uint32_t flags,
-    union wl_argument* args) {
+    union wl_argument* args,
+    struct wl_proxy** ret_proxy
+) {
     (void)interface; (void)flags;
     LayerSurface* self = (LayerSurface*)data;
     if (opcode == XDG_SURFACE_GET_TOPLEVEL) {
-        struct wl_proxy* toplevel = libwayland_shim_create_client_proxy(
+        *ret_proxy = libwayland_shim_create_client_proxy(
             proxy,
             &xdg_toplevel_interface,
             version,
@@ -464,24 +466,25 @@ static struct wl_proxy* stubbed_xdg_surface_handle_request(
             stubbed_xdg_toplevel_handle_destroy,
             data
         );
-        self->client_facing_xdg_toplevel = (struct xdg_toplevel*)toplevel;
-        return toplevel;
+        self->client_facing_xdg_toplevel = (struct xdg_toplevel*)*ret_proxy;
+        return true;
     } else if (opcode == XDG_SURFACE_GET_POPUP) {
         g_critical("XDG surface intercepted, but is now being used as popup");
-        return libwayland_shim_create_client_proxy(proxy, &xdg_popup_interface, version, NULL, NULL, NULL);
+        *ret_proxy = libwayland_shim_create_client_proxy(proxy, &xdg_popup_interface, version, NULL, NULL, NULL);
+        return true;
     } else if (opcode == XDG_SURFACE_SET_WINDOW_GEOMETRY) {
         layer_surface_send_set_size(self);
         layer_surface_update_auto_exclusive_zone(self);
-        return NULL;
+        return false;
     } else if (opcode == XDG_SURFACE_ACK_CONFIGURE) {
         uint32_t serial = args[0].u;
         if (serial && serial == self->pending_configure_serial) {
             self->pending_configure_serial = 0;
             zwlr_layer_surface_v1_ack_configure(self->layer_surface, serial);
         }
-        return NULL;
+        return false;
     } else {
-        return NULL;
+        return false;
     }
 }
 
