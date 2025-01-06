@@ -17,7 +17,7 @@ bool layer_surface_handle_request(
     struct wl_proxy **ret_proxy
 );
 
-static void* real_libwayland_handle = NULL;
+static bool has_initialized = NULL;
 
 static struct wl_proxy* (*real_wl_proxy_marshal_array_flags)(
     struct wl_proxy* proxy,
@@ -31,39 +31,24 @@ static struct wl_proxy* (*real_wl_proxy_marshal_array_flags)(
 static void (*real_wl_proxy_destroy)(struct wl_proxy* proxy) = NULL;
 
 bool libwayland_shim_has_initialized() {
-    return real_libwayland_handle != NULL;
+    return has_initialized;
 }
 
 static void libwayland_shim_init() {
-    if (real_libwayland_handle) return;
-
-    real_libwayland_handle = dlopen("libwayland-client.so.0", RTLD_LAZY);
-    if (real_libwayland_handle == NULL) {
-        real_libwayland_handle = dlopen("libwayland-client.so", RTLD_LAZY);
-    }
-    if (real_libwayland_handle == NULL) {
-        fprintf(stderr, "libwayland_shim: failed to dlopen libwayland\n");
-    }
+    if (has_initialized) return;
 
 #define INIT_SYM(name) \
-    if (!(real_##name = dlsym(real_libwayland_handle, #name))) {\
+    if (!(real_##name = dlsym(RTLD_NEXT, #name))) {\
         fprintf(stderr, "libwayland_shim: dlsym failed to load %s\n", #name); \
+        exit(1); \
     }
 
     INIT_SYM(wl_proxy_marshal_array_flags);
     INIT_SYM(wl_proxy_destroy);
 
 #undef INIT_SYM
-}
 
-__attribute__((destructor))
-static void libwayland_shim_uninit() {
-    if (real_libwayland_handle) {
-        dlclose(real_libwayland_handle);
-        real_libwayland_handle = NULL;
-        real_wl_proxy_marshal_array_flags = NULL;
-        real_wl_proxy_destroy = NULL;
-    }
+    has_initialized = true;
 }
 
 struct wrapped_proxy {
