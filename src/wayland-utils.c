@@ -8,7 +8,7 @@ static struct zwlr_layer_shell_v1* layer_shell_global = NULL;
 
 static gboolean has_initialized = FALSE;
 
-struct zwlr_layer_shell_v1 * gtk_wayland_get_layer_shell_global() {
+struct zwlr_layer_shell_v1* gtk_wayland_get_layer_shell_global() {
     return layer_shell_global;
 }
 

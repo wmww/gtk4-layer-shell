@@ -116,16 +116,16 @@ static void layer_surface_configure_xdg_surface(
 
         LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(
             xdg_toplevel_listener,
-            self->client_facing_xdg_toplevel,
             configure,
+            self->client_facing_xdg_toplevel,
             width, height,
             &states);
         wl_array_release(&states);
 
         LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(
             xdg_surface_listener,
-            self->client_facing_xdg_surface,
             configure,
+            self->client_facing_xdg_surface,
             serial);
     }
 }
@@ -587,13 +587,13 @@ static bool xdg_surface_get_popup_hook(
 
 __attribute__((constructor))
 static void init_hooks() {
-    libwayland_shim_install_hook(
+    libwayland_shim_install_request_hook(
         &xdg_wm_base_interface,
         XDG_WM_BASE_GET_XDG_SURFACE,
         xdg_wm_base_get_xdg_surface_hook,
         NULL
     );
-    libwayland_shim_install_hook(
+    libwayland_shim_install_request_hook(
         &xdg_surface_interface,
         XDG_SURFACE_GET_POPUP,
         xdg_surface_get_popup_hook,

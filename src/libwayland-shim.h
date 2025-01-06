@@ -26,7 +26,7 @@ bool libwayland_shim_has_initialized();
 
 // The handler will be called and can optionally handle all matching requests. There is no way to uninstall a hook, and
 // installing too many hooks may hurt performance.
-void libwayland_shim_install_hook(
+void libwayland_shim_install_request_hook(
     struct wl_interface const* interface,
     uint32_t opcode,
     libwayland_shim_request_handler_func_t handler,
@@ -57,24 +57,23 @@ void libwayland_shim_clear_client_proxy_data(struct wl_proxy* proxy);
 // the given expected handler
 void* libwayland_shim_get_client_proxy_data(struct wl_proxy* proxy, void* expected_handler);
 
-#define LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(listener, proxy, event, ...) \
-    if (libwayland_shim_proxy_get_dispatcher((struct wl_proxy*)proxy)) { \
+#define LIBWAYLAND_SHIM_FIRST_ARG(first, ...) first
+#define LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(listener, event, ...) \
+    if (libwayland_shim_proxy_get_dispatcher((struct wl_proxy*)LIBWAYLAND_SHIM_FIRST_ARG(__VA_ARGS__))) { \
         libwayland_shim_proxy_invoke_dispatcher( \
-            (struct wl_proxy*)proxy, \
             (long)((char*)((struct listener*)NULL)->event) / sizeof(void(*)()), \
-            __VA_ARGS__ \
+            (struct wl_proxy*)__VA_ARGS__ \
         ); \
-    } else if (libwayland_shim_proxy_get_implementation((struct wl_proxy*)proxy)) { \
-        ((struct listener*)libwayland_shim_proxy_get_implementation((struct wl_proxy*)proxy)) \
+    } else if (libwayland_shim_proxy_get_implementation((struct wl_proxy*)LIBWAYLAND_SHIM_FIRST_ARG(__VA_ARGS__))) { \
+        ((struct listener*)libwayland_shim_proxy_get_implementation((struct wl_proxy*)LIBWAYLAND_SHIM_FIRST_ARG(__VA_ARGS__))) \
             ->event( \
-                libwayland_shim_proxy_get_user_data((struct wl_proxy*)proxy), \
-                proxy, \
+                libwayland_shim_proxy_get_user_data((struct wl_proxy*)LIBWAYLAND_SHIM_FIRST_ARG(__VA_ARGS__)), \
                 __VA_ARGS__ \
             ); \
     }
 
 // These functions are used by LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT()
 wl_dispatcher_func_t libwayland_shim_proxy_get_dispatcher(struct wl_proxy* proxy);
-void libwayland_shim_proxy_invoke_dispatcher(struct wl_proxy* proxy, uint32_t opcode, ...);
+void libwayland_shim_proxy_invoke_dispatcher(uint32_t opcode, struct wl_proxy* proxy, ...);
 void const* libwayland_shim_proxy_get_implementation(struct wl_proxy* proxy);
 void* libwayland_shim_proxy_get_user_data(struct wl_proxy* proxy);

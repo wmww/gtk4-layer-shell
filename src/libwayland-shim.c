@@ -58,7 +58,7 @@ static void libwayland_shim_init() {
     has_initialized = true;
 }
 
-void libwayland_shim_install_hook(
+void libwayland_shim_install_request_hook(
     struct wl_interface const* interface,
     uint32_t opcode,
     libwayland_shim_request_handler_func_t handler,
@@ -304,7 +304,7 @@ wl_dispatcher_func_t libwayland_shim_proxy_get_dispatcher(struct wl_proxy* proxy
     return proxy->dispatcher;
 }
 
-void libwayland_shim_proxy_invoke_dispatcher(struct wl_proxy* proxy, uint32_t opcode, ...) {
+void libwayland_shim_proxy_invoke_dispatcher(uint32_t opcode, struct wl_proxy* proxy, ...) {
     // This should be possible to implement if needed, but not much seems to use dispatchers
     fprintf(
         stderr,
