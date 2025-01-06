@@ -118,7 +118,6 @@ static void layer_surface_configure_xdg_surface(
             xdg_toplevel_listener,
             self->client_facing_xdg_toplevel,
             configure,
-            self->client_facing_xdg_toplevel,
             width, height,
             &states);
         wl_array_release(&states);
@@ -127,7 +126,6 @@ static void layer_surface_configure_xdg_surface(
             xdg_surface_listener,
             self->client_facing_xdg_surface,
             configure,
-            self->client_facing_xdg_surface,
             serial);
     }
 }

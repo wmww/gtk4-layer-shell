@@ -30,12 +30,6 @@ static struct wl_proxy* (*real_wl_proxy_marshal_array_flags)(
 
 static void (*real_wl_proxy_destroy)(struct wl_proxy* proxy) = NULL;
 
-static int (*real_wl_proxy_add_dispatcher)(
-    struct wl_proxy* proxy,
-    wl_dispatcher_func_t dispatcher_func,
-    const void* dispatcher_data, void* data
-) = NULL;
-
 bool libwayland_shim_has_initialized() {
     return real_libwayland_handle != NULL;
 }
@@ -58,7 +52,6 @@ static void libwayland_shim_init() {
 
     INIT_SYM(wl_proxy_marshal_array_flags);
     INIT_SYM(wl_proxy_destroy);
-    INIT_SYM(wl_proxy_add_dispatcher);
 
 #undef INIT_SYM
 }
@@ -70,7 +63,6 @@ static void libwayland_shim_uninit() {
         real_libwayland_handle = NULL;
         real_wl_proxy_marshal_array_flags = NULL;
         real_wl_proxy_destroy = NULL;
-        real_wl_proxy_add_dispatcher = NULL;
     }
 }
 
@@ -302,19 +294,19 @@ struct wl_proxy* wl_proxy_marshal_array_flags(
     }
 }
 
-// Overrides the function in wayland-client.c in libwayland
-int wl_proxy_add_dispatcher(
-    struct wl_proxy* proxy,
-    wl_dispatcher_func_t dispatcher_func,
-    const void* dispatcher_data,
-    void* data
-) {
-    libwayland_shim_init();
-    if (proxy->object.id == client_facing_proxy_id) {
-        // This could be supported in the future, but so far has not been needed
-        fprintf(stderr, "libwayland_shim: wl_proxy_add_dispatcher() not supported for client-facing proxies\n");
-    }
-    return real_wl_proxy_add_dispatcher(proxy, dispatcher_func, dispatcher_data, data);
+wl_dispatcher_func_t libwayland_shim_proxy_get_dispatcher(struct wl_proxy* proxy) {
+    return proxy->dispatcher;
+}
+
+void libwayland_shim_proxy_invoke_dispatcher(struct wl_proxy* proxy, uint32_t opcode, ...) {
+    // This should be possible to implement if needed, but not much seems to use dispatchers
+    fprintf(
+        stderr,
+        "libwayland_shim: invoking event %s@%d.%s: dispatchers not currently supported for client objects\n",
+        proxy->object.interface->name,
+        proxy->object.id,
+        proxy->object.interface->methods[opcode].name
+    );
 }
 
 void const* libwayland_shim_proxy_get_implementation(struct wl_proxy* proxy) {
