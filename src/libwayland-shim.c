@@ -47,12 +47,12 @@ static void libwayland_shim_init() {
         real_libwayland_handle = dlopen("libwayland-client.so", RTLD_LAZY);
     }
     if (real_libwayland_handle == NULL) {
-        fprintf(stderr, "libwayland_shim: failed to dlopen libwayland");
+        fprintf(stderr, "libwayland_shim: failed to dlopen libwayland\n");
     }
 
 #define INIT_SYM(name) \
     if (!(real_##name = dlsym(real_libwayland_handle, #name))) {\
-        fprintf(stderr, "libwayland_shim: dlsym failed to load %s", #name); \
+        fprintf(stderr, "libwayland_shim: dlsym failed to load %s\n", #name); \
     }
 
     INIT_SYM(wl_proxy_marshal_array_flags);
@@ -225,7 +225,8 @@ int wl_proxy_add_dispatcher(
 ) {
     libwayland_shim_init();
     if (proxy->object.id == client_facing_proxy_id) {
-        fprintf(stderr, "libwayland_shim: wl_proxy_add_dispatcher() not supported for client-facing proxies");
+        // This could be supported in the future, but so far has not been needed
+        fprintf(stderr, "libwayland_shim: wl_proxy_add_dispatcher() not supported for client-facing proxies\n");
     }
     return real_wl_proxy_add_dispatcher(proxy, dispatcher_func, dispatcher_data, data);
 }
