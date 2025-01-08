@@ -80,15 +80,6 @@ enum zwlr_layer_shell_v1_layer gtk_layer_shell_layer_get_zwlr_layer_shell_v1_lay
     }
 }
 
-uint32_t gtk_layer_shell_edge_array_get_zwlr_layer_shell_v1_anchor(gboolean edges[GTK_LAYER_SHELL_EDGE_ENTRY_NUMBER]) {
-    uint32_t anchor = 0;
-    if (edges[GTK_LAYER_SHELL_EDGE_LEFT])   anchor |= ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT;
-    if (edges[GTK_LAYER_SHELL_EDGE_RIGHT])  anchor |= ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
-    if (edges[GTK_LAYER_SHELL_EDGE_TOP])    anchor |= ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP;
-    if (edges[GTK_LAYER_SHELL_EDGE_BOTTOM]) anchor |= ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
-    return anchor;
-}
-
 enum xdg_positioner_gravity gdk_gravity_get_xdg_positioner_gravity(GdkGravity gravity) {
     switch (gravity) {
     case GDK_GRAVITY_NORTH_WEST:    return XDG_POSITIONER_GRAVITY_BOTTOM_RIGHT;

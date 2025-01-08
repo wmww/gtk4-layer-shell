@@ -8,6 +8,10 @@ struct wl_surface;
 struct xdg_surface;
 struct xdg_positioner;
 
+struct geom_edges_t {
+    int left, right, top, bottom;
+};
+
 typedef struct _LayerSurface LayerSurface;
 
 // Functions that mutate this structure should all be in layer-surface.c to make the logic easier to understand
@@ -16,10 +20,10 @@ struct _LayerSurface {
     GtkWindow* gtk_window;
 
     // Can be set at any time
-    gboolean anchors[GTK_LAYER_SHELL_EDGE_ENTRY_NUMBER]; // The current anchor
-    int margins[GTK_LAYER_SHELL_EDGE_ENTRY_NUMBER]; // The current margins
+    struct geom_edges_t anchored; // Logically booleans, the edges of the output this layer surface is currently anchored to
+    struct geom_edges_t margin_size; // The gap between each edge of the output and this layer surface (only applicable for anchored edges)
     int exclusive_zone; // The current exclusive zone(set either explicitly or automatically)
-    gboolean auto_exclusive_zone; // If to automatically change the exclusive zone to match the window size
+    bool auto_exclusive_zone; // If to automatically change the exclusive zone to match the window size
     GtkLayerShellKeyboardMode keyboard_mode; // Type of keyboard interactivity enabled for this surface
     GtkLayerShellLayer layer; // The current layer, needs surface recreation on old layer shell versions
 
@@ -50,8 +54,8 @@ void layer_surface_set_name_space(LayerSurface* self, char const* name_space); /
 
 // Can be set without remapping the surface
 void layer_surface_set_layer(LayerSurface* self, GtkLayerShellLayer layer); // Remaps surface on old layer shell versions
-void layer_surface_set_anchor(LayerSurface* self, GtkLayerShellEdge edge, gboolean anchor_to_edge);
-void layer_surface_set_margin(LayerSurface* self, GtkLayerShellEdge edge, int margin_size);
+void layer_surface_set_anchor(LayerSurface* self, struct geom_edges_t anchors); // anchor values are treated as booleans
+void layer_surface_set_margin(LayerSurface* self, struct geom_edges_t margins);
 void layer_surface_set_exclusive_zone(LayerSurface* self, int exclusive_zone);
 void layer_surface_auto_exclusive_zone_enable(LayerSurface* self);
 void layer_surface_set_keyboard_mode(LayerSurface* self, GtkLayerShellKeyboardMode mode);

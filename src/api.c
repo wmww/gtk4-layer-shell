@@ -96,27 +96,53 @@ GdkMonitor * gtk_layer_get_monitor(GtkWindow* window) {
 void gtk_layer_set_anchor(GtkWindow* window, GtkLayerShellEdge edge, gboolean anchor_to_edge) {
     LayerSurface* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return;
-    layer_surface_set_anchor(layer_surface, edge, anchor_to_edge);
+    struct geom_edges_t anchored = layer_surface->anchored;
+    switch (edge) {
+        case GTK_LAYER_SHELL_EDGE_LEFT:   anchored.left   = anchor_to_edge; break;
+        case GTK_LAYER_SHELL_EDGE_RIGHT:  anchored.right  = anchor_to_edge; break;
+        case GTK_LAYER_SHELL_EDGE_TOP:    anchored.top    = anchor_to_edge; break;
+        case GTK_LAYER_SHELL_EDGE_BOTTOM: anchored.bottom = anchor_to_edge; break;
+        default: g_warning("Invalid GtkLayerShellEdge %d", edge);
+    }
+    layer_surface_set_anchor(layer_surface, anchored);
 }
 
 gboolean gtk_layer_get_anchor(GtkWindow* window, GtkLayerShellEdge edge) {
     LayerSurface* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return FALSE;
-    g_return_val_if_fail(edge >= 0 && edge < GTK_LAYER_SHELL_EDGE_ENTRY_NUMBER, FALSE);
-    return layer_surface->anchors[edge];
+    switch (edge) {
+        case GTK_LAYER_SHELL_EDGE_LEFT:   return layer_surface->anchored.left;
+        case GTK_LAYER_SHELL_EDGE_RIGHT:  return layer_surface->anchored.right;
+        case GTK_LAYER_SHELL_EDGE_TOP:    return layer_surface->anchored.top;
+        case GTK_LAYER_SHELL_EDGE_BOTTOM: return layer_surface->anchored.bottom;
+        default: g_warning("Invalid GtkLayerShellEdge %d", edge); return FALSE;
+    }
 }
 
 void gtk_layer_set_margin(GtkWindow* window, GtkLayerShellEdge edge, int margin_size) {
     LayerSurface* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return;
-    layer_surface_set_margin(layer_surface, edge, margin_size);
+    struct geom_edges_t margins = layer_surface->margin_size;
+    switch (edge) {
+        case GTK_LAYER_SHELL_EDGE_LEFT:   margins.left   = margin_size; break;
+        case GTK_LAYER_SHELL_EDGE_RIGHT:  margins.right  = margin_size; break;
+        case GTK_LAYER_SHELL_EDGE_TOP:    margins.top    = margin_size; break;
+        case GTK_LAYER_SHELL_EDGE_BOTTOM: margins.bottom = margin_size; break;
+        default: g_warning("Invalid GtkLayerShellEdge %d", edge);
+    }
+    layer_surface_set_margin(layer_surface, margins);
 }
 
 int gtk_layer_get_margin(GtkWindow* window, GtkLayerShellEdge edge) {
     LayerSurface* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return 0;
-    g_return_val_if_fail(edge >= 0 && edge < GTK_LAYER_SHELL_EDGE_ENTRY_NUMBER, FALSE);
-    return layer_surface->margins[edge];
+    switch (edge) {
+        case GTK_LAYER_SHELL_EDGE_LEFT:   return layer_surface->margin_size.left;
+        case GTK_LAYER_SHELL_EDGE_RIGHT:  return layer_surface->margin_size.right;
+        case GTK_LAYER_SHELL_EDGE_TOP:    return layer_surface->margin_size.top;
+        case GTK_LAYER_SHELL_EDGE_BOTTOM: return layer_surface->margin_size.bottom;
+        default: g_warning("Invalid GtkLayerShellEdge %d", edge); return 0;
+    }
 }
 
 void gtk_layer_set_exclusive_zone(GtkWindow* window, int exclusive_zone) {

@@ -41,19 +41,15 @@ static void layer_surface_send_set_size(LayerSurface* self) {
         layer_surface_get_preferred_size(self, &width, &height);
     }
 
-    if (self->anchors[GTK_LAYER_SHELL_EDGE_LEFT] &&
-        self->anchors[GTK_LAYER_SHELL_EDGE_RIGHT]
-    ) {
+    if (self->anchored.left && self->anchored.right) {
         width = 0;
     }
 
-    if (self->anchors[GTK_LAYER_SHELL_EDGE_TOP] &&
-        self->anchors[GTK_LAYER_SHELL_EDGE_BOTTOM]
-    ) {
+    if (self->anchored.top && self->anchored.bottom) {
         height = 0;
     }
 
-    if (self->cached_layer_size_set.width != width ||
+    if (self->cached_layer_size_set.width  != width ||
         self->cached_layer_size_set.height != height
     ) {
         self->cached_layer_size_set = (GtkRequisition){width, height};
@@ -73,17 +69,11 @@ static void layer_surface_configure_xdg_surface(
     int width, height;
     layer_surface_get_preferred_size(self, &width, &height);
 
-    if (self->anchors[GTK_LAYER_SHELL_EDGE_LEFT] &&
-        self->anchors[GTK_LAYER_SHELL_EDGE_RIGHT] &&
-        self->last_layer_configured_size.width
-    ) {
+    if (self->anchored.left && self->anchored.right && self->last_layer_configured_size.width) {
         width = self->last_layer_configured_size.width;
     }
 
-    if (self->anchors[GTK_LAYER_SHELL_EDGE_TOP] &&
-        self->anchors[GTK_LAYER_SHELL_EDGE_BOTTOM] &&
-        self->last_layer_configured_size.height
-    ) {
+    if (self->anchored.top && self->anchored.bottom && self->last_layer_configured_size.height) {
         height = self->last_layer_configured_size.height;
     }
 
@@ -162,8 +152,13 @@ static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
 
 static void layer_surface_send_set_anchor(LayerSurface* self) {
     if (self->layer_surface) {
-        uint32_t wlr_anchor = gtk_layer_shell_edge_array_get_zwlr_layer_shell_v1_anchor(self->anchors);
-        zwlr_layer_surface_v1_set_anchor(self->layer_surface, wlr_anchor);
+        zwlr_layer_surface_v1_set_anchor(
+            self->layer_surface,
+            (self->anchored.left   ? ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT   : 0) |
+            (self->anchored.right  ? ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT  : 0) |
+            (self->anchored.top    ? ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP    : 0) |
+            (self->anchored.bottom ? ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM : 0)
+        );
     }
 }
 
@@ -171,10 +166,10 @@ static void layer_surface_send_set_margin(LayerSurface* self) {
     if (self->layer_surface) {
         zwlr_layer_surface_v1_set_margin(
             self->layer_surface,
-            self->margins[GTK_LAYER_SHELL_EDGE_TOP],
-            self->margins[GTK_LAYER_SHELL_EDGE_RIGHT],
-            self->margins[GTK_LAYER_SHELL_EDGE_BOTTOM],
-            self->margins[GTK_LAYER_SHELL_EDGE_LEFT]
+            self->margin_size.top,
+            self->margin_size.right,
+            self->margin_size.bottom,
+            self->margin_size.left
         );
     }
 }
@@ -240,27 +235,27 @@ static void layer_surface_destroy(LayerSurface* self) {
 static void layer_surface_update_auto_exclusive_zone(LayerSurface* self) {
     if (!self->auto_exclusive_zone) return;
 
-    gboolean horiz = (self->anchors[GTK_LAYER_SHELL_EDGE_LEFT] == self->anchors[GTK_LAYER_SHELL_EDGE_RIGHT]);
-    gboolean vert  = (self->anchors[GTK_LAYER_SHELL_EDGE_TOP] == self->anchors[GTK_LAYER_SHELL_EDGE_BOTTOM]);
+    gboolean horiz = (self->anchored.left == self->anchored.right);
+    gboolean vert  = (self->anchored.top  == self->anchored.bottom);
     int new_exclusive_zone = -1;
 
     int window_width  = gtk_widget_get_width(GTK_WIDGET(self->gtk_window));
     int window_height = gtk_widget_get_height(GTK_WIDGET(self->gtk_window));
     if (horiz && !vert) {
         new_exclusive_zone = window_height;
-        if (!self->anchors[GTK_LAYER_SHELL_EDGE_TOP]) {
-            new_exclusive_zone += self->margins[GTK_LAYER_SHELL_EDGE_TOP];
+        if (!self->anchored.top) {
+            new_exclusive_zone += self->margin_size.top;
         }
-        if (!self->anchors[GTK_LAYER_SHELL_EDGE_BOTTOM]) {
-            new_exclusive_zone += self->margins[GTK_LAYER_SHELL_EDGE_BOTTOM];
+        if (!self->anchored.bottom) {
+            new_exclusive_zone += self->margin_size.bottom;
         }
     } else if (vert && !horiz) {
         new_exclusive_zone = window_width;
-        if (!self->anchors[GTK_LAYER_SHELL_EDGE_LEFT]) {
-            new_exclusive_zone += self->margins[GTK_LAYER_SHELL_EDGE_LEFT];
+        if (!self->anchored.left) {
+            new_exclusive_zone += self->margin_size.left;
         }
-        if (!self->anchors[GTK_LAYER_SHELL_EDGE_RIGHT]) {
-            new_exclusive_zone += self->margins[GTK_LAYER_SHELL_EDGE_RIGHT];
+        if (!self->anchored.right) {
+            new_exclusive_zone += self->margin_size.right;
         }
     }
 
@@ -364,11 +359,19 @@ void layer_surface_set_layer(LayerSurface* self, GtkLayerShellLayer layer) {
     }
 }
 
-void layer_surface_set_anchor(LayerSurface* self, GtkLayerShellEdge edge, gboolean anchor_to_edge) {
-    g_return_if_fail(edge >= 0 && edge < GTK_LAYER_SHELL_EDGE_ENTRY_NUMBER);
-    anchor_to_edge = (anchor_to_edge != FALSE);
-    if (anchor_to_edge != self->anchors[edge]) {
-        self->anchors[edge] = anchor_to_edge;
+void layer_surface_set_anchor(LayerSurface* self, struct geom_edges_t anchors) {
+    // Normalize booleans or else strange things can happen
+    anchors.left   = anchors.left   ? 1 : 0;
+    anchors.right  = anchors.right  ? 1 : 0;
+    anchors.top    = anchors.top    ? 1 : 0;
+    anchors.bottom = anchors.bottom ? 1 : 0;
+
+    if (self->anchored.left   != anchors.left ||
+        self->anchored.right  != anchors.right ||
+        self->anchored.top    != anchors.top   ||
+        self->anchored.bottom != anchors.bottom
+    ) {
+        self->anchored = anchors;
         if (self->layer_surface) {
             layer_surface_send_set_anchor(self);
             layer_surface_send_set_size(self);
@@ -379,10 +382,13 @@ void layer_surface_set_anchor(LayerSurface* self, GtkLayerShellEdge edge, gboole
     }
 }
 
-void layer_surface_set_margin(LayerSurface* self, GtkLayerShellEdge edge, int margin_size) {
-    g_return_if_fail(edge >= 0 && edge < GTK_LAYER_SHELL_EDGE_ENTRY_NUMBER);
-    if (margin_size != self->margins[edge]) {
-        self->margins[edge] = margin_size;
+void layer_surface_set_margin(LayerSurface* self, struct geom_edges_t margins) {
+    if (self->margin_size.left   != margins.left ||
+        self->margin_size.right  != margins.right ||
+        self->margin_size.top    != margins.top   ||
+        self->margin_size.bottom != margins.bottom
+    ) {
+        self->margin_size = margins;
         layer_surface_send_set_margin(self);
         layer_surface_update_auto_exclusive_zone(self);
         layer_surface_needs_commit(self);
