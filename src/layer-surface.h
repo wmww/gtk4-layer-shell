@@ -12,6 +12,10 @@ struct geom_edges_t {
     int left, right, top, bottom;
 };
 
+struct geom_size_t {
+    int width, height;
+};
+
 typedef struct _LayerSurface LayerSurface;
 
 // Functions that mutate this structure should all be in layer-surface.c to make the logic easier to understand
@@ -33,9 +37,9 @@ struct _LayerSurface {
 
     // Not set by user requests
     struct zwlr_layer_surface_v1* layer_surface; // The actual layer surface Wayland object(can be NULL)
-    GtkRequisition cached_xdg_configure_size; // The last size we configured GTK's XDG surface with
-    GtkRequisition cached_layer_size_set; // The last size we set the layer surface to with the compositor
-    GtkRequisition last_layer_configured_size; // The last size our layer surface received from the compositor
+    struct geom_size_t cached_xdg_configure_size; // The last size we configured GTK's XDG surface with
+    struct geom_size_t cached_layer_size_set; // The last size we set the layer surface to with the compositor
+    struct geom_size_t last_layer_configured_size; // The last size our layer surface received from the compositor
     uint32_t pending_configure_serial; // If non-zero our layer surface received a configure with this serial, we passed
       // it on to GTK's XDG surface and will ack it once GTK acks it's configure. Otherwise this is zero, all acks from
       // GTK can be ignored(they are for configures not originating from the compositor)

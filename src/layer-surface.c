@@ -52,7 +52,7 @@ static void layer_surface_send_set_size(LayerSurface* self) {
     if (self->cached_layer_size_set.width  != width ||
         self->cached_layer_size_set.height != height
     ) {
-        self->cached_layer_size_set = (GtkRequisition){width, height};
+        self->cached_layer_size_set = (struct geom_size_t){width, height};
         zwlr_layer_surface_v1_set_size(self->layer_surface, width, height);
     }
 }
@@ -88,7 +88,7 @@ static void layer_surface_configure_xdg_surface(
         self->cached_xdg_configure_size.height != height ||
         send_even_if_size_unchanged
     ) {
-        self->cached_xdg_configure_size = (GtkRequisition){width, height};
+        self->cached_xdg_configure_size = (struct geom_size_t){width, height};
         if (serial) {
             self->pending_configure_serial = serial;
         }
@@ -134,7 +134,7 @@ static void layer_surface_handle_configure(
 ) {
     (void)surface;
     LayerSurface* self = data;
-    self->last_layer_configured_size = (GtkRequisition){w, h};
+    self->last_layer_configured_size = (struct geom_size_t){w, h};
     self->has_initial_layer_shell_configure = true;
     layer_surface_configure_xdg_surface(self, serial, TRUE);
 }
@@ -217,9 +217,9 @@ static void layer_surface_unmap(LayerSurface* super) {
     self->client_facing_xdg_toplevel = NULL;
     self->has_initial_layer_shell_configure = false;
 
-    self->cached_xdg_configure_size = (GtkRequisition){-1, -1};
-    self->cached_layer_size_set = (GtkRequisition){-1, -1};
-    self->last_layer_configured_size = (GtkRequisition){0, 0};
+    self->cached_xdg_configure_size = (struct geom_size_t){-1, -1};
+    self->cached_layer_size_set = (struct geom_size_t){-1, -1};
+    self->last_layer_configured_size = (struct geom_size_t){0, 0};
     self->pending_configure_serial = 0;
 }
 
@@ -297,8 +297,8 @@ LayerSurface* layer_surface_new(GtkWindow* gtk_window) {
     }
 
     LayerSurface* self = g_new0(LayerSurface, 1);
-    self->cached_xdg_configure_size = (GtkRequisition){-1, -1};
-    self->cached_layer_size_set = (GtkRequisition){-1, -1};
+    self->cached_xdg_configure_size = (struct geom_size_t){-1, -1};
+    self->cached_layer_size_set = (struct geom_size_t){-1, -1};
     self->has_initial_layer_shell_configure = false;
     all_layer_surfaces = g_list_append(all_layer_surfaces, self);
 
