@@ -36,10 +36,10 @@ G_BEGIN_DECLS
  * future releases as more entries are added)
  */
 typedef enum {
-    GTK_LAYER_SHELL_LAYER_BACKGROUND,
-    GTK_LAYER_SHELL_LAYER_BOTTOM,
-    GTK_LAYER_SHELL_LAYER_TOP,
-    GTK_LAYER_SHELL_LAYER_OVERLAY,
+    GTK_LAYER_SHELL_LAYER_BACKGROUND = 0,
+    GTK_LAYER_SHELL_LAYER_BOTTOM = 1,
+    GTK_LAYER_SHELL_LAYER_TOP = 2,
+    GTK_LAYER_SHELL_LAYER_OVERLAY = 3,
     GTK_LAYER_SHELL_LAYER_ENTRY_NUMBER, // Should not be used except to get the number of entries
 } GtkLayerShellLayer;
 

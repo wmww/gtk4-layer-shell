@@ -24,8 +24,8 @@ struct _LayerSurface {
     struct geom_edges_t margin_size; // The gap between each edge of the output and this layer surface (only applicable for anchored edges)
     int exclusive_zone; // The current exclusive zone(set either explicitly or automatically)
     bool auto_exclusive_zone; // If to automatically change the exclusive zone to match the window size
-    GtkLayerShellKeyboardMode keyboard_mode; // Type of keyboard interactivity enabled for this surface
-    GtkLayerShellLayer layer; // The current layer, needs surface recreation on old layer shell versions
+    enum zwlr_layer_surface_v1_keyboard_interactivity keyboard_mode; // Type of keyboard interactivity enabled for this surface
+    enum zwlr_layer_shell_v1_layer layer; // The current layer, needs surface recreation on old layer shell versions
 
     // Need the surface to be recreated to change
     GdkMonitor* monitor; // Can be null
@@ -53,12 +53,12 @@ void layer_surface_set_monitor(LayerSurface* self, GdkMonitor* monitor); // Can 
 void layer_surface_set_name_space(LayerSurface* self, char const* name_space); // Makes a copy of the string, can be null
 
 // Can be set without remapping the surface
-void layer_surface_set_layer(LayerSurface* self, GtkLayerShellLayer layer); // Remaps surface on old layer shell versions
+void layer_surface_set_layer(LayerSurface* self, enum zwlr_layer_shell_v1_layer layer); // Remaps surface on old layer shell versions
 void layer_surface_set_anchor(LayerSurface* self, struct geom_edges_t anchors); // anchor values are treated as booleans
 void layer_surface_set_margin(LayerSurface* self, struct geom_edges_t margins);
 void layer_surface_set_exclusive_zone(LayerSurface* self, int exclusive_zone);
 void layer_surface_auto_exclusive_zone_enable(LayerSurface* self);
-void layer_surface_set_keyboard_mode(LayerSurface* self, GtkLayerShellKeyboardMode mode);
+void layer_surface_set_keyboard_mode(LayerSurface* self, enum zwlr_layer_surface_v1_keyboard_interactivity mode);
 
 // Returns the effective namespace(default if unset). Does not return ownership. Never returns NULL. Handles NULL self.
 const char* layer_surface_get_namespace(LayerSurface* self);

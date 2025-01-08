@@ -185,13 +185,12 @@ static void layer_surface_create_surface_object(LayerSurface* self, struct wl_su
         output = gdk_wayland_monitor_get_wl_output(self->monitor);
     }
 
-    enum zwlr_layer_shell_v1_layer layer = gtk_layer_shell_layer_get_zwlr_layer_shell_v1_layer(self->layer);
     self->has_initial_layer_shell_configure = false;
     self->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
         layer_shell_global,
         wl_surface,
         output,
-        layer,
+        self->layer,
         name_space);
     g_return_if_fail(self->layer_surface);
     zwlr_layer_surface_v1_add_listener(self->layer_surface, &layer_surface_listener, self);
@@ -307,8 +306,8 @@ LayerSurface* layer_surface_new(GtkWindow* gtk_window) {
 
     g_object_set_data_full(G_OBJECT(gtk_window), layer_surface_key, self, (GDestroyNotify)layer_surface_destroy);
 
-    self->layer = GTK_LAYER_SHELL_LAYER_TOP;
-    self->keyboard_mode = GTK_LAYER_SHELL_KEYBOARD_MODE_NONE;
+    self->layer = ZWLR_LAYER_SHELL_V1_LAYER_TOP;
+    self->keyboard_mode = ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE;
 
     gtk_window_set_decorated(gtk_window, FALSE);
     g_signal_connect(gtk_window, "notify::default-width", G_CALLBACK(layer_surface_on_default_size_set), self);
@@ -343,14 +342,13 @@ void layer_surface_set_name_space(LayerSurface* self, char const* name_space) {
     }
 }
 
-void layer_surface_set_layer(LayerSurface* self, GtkLayerShellLayer layer) {
+void layer_surface_set_layer(LayerSurface* self, enum zwlr_layer_shell_v1_layer layer) {
     if (self->layer != layer) {
         self->layer = layer;
         if (self->layer_surface) {
             uint32_t version = zwlr_layer_surface_v1_get_version(self->layer_surface);
             if (version >= ZWLR_LAYER_SURFACE_V1_SET_LAYER_SINCE_VERSION) {
-                enum zwlr_layer_shell_v1_layer wlr_layer = gtk_layer_shell_layer_get_zwlr_layer_shell_v1_layer(layer);
-                zwlr_layer_surface_v1_set_layer(self->layer_surface, wlr_layer);
+                zwlr_layer_surface_v1_set_layer(self->layer_surface, layer);
                 layer_surface_needs_commit(self);
             } else {
                 layer_surface_remap(self);
@@ -416,14 +414,14 @@ void layer_surface_auto_exclusive_zone_enable(LayerSurface* self) {
     }
 }
 
-void layer_surface_set_keyboard_mode(LayerSurface* self, GtkLayerShellKeyboardMode mode) {
-    if (mode == GTK_LAYER_SHELL_KEYBOARD_MODE_ON_DEMAND) {
+void layer_surface_set_keyboard_mode(LayerSurface* self, enum zwlr_layer_surface_v1_keyboard_interactivity mode) {
+    if (mode == ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND) {
         uint32_t version = gtk_layer_get_protocol_version();
-        if (version <= 3) {
+        if (version < ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND_SINCE_VERSION) {
             g_warning(
                 "Compositor uses layer shell version %d, which does not support on-demand keyboard interactivity",
                 version);
-            mode = GTK_LAYER_SHELL_KEYBOARD_MODE_NONE;
+            mode = ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE;
         }
     }
     if (self->keyboard_mode != mode) {

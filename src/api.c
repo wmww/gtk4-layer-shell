@@ -70,15 +70,18 @@ const char* gtk_layer_get_namespace(GtkWindow* window) {
 }
 
 void gtk_layer_set_layer(GtkWindow* window, GtkLayerShellLayer layer) {
+    g_return_if_fail(layer >= 0 && layer < GTK_LAYER_SHELL_LAYER_ENTRY_NUMBER);
     LayerSurface* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return;
-    layer_surface_set_layer(layer_surface, layer);
+    // Our keyboard interactivity enum matches the layer shell one
+    layer_surface_set_layer(layer_surface, (enum zwlr_layer_shell_v1_layer)layer);
 }
 
 GtkLayerShellLayer gtk_layer_get_layer(GtkWindow* window) {
     LayerSurface* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return GTK_LAYER_SHELL_LAYER_TOP;
-    return layer_surface->layer;
+    // Our keyboard interactivity enum matches the layer shell one
+    return (GtkLayerShellLayer)layer_surface->layer;
 }
 
 void gtk_layer_set_monitor(GtkWindow* window, GdkMonitor* monitor) {
@@ -170,14 +173,16 @@ gboolean gtk_layer_auto_exclusive_zone_is_enabled(GtkWindow* window) {
 }
 
 void gtk_layer_set_keyboard_mode(GtkWindow* window, GtkLayerShellKeyboardMode mode) {
-    g_return_if_fail(mode < GTK_LAYER_SHELL_KEYBOARD_MODE_ENTRY_NUMBER);
+    g_return_if_fail(mode >= 0 && mode < GTK_LAYER_SHELL_KEYBOARD_MODE_ENTRY_NUMBER);
     LayerSurface* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return;
-    layer_surface_set_keyboard_mode(layer_surface, mode);
+    // Our keyboard interactivity enum matches the layer shell one
+    layer_surface_set_keyboard_mode(layer_surface, (enum zwlr_layer_surface_v1_keyboard_interactivity)mode);
 }
 
 GtkLayerShellKeyboardMode gtk_layer_get_keyboard_mode(GtkWindow* window) {
     LayerSurface* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return GTK_LAYER_SHELL_KEYBOARD_MODE_NONE;
-    return layer_surface->keyboard_mode;
+    // Our keyboard interactivity enum matches the layer shell one
+    return (GtkLayerShellKeyboardMode)layer_surface->keyboard_mode;
 }
