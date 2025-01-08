@@ -87,13 +87,20 @@ GtkLayerShellLayer gtk_layer_get_layer(GtkWindow* window) {
 void gtk_layer_set_monitor(GtkWindow* window, GdkMonitor* monitor) {
     LayerSurface* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return;
-    layer_surface_set_monitor(layer_surface, monitor);
+    struct wl_output* output = NULL;
+    if (monitor) {
+        g_return_if_fail(GDK_IS_WAYLAND_MONITOR(monitor));
+        output = gdk_wayland_monitor_get_wl_output(monitor);
+        g_return_if_fail(output);
+    }
+    layer_surface_set_output(layer_surface, output);
 }
 
 GdkMonitor * gtk_layer_get_monitor(GtkWindow* window) {
     LayerSurface* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return NULL;
-    return layer_surface->monitor;
+    // TODO
+    return NULL;
 }
 
 void gtk_layer_set_anchor(GtkWindow* window, GtkLayerShellEdge edge, gboolean anchor_to_edge) {

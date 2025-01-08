@@ -180,16 +180,11 @@ static void layer_surface_create_surface_object(LayerSurface* self, struct wl_su
 
     const char* name_space = layer_surface_get_namespace(self);
 
-    struct wl_output* output = NULL;
-    if (self->monitor) {
-        output = gdk_wayland_monitor_get_wl_output(self->monitor);
-    }
-
     self->has_initial_layer_shell_configure = false;
     self->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
         layer_shell_global,
         wl_surface,
-        output,
+        self->output,
         self->layer,
         name_space);
     g_return_if_fail(self->layer_surface);
@@ -320,12 +315,9 @@ LayerSurface* layer_surface_new(GtkWindow* gtk_window) {
     return self;
 }
 
-void layer_surface_set_monitor(LayerSurface* self, GdkMonitor* monitor) {
-    if (monitor) {
-        g_return_if_fail(GDK_IS_WAYLAND_MONITOR(monitor));
-    }
-    if (monitor != self->monitor) {
-        self->monitor = monitor;
+void layer_surface_set_output(LayerSurface* self, struct wl_output* output) {
+    if (self->output != output) {
+        self->output = output;
         if (self->layer_surface) {
             layer_surface_remap(self);
         }

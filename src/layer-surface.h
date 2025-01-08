@@ -32,7 +32,7 @@ struct _LayerSurface {
     enum zwlr_layer_shell_v1_layer layer; // The current layer, needs surface recreation on old layer shell versions
 
     // Need the surface to be recreated to change
-    GdkMonitor* monitor; // Can be null
+    struct wl_output* output; // Can be null
     const char* name_space; // Can be null, freed on destruction
 
     // Not set by user requests
@@ -53,7 +53,7 @@ LayerSurface* layer_surface_new(GtkWindow* gtk_window);
 LayerSurface* gtk_window_get_layer_surface(GtkWindow* gtk_window);
 
 // Surface is remapped in order to set
-void layer_surface_set_monitor(LayerSurface* self, GdkMonitor* monitor); // Can be null for default
+void layer_surface_set_output(LayerSurface* self, struct wl_output* output); // Can be null for default
 void layer_surface_set_name_space(LayerSurface* self, char const* name_space); // Makes a copy of the string, can be null
 
 // Can be set without remapping the surface
