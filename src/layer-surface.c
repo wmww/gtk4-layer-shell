@@ -66,7 +66,7 @@ static void layer_surface_configure_xdg_surface(
         return;
     }
 
-    int width, height;
+    int width = 0, height = 0;
     layer_surface_get_preferred_size(self, &width, &height);
 
     if (self->anchored.left && self->anchored.right && self->last_layer_configured_size.width) {
