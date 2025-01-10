@@ -29,8 +29,8 @@ static void layer_surface_get_preferred_size(struct layer_surface_t* self, int* 
 static void layer_surface_send_set_size(struct layer_surface_t* self) {
     g_return_if_fail(self->layer_surface);
 
-    int width  = gtk_widget_get_width (GTK_WIDGET(self->gtk_window));
-    int height = gtk_widget_get_height(GTK_WIDGET(self->gtk_window));
+    int width = self->cached_xdg_configure_size.width == -1 ? 0 : self->cached_xdg_configure_size.width;
+    int height = self->cached_xdg_configure_size.width == -1 ? 0 : self->cached_xdg_configure_size.height;
     if (!width || !height) {
         layer_surface_get_preferred_size(self, &width, &height);
     }
@@ -221,8 +221,12 @@ static void layer_surface_update_auto_exclusive_zone(struct layer_surface_t* sel
     gboolean vert  = (self->anchored.top  == self->anchored.bottom);
     int new_exclusive_zone = -1;
 
-    int window_width  = gtk_widget_get_width(GTK_WIDGET(self->gtk_window));
-    int window_height = gtk_widget_get_height(GTK_WIDGET(self->gtk_window));
+    int window_width = self->cached_xdg_configure_size.width == -1 ? 0 : self->cached_xdg_configure_size.width;
+    int window_height = self->cached_xdg_configure_size.width == -1 ? 0 : self->cached_xdg_configure_size.height;
+    if (!window_width || !window_height) {
+        layer_surface_get_preferred_size(self, &window_width, &window_height);
+    }
+
     if (horiz && !vert) {
         new_exclusive_zone = window_height;
         if (!self->anchored.top) {
