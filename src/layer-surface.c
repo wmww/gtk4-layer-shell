@@ -16,10 +16,8 @@ static struct layer_surface_t* default_get_layer_surface_for_wl_surface(struct w
 struct layer_surface_t* (*get_layer_surface_for_wl_surface)(struct wl_surface* wl_surface)
     = default_get_layer_surface_for_wl_surface;
 
-static void layer_surface_send_set_size(struct layer_surface_t* self) {
-    if (!self->layer_surface) return;
-
-    struct geom_size_t size = {
+static struct geom_size_t layer_surface_get_effective_size(struct layer_surface_t* self) {
+    return (struct geom_size_t) {
         self->cached_xdg_configure_size.width == -1 ?
             (self->preferred_size.width == -1 ? 400 : self->preferred_size.width) :
             self->cached_xdg_configure_size.width,
@@ -27,6 +25,12 @@ static void layer_surface_send_set_size(struct layer_surface_t* self) {
             (self->preferred_size.height == -1 ? 400 : self->preferred_size.height) :
             self->cached_xdg_configure_size.height,
     };
+}
+
+static void layer_surface_send_set_size(struct layer_surface_t* self) {
+    if (!self->layer_surface) return;
+
+    struct geom_size_t size = layer_surface_get_effective_size(self);
 
     if (self->anchored.left && self->anchored.right) {
         size.width = 0;
@@ -219,14 +223,7 @@ static void layer_surface_update_auto_exclusive_zone(struct layer_surface_t* sel
     bool vert  = (self->anchored.top  == self->anchored.bottom);
     int new_exclusive_zone = -1;
 
-    struct geom_size_t window_size = {
-        self->cached_xdg_configure_size.width == -1 ?
-            (self->preferred_size.width == -1 ? 400 : self->preferred_size.width) :
-            self->cached_xdg_configure_size.width,
-        self->cached_xdg_configure_size.height == -1 ?
-            (self->preferred_size.height == -1 ? 400 : self->preferred_size.height) :
-            self->cached_xdg_configure_size.height,
-    };
+    struct geom_size_t window_size = layer_surface_get_effective_size(self);
 
     if (horiz && !vert) {
         new_exclusive_zone = window_size.height;
