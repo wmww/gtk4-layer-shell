@@ -9,6 +9,7 @@ static GList* all_layer_surfaces = NULL;
 
 typedef struct {
     struct layer_surface_t super;
+    GtkWindow* gtk_window;
     GdkMonitor* monitor;
 } LayerSurface;
 
@@ -63,7 +64,7 @@ static void layer_surface_destroy(LayerSurface* self) {
 }
 
 static gint find_layer_surface_with_wl_surface(gconstpointer layer_surface, gconstpointer needle) {
-    struct layer_surface_t const* self = layer_surface;
+    LayerSurface* self = (LayerSurface*)layer_surface;
     GdkSurface* gdk_surface = gtk_native_get_surface(GTK_NATIVE(self->gtk_window));
     if (!gdk_surface) return 1;
     struct wl_surface* wl_surface = gdk_wayland_surface_get_wl_surface(gdk_surface);
@@ -81,10 +82,10 @@ static struct layer_surface_t* get_layer_surface_for_wl_surface_impl(struct wl_s
 
 static void layer_surface_update_preferred_size(LayerSurface* self) {
     struct geom_size_t size = {0};
-    gtk_window_get_default_size(self->super.gtk_window, &size.width, &size.height);
+    gtk_window_get_default_size(self->gtk_window, &size.width, &size.height);
 
     GtkRequisition natural;
-    gtk_widget_get_preferred_size(GTK_WIDGET(self->super.gtk_window), NULL, &natural);
+    gtk_widget_get_preferred_size(GTK_WIDGET(self->gtk_window), NULL, &natural);
 
     if (!size.width)  size.width  = natural.width;
     if (!size.height) size.height = natural.height;
@@ -101,7 +102,8 @@ static void layer_surface_on_default_size_set(
     layer_surface_update_preferred_size((LayerSurface*)layer_surface);
 }
 
-static void layer_surface_remap_impl(struct layer_surface_t* self) {
+static void layer_surface_remap_impl(struct layer_surface_t* super) {
+    LayerSurface* self = (LayerSurface*)super;
     gtk_widget_unrealize(GTK_WIDGET(self->gtk_window));
     gtk_widget_map(GTK_WIDGET(self->gtk_window));
 }
@@ -134,9 +136,9 @@ void gtk_layer_init_for_window(GtkWindow* window) {
     }
 
     LayerSurface* layer_surface = g_new0(LayerSurface, 1);
+    layer_surface->gtk_window = window;
     layer_surface->super = layer_surface_make();
     layer_surface->super.remap = layer_surface_remap_impl;
-    layer_surface->super.gtk_window = window;
     layer_surface_update_preferred_size(layer_surface);
     g_object_set_data_full(G_OBJECT(window), layer_surface_key, layer_surface, (GDestroyNotify)layer_surface_destroy);
 

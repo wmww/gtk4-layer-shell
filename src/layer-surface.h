@@ -19,8 +19,6 @@ struct geom_size_t {
 // Functions that mutate this structure should all be in layer-surface.c to make the logic easier to understand
 // Struct is declared in this header to prevent the need for excess getters
 struct layer_surface_t {
-    GtkWindow* gtk_window;
-
     void (*remap)(struct layer_surface_t* super);
 
     // Can be set at any time
