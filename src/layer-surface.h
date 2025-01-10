@@ -1,8 +1,7 @@
 #pragma once
 
+#include <stdbool.h>
 #include "wlr-layer-shell-unstable-v1-client.h"
-#include "gtk4-layer-shell.h"
-#include <gtk/gtk.h>
 
 struct wl_surface;
 struct xdg_surface;

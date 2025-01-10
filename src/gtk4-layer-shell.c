@@ -1,3 +1,4 @@
+#include "gtk4-layer-shell.h"
 #include "wayland-utils.h"
 #include "layer-surface.h"
 #include "libwayland-shim.h"

@@ -2,6 +2,8 @@
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 #include <gdk/wayland/gdkwayland.h>
+#include "wlr-layer-shell-unstable-v1-client.h"
+#include <gtk/gtk.h>
 
 static struct wl_registry* wl_registry_global = NULL;
 static struct zwlr_layer_shell_v1* layer_shell_global = NULL;
