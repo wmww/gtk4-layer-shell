@@ -36,7 +36,8 @@ struct layer_surface_t {
     const char* name_space; // Can be null, freed on destruction
 
     // Not set by user requests
-    struct zwlr_layer_surface_v1* layer_surface; // The actual layer surface Wayland object(can be NULL)
+    struct zwlr_layer_surface_v1* layer_surface; // The actual layer surface Wayland object (can be NULL)
+    struct geom_size_t preferred_size; // Should always be non-zero
     struct geom_size_t cached_xdg_configure_size; // The last size we configured GTK's XDG surface with
     struct geom_size_t cached_layer_size_set; // The last size we set the layer surface to with the compositor
     struct geom_size_t last_layer_configured_size; // The last size our layer surface received from the compositor
@@ -68,11 +69,6 @@ void layer_surface_set_keyboard_mode(
     struct layer_surface_t* self,
     enum zwlr_layer_surface_v1_keyboard_interactivity mode
 );
-
-void layer_surface_configure_xdg_surface(
-    struct layer_surface_t* self,
-    uint32_t serial, // Can be 0
-    gboolean send_even_if_size_unchanged
-);
+void layer_surface_set_preferred_size(struct layer_surface_t* self, struct geom_size_t size); // -1 to unset
 
 extern struct layer_surface_t* (*get_layer_surface_for_wl_surface)(struct wl_surface* wl_surface);

@@ -16,59 +16,54 @@ static struct layer_surface_t* default_get_layer_surface_for_wl_surface(struct w
 struct layer_surface_t* (*get_layer_surface_for_wl_surface)(struct wl_surface* wl_surface)
     = default_get_layer_surface_for_wl_surface;
 
-static void layer_surface_get_preferred_size(struct layer_surface_t* self, int* width, int* height) {
-    gtk_window_get_default_size(self->gtk_window, width, height);
-
-    GtkRequisition natural;
-    gtk_widget_get_preferred_size(GTK_WIDGET(self->gtk_window), NULL, &natural);
-
-    if (!*width)  *width  = natural.width;
-    if (!*height) *height = natural.height;
-}
-
 static void layer_surface_send_set_size(struct layer_surface_t* self) {
     g_return_if_fail(self->layer_surface);
 
-    int width = self->cached_xdg_configure_size.width == -1 ? 0 : self->cached_xdg_configure_size.width;
-    int height = self->cached_xdg_configure_size.width == -1 ? 0 : self->cached_xdg_configure_size.height;
-    if (!width || !height) {
-        layer_surface_get_preferred_size(self, &width, &height);
-    }
+    struct geom_size_t size = {
+        self->cached_xdg_configure_size.width == -1 ?
+            (self->preferred_size.width == -1 ? 400 : self->preferred_size.width) :
+            self->cached_xdg_configure_size.width,
+        self->cached_xdg_configure_size.height == -1 ?
+            (self->preferred_size.height == -1 ? 400 : self->preferred_size.height) :
+            self->cached_xdg_configure_size.height,
+    };
 
     if (self->anchored.left && self->anchored.right) {
-        width = 0;
+        size.width = 0;
     }
 
     if (self->anchored.top && self->anchored.bottom) {
-        height = 0;
+        size.height = 0;
     }
 
-    if (self->cached_layer_size_set.width  != width ||
-        self->cached_layer_size_set.height != height
+    if (self->cached_layer_size_set.width  != size.width ||
+        self->cached_layer_size_set.height != size.height
     ) {
-        self->cached_layer_size_set = (struct geom_size_t){width, height};
-        zwlr_layer_surface_v1_set_size(self->layer_surface, width, height);
+        self->cached_layer_size_set = size;
+        zwlr_layer_surface_v1_set_size(self->layer_surface, size.width, size.height);
     }
 }
 
-void layer_surface_configure_xdg_surface(
+static void layer_surface_configure_xdg_surface(
     struct layer_surface_t* self,
-    uint32_t serial,
+    uint32_t serial, // Can be 0
     gboolean send_even_if_size_unchanged
 ) {
     if (!self->client_facing_xdg_surface || !self->client_facing_xdg_toplevel) {
         return;
     }
 
-    int width = 0, height = 0;
-    layer_surface_get_preferred_size(self, &width, &height);
+    struct geom_size_t size = {
+        self->preferred_size.width == -1 ? 400 : self->preferred_size.width,
+        self->preferred_size.height == -1 ? 400 : self->preferred_size.height,
+    };
 
     if (self->anchored.left && self->anchored.right && self->last_layer_configured_size.width) {
-        width = self->last_layer_configured_size.width;
+        size.width = self->last_layer_configured_size.width;
     }
 
     if (self->anchored.top && self->anchored.bottom && self->last_layer_configured_size.height) {
-        height = self->last_layer_configured_size.height;
+        size.height = self->last_layer_configured_size.height;
     }
 
     if (!self->has_initial_layer_shell_configure) {
@@ -78,11 +73,11 @@ void layer_surface_configure_xdg_surface(
         return;
     }
 
-    if (self->cached_xdg_configure_size.width != width ||
-        self->cached_xdg_configure_size.height != height ||
+    if (self->cached_xdg_configure_size.width != size.width ||
+        self->cached_xdg_configure_size.height != size.height ||
         send_even_if_size_unchanged
     ) {
-        self->cached_xdg_configure_size = (struct geom_size_t){width, height};
+        self->cached_xdg_configure_size = size;
         if (serial) {
             self->pending_configure_serial = serial;
         }
@@ -102,7 +97,7 @@ void layer_surface_configure_xdg_surface(
             xdg_toplevel_listener,
             configure,
             self->client_facing_xdg_toplevel,
-            width, height,
+            size.width, size.height,
             &states);
         wl_array_release(&states);
 
@@ -221,14 +216,17 @@ static void layer_surface_update_auto_exclusive_zone(struct layer_surface_t* sel
     gboolean vert  = (self->anchored.top  == self->anchored.bottom);
     int new_exclusive_zone = -1;
 
-    int window_width = self->cached_xdg_configure_size.width == -1 ? 0 : self->cached_xdg_configure_size.width;
-    int window_height = self->cached_xdg_configure_size.width == -1 ? 0 : self->cached_xdg_configure_size.height;
-    if (!window_width || !window_height) {
-        layer_surface_get_preferred_size(self, &window_width, &window_height);
-    }
+    struct geom_size_t window_size = {
+        self->cached_xdg_configure_size.width == -1 ?
+            (self->preferred_size.width == -1 ? 400 : self->preferred_size.width) :
+            self->cached_xdg_configure_size.width,
+        self->cached_xdg_configure_size.height == -1 ?
+            (self->preferred_size.height == -1 ? 400 : self->preferred_size.height) :
+            self->cached_xdg_configure_size.height,
+    };
 
     if (horiz && !vert) {
-        new_exclusive_zone = window_height;
+        new_exclusive_zone = window_size.height;
         if (!self->anchored.top) {
             new_exclusive_zone += self->margin_size.top;
         }
@@ -236,7 +234,7 @@ static void layer_surface_update_auto_exclusive_zone(struct layer_surface_t* sel
             new_exclusive_zone += self->margin_size.bottom;
         }
     } else if (vert && !horiz) {
-        new_exclusive_zone = window_width;
+        new_exclusive_zone = window_size.width;
         if (!self->anchored.left) {
             new_exclusive_zone += self->margin_size.left;
         }
@@ -260,6 +258,7 @@ static void layer_surface_default_remap(struct layer_surface_t* self) {
 struct layer_surface_t layer_surface_make() {
     struct layer_surface_t ret = {
         .remap = layer_surface_default_remap,
+        .preferred_size = (struct geom_size_t){-1, -1},
         .cached_xdg_configure_size = (struct geom_size_t){-1, -1},
         .cached_layer_size_set = (struct geom_size_t){-1, -1},
         .has_initial_layer_shell_configure = false,
@@ -389,6 +388,13 @@ void layer_surface_set_keyboard_mode(struct layer_surface_t* self, enum zwlr_lay
             zwlr_layer_surface_v1_set_keyboard_interactivity(self->layer_surface, self->keyboard_mode);
             layer_surface_needs_commit(self);
         }
+    }
+}
+
+void layer_surface_set_preferred_size(struct layer_surface_t* self, struct geom_size_t size) {
+    if (self->preferred_size.width != size.width || self->preferred_size.height != size.height) {
+        self->preferred_size = size;
+        layer_surface_configure_xdg_surface(self, 0, FALSE);
     }
 }
 
