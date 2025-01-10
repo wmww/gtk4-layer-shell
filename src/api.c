@@ -9,6 +9,7 @@ static GList* all_layer_surfaces = NULL;
 
 typedef struct {
     struct layer_surface_t super;
+    GdkMonitor* monitor;
 } LayerSurface;
 
 guint gtk_layer_get_major_version() {
@@ -183,13 +184,13 @@ void gtk_layer_set_monitor(GtkWindow* window, GdkMonitor* monitor) {
         g_return_if_fail(output);
     }
     layer_surface_set_output(&layer_surface->super, output);
+    layer_surface->monitor = monitor;
 }
 
 GdkMonitor* gtk_layer_get_monitor(GtkWindow* window) {
     LayerSurface* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return NULL;
-    // TODO
-    return NULL;
+    return layer_surface->monitor;
 }
 
 void gtk_layer_set_anchor(GtkWindow* window, GtkLayerShellEdge edge, gboolean anchor_to_edge) {
