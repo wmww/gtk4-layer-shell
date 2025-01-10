@@ -136,7 +136,9 @@ static void layer_surface_handle_configure(
 static void layer_surface_handle_closed(void* data, struct zwlr_layer_surface_v1* _surface) {
     (void)_surface;
     struct layer_surface_t* self = data;
-    gtk_window_close(self->gtk_window);
+    if (self->client_facing_xdg_toplevel) {
+        LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(xdg_toplevel_listener, close, self->client_facing_xdg_toplevel);
+    }
 }
 
 static const struct zwlr_layer_surface_v1_listener layer_surface_listener = {
