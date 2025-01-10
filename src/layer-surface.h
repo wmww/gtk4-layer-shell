@@ -16,12 +16,12 @@ struct geom_size_t {
     int width, height;
 };
 
-typedef struct _LayerSurface LayerSurface;
-
 // Functions that mutate this structure should all be in layer-surface.c to make the logic easier to understand
 // Struct is declared in this header to prevent the need for excess getters
-struct _LayerSurface {
+struct layer_surface_t {
     GtkWindow* gtk_window;
+
+    void (*remap)(struct layer_surface_t* super);
 
     // Can be set at any time
     struct geom_edges_t anchored; // Logically booleans, the edges of the output this layer surface is currently anchored to
@@ -48,21 +48,31 @@ struct _LayerSurface {
     bool has_initial_layer_shell_configure;
 };
 
-LayerSurface* layer_surface_new(GtkWindow* gtk_window);
-
-LayerSurface* gtk_window_get_layer_surface(GtkWindow* gtk_window);
+struct layer_surface_t layer_surface_make();
+void layer_surface_uninit(struct layer_surface_t* self);
 
 // Surface is remapped in order to set
-void layer_surface_set_output(LayerSurface* self, struct wl_output* output); // Can be null for default
-void layer_surface_set_name_space(LayerSurface* self, char const* name_space); // Makes a copy of the string, can be null
-
-// Can be set without remapping the surface
-void layer_surface_set_layer(LayerSurface* self, enum zwlr_layer_shell_v1_layer layer); // Remaps surface on old layer shell versions
-void layer_surface_set_anchor(LayerSurface* self, struct geom_edges_t anchors); // anchor values are treated as booleans
-void layer_surface_set_margin(LayerSurface* self, struct geom_edges_t margins);
-void layer_surface_set_exclusive_zone(LayerSurface* self, int exclusive_zone);
-void layer_surface_auto_exclusive_zone_enable(LayerSurface* self);
-void layer_surface_set_keyboard_mode(LayerSurface* self, enum zwlr_layer_surface_v1_keyboard_interactivity mode);
+void layer_surface_set_output(struct layer_surface_t* self, struct wl_output* output); // Can be null for default
+void layer_surface_set_name_space(struct layer_surface_t* self, char const* name_space); // Makes a copy of the string, can be null
 
 // Returns the effective namespace(default if unset). Does not return ownership. Never returns NULL. Handles NULL self.
-const char* layer_surface_get_namespace(LayerSurface* self);
+const char* layer_surface_get_namespace(struct layer_surface_t* self);
+
+// Can be set without remapping the surface
+void layer_surface_set_layer(struct layer_surface_t* self, enum zwlr_layer_shell_v1_layer layer); // Remaps surface on old layer shell versions
+void layer_surface_set_anchor(struct layer_surface_t* self, struct geom_edges_t anchors); // anchor values are treated as booleans
+void layer_surface_set_margin(struct layer_surface_t* self, struct geom_edges_t margins);
+void layer_surface_set_exclusive_zone(struct layer_surface_t* self, int exclusive_zone);
+void layer_surface_auto_exclusive_zone_enable(struct layer_surface_t* self);
+void layer_surface_set_keyboard_mode(
+    struct layer_surface_t* self,
+    enum zwlr_layer_surface_v1_keyboard_interactivity mode
+);
+
+void layer_surface_configure_xdg_surface(
+    struct layer_surface_t* self,
+    uint32_t serial, // Can be 0
+    gboolean send_even_if_size_unchanged
+);
+
+extern struct layer_surface_t* (*get_layer_surface_for_wl_surface)(struct wl_surface* wl_surface);
