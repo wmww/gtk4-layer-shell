@@ -26,17 +26,21 @@ guint gtk_layer_get_micro_version() {
     return GTK_LAYER_SHELL_MICRO;
 }
 
+static struct zwlr_layer_shell_v1* init_and_get_layer_shell_global() {
+    gtk_init();
+    GdkDisplay* gdk_display = gdk_display_get_default();
+    g_return_val_if_fail(gdk_display, NULL);
+    g_return_val_if_fail(GDK_IS_WAYLAND_DISPLAY(gdk_display), NULL);
+    struct wl_display* wl_display = gdk_wayland_display_get_wl_display(gdk_display);
+    return get_layer_shell_global_from_display(wl_display);
+}
+
 gboolean gtk_layer_is_supported() {
-    gtk_wayland_init_if_needed();
-    return libwayland_shim_has_initialized() && gtk_wayland_get_layer_shell_global() != NULL;
+    return init_and_get_layer_shell_global() != NULL && libwayland_shim_has_initialized();
 }
 
 guint gtk_layer_get_protocol_version() {
-    if (!GDK_IS_WAYLAND_DISPLAY(gdk_display_get_default())) {
-        return 0;
-    }
-    gtk_wayland_init_if_needed();
-    struct zwlr_layer_shell_v1* layer_shell_global = gtk_wayland_get_layer_shell_global();
+    struct zwlr_layer_shell_v1* layer_shell_global = init_and_get_layer_shell_global();
     if (!layer_shell_global) {
         return 0;
     }
@@ -112,9 +116,6 @@ static void layer_surface_remap_impl(struct layer_surface_t* super) {
 }
 
 void gtk_layer_init_for_window(GtkWindow* window) {
-    gtk_wayland_init_if_needed();
-    get_layer_surface_for_wl_surface = get_layer_surface_for_wl_surface_impl;
-
     if (!GDK_IS_WAYLAND_DISPLAY(gdk_display_get_default())) {
         g_warning("Failed to initialize layer surface, not on Wayland");
         return;
@@ -133,10 +134,12 @@ void gtk_layer_init_for_window(GtkWindow* window) {
         return;
     }
 
-    if (!gtk_wayland_get_layer_shell_global()) {
+    if (!init_and_get_layer_shell_global()) {
         g_warning("Failed to initialize layer surface, it appears your Wayland compositor doesn't support Layer Shell");
         return;
     }
+
+    get_layer_surface_for_wl_surface = get_layer_surface_for_wl_surface_impl;
 
     LayerSurface* layer_surface = g_new0(LayerSurface, 1);
     layer_surface->gtk_window = window;

@@ -1,6 +1,6 @@
 #pragma once
 
 struct zwlr_layer_shell_v1;
+struct wl_display;
 
-void gtk_wayland_init_if_needed();
-struct zwlr_layer_shell_v1* gtk_wayland_get_layer_shell_global();
+struct zwlr_layer_shell_v1* get_layer_shell_global_from_display(struct wl_display* display);

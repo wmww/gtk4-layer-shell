@@ -188,7 +188,8 @@ static void layer_surface_send_set_keyboard_interactivity(struct layer_surface_t
 }
 
 static void layer_surface_create_surface_object(struct layer_surface_t* self, struct wl_surface* wl_surface) {
-    struct zwlr_layer_shell_v1* layer_shell_global = gtk_wayland_get_layer_shell_global();
+    struct wl_display* display = wl_proxy_get_display((struct wl_proxy*)wl_surface);
+    struct zwlr_layer_shell_v1* layer_shell_global = get_layer_shell_global_from_display(display);
     if (!layer_shell_global) {
         fprintf(stderr, "failed to create layer surface, no layer shell global\n");
         return;
