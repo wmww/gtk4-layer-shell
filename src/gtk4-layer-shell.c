@@ -81,7 +81,8 @@ static struct layer_surface_t* get_layer_surface_for_wl_surface_impl(struct wl_s
     return layer_surface_entry ? layer_surface_entry->data : NULL;
 }
 
-static void layer_surface_update_preferred_size(LayerSurface* self) {
+static struct geom_size_t layer_surface_get_preferred_size_impl(struct layer_surface_t* super) {
+    LayerSurface* self = (LayerSurface*)super;
     struct geom_size_t size = {0};
     gtk_window_get_default_size(self->gtk_window, &size.width, &size.height);
 
@@ -90,7 +91,8 @@ static void layer_surface_update_preferred_size(LayerSurface* self) {
 
     if (!size.width)  size.width  = natural.width;
     if (!size.height) size.height = natural.height;
-    layer_surface_set_preferred_size(&self->super, size);
+
+    return size;
 }
 
 static void layer_surface_on_default_size_set(
@@ -100,7 +102,7 @@ static void layer_surface_on_default_size_set(
 ) {
     (void)_window;
     (void)_pspec;
-    layer_surface_update_preferred_size((LayerSurface*)layer_surface);
+    layer_surface_invalidate_preferred_size(&((LayerSurface*)layer_surface)->super);
 }
 
 static void layer_surface_remap_impl(struct layer_surface_t* super) {
@@ -140,7 +142,7 @@ void gtk_layer_init_for_window(GtkWindow* window) {
     layer_surface->gtk_window = window;
     layer_surface->super = layer_surface_make();
     layer_surface->super.remap = layer_surface_remap_impl;
-    layer_surface_update_preferred_size(layer_surface);
+    layer_surface->super.get_preferred_size = layer_surface_get_preferred_size_impl;
     g_object_set_data_full(G_OBJECT(window), layer_surface_key, layer_surface, (GDestroyNotify)layer_surface_destroy);
 
     all_layer_surfaces = g_list_append(all_layer_surfaces, layer_surface);

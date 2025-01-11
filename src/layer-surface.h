@@ -15,10 +15,23 @@ struct geom_size_t {
     int width, height;
 };
 
+#define GEOM_SIZE_UNSET (struct geom_size_t){-1, -1}
+
 // Functions that mutate this structure should all be in layer-surface.c to make the logic easier to understand
 // Struct is declared in this header to prevent the need for excess getters
 struct layer_surface_t {
+    // Virtual functions (never NULL, should be set to no-op or default implementations by default, and can be
+    // overrided by the user of this struct)
+
+    // Ask the toolkit to unmap and remap the surface
     void (*remap)(struct layer_surface_t* super);
+
+    // Get the preferred size of the surface from the client program. -1 (as is returned for both axes by the default
+    // implementation) means to figure it out based on Wayland messages. In general this default behavior is correct,
+    // however GTK seems to have a bug where if its configured with EITHER width or height as 0 it uses its preferred
+    // size for both dimensions. This causes problems when anchored along one axis and not the other. By supplying an
+    // implementation of this function that gets GTKs preferred widget size this issue can be bypassed.
+    struct geom_size_t (*get_preferred_size)(struct layer_surface_t* super);
 
     // Can be set at any time
     struct geom_edges_t anchored; // Logically booleans, the edges of the output this layer surface is currently anchored to
@@ -34,13 +47,24 @@ struct layer_surface_t {
 
     // Not set by user requests
     struct zwlr_layer_surface_v1* layer_surface; // The actual layer surface Wayland object (can be NULL)
-    struct geom_size_t preferred_size; // Should always be non-zero
-    struct geom_size_t cached_xdg_configure_size; // The last size we configured GTK's XDG surface with
-    struct geom_size_t cached_layer_size_set; // The last size we set the layer surface to with the compositor
-    struct geom_size_t last_layer_configured_size; // The last size our layer surface received from the compositor
-    uint32_t pending_configure_serial; // If non-zero our layer surface received a configure with this serial, we passed
-      // it on to GTK's XDG surface and will ack it once GTK acks it's configure. Otherwise this is zero, all acks from
-      // GTK can be ignored(they are for configures not originating from the compositor)
+    // The last size we configured the client program with. -1 means unset, 0 means we've asked the program to decide
+    // its own size. In theory we should be able to set only width or only height to 0. In practice GTK at least uses
+    // its preferred size for both if either are set to 0, so we either use (0, 0) or (>0, >0).
+    struct geom_size_t cached_xdg_configure_size;
+    // The last size the client program set its window geometry to. -1 means unset, should never be 0 for well behaved
+    // client programs.
+    struct geom_size_t last_xdg_window_geom_size;
+    // The last size we sent to the compositor for our layer surface's size (with the .set_size request). -1 is unset,
+    // 0 means we requested the compositor give us a size, though this is only allowed for axes where we're currently
+    // anchored to both edges.
+    struct geom_size_t cached_layer_size_set;
+    // The last size the compositor configured our layer surface with. -1 is unset. 0 means no preference from the
+    // compositor. This is a hint, are allowed to ignore this size if we want.
+    struct geom_size_t last_layer_configured_size;
+    // If non-zero our layer surface received a configure with this serial, we passed it on to the client program's XDG
+    // surface and will ack it once the client program acks its configure. Otherwise this is zero, all acks from the
+    // client program can be ignored (they are for configures not originating from the compositor)
+    uint32_t pending_configure_serial;
     struct xdg_surface* client_facing_xdg_surface;
     struct xdg_toplevel* client_facing_xdg_toplevel;
     bool has_initial_layer_shell_configure;
@@ -66,6 +90,6 @@ void layer_surface_set_keyboard_mode(
     struct layer_surface_t* self,
     enum zwlr_layer_surface_v1_keyboard_interactivity mode
 );
-void layer_surface_set_preferred_size(struct layer_surface_t* self, struct geom_size_t size); // -1 to unset
+void layer_surface_invalidate_preferred_size(struct layer_surface_t* self); // Called when preferred size may have changed
 
 extern struct layer_surface_t* (*get_layer_surface_for_wl_surface)(struct wl_surface* wl_surface);
