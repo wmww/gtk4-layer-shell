@@ -6,8 +6,7 @@
 // Replace with: \1;\n};\nstatic void \2_\5\6\n{\n    FATAL_NOT_IMPL;\n}\n\{10}\nstatic const struct \2_interface \2_impl = {\n    .\5 = \2_\5,\n\{12}};
 // Then remove the struct artifact and replace this with a space: \n\t\s*
 
-#ifndef MOCK_SERVER_H
-#define MOCK_SERVER_H
+#pragma once
 
 #include "test-common.h"
 #include <wayland-server.h>
@@ -32,5 +31,3 @@ void default_global_create(struct wl_display* display, const struct wl_interface
 char type_code_at_index(const struct wl_message* message, int index);
 
 void init();
-
-#endif // MOCK_SERVER_H

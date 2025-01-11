@@ -32,9 +32,11 @@ The main downside is that if libwayland gets loaded before us, it's calls take p
 
 ## Triggering the error
 Triggering the link error intentionally (for example for testing that the library detects it) can be difficult. You need at least the following:
-1. Build separate from the gtk4-layer-shell project. If your apps is built within the project (even if it's a different executable) meson links our library first.
+1. Build separate from the gtk4-layer-shell project. If your app is built within the project (even if it's a different executable) meson links our library first.
 2. Link libwayland-client before gtk4-layer-shell
 3. Make at least one call to libwayland in your app (otherwise your linking of libwayland-client is ignored)
+
+Alternatively you can test by editing the CDLL call out of the example Python script and calling `ninja -C build && GI_TYPELIB_PATH=$PWD/build/src LD_LIBRARY_PATH=$PWD/build/src python examples/simple-example.py`.
 
 ## Wayland Debug
 Old versions of my [wayland-debug](https://github.com/wmww/wayland-debug) tool set used `LD_PRELOAD` to load a patched libwayland, which breaks this library. wayland-debug has been updated to use `LD_LIBRARY_PATH` instead which seems to work fine. If you have any problems please let me know.

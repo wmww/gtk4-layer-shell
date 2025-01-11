@@ -2,8 +2,7 @@
 
 static GtkWindow* window;
 
-static void callback_0()
-{
+static void callback_0() {
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .set_margin 2 6 12 14);
     EXPECT_MESSAGE(wl_surface .commit);
 
@@ -22,8 +21,7 @@ static void callback_0()
     gtk_window_present(window);
 }
 
-static void callback_1()
-{
+static void callback_1() {
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .set_margin 5 10 25 30);
     EXPECT_MESSAGE(wl_surface .commit);
 

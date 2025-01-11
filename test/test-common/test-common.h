@@ -1,5 +1,4 @@
-#ifndef TEST_COMMON_H
-#define TEST_COMMON_H
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +13,4 @@
 #define ASSERT(assertion) do {if (!(assertion)) {FATAL_FMT("\n  assertion failed: %s", #assertion);}} while (0)
 #define ASSERT_EQ(a, b, format) do {if (!((a) == (b))) {FATAL_FMT("\n  expected: %s == %s\n  actual:   " format " != " format "\n", #a, #b, a, b);}} while (0)
 #define ASSERT_STR_EQ(a, b) do {if (strcmp(a, b)) {FATAL_FMT("\n  expected: %s ≈ %s\n  actual:   \"%s\" ≠ \"%s\"\n", #a, #b, a, b);}} while (0)
-
-#endif // TEST_COMMON_H
 

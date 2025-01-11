@@ -2,8 +2,7 @@
 
 static GtkWindow *window;
 
-static void callback_0()
-{
+static void callback_0() {
     DONT_EXPECT_MESSAGE(.get_layer_surface zwlr_layer_shell_v1);
 
     window = create_default_window();

@@ -2,8 +2,7 @@
 
 static GtkWindow* window;
 
-static void callback_0()
-{
+static void callback_0() {
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .set_keyboard_interactivity 1);
     EXPECT_MESSAGE(wl_surface .commit);
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .set_keyboard_interactivity 0);
@@ -16,8 +15,7 @@ static void callback_0()
     gtk_layer_set_keyboard_mode(window, GTK_LAYER_SHELL_KEYBOARD_MODE_NONE);
 }
 
-static void callback_1()
-{
+static void callback_1() {
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .set_keyboard_interactivity 2);
     EXPECT_MESSAGE(wl_surface .commit);
 

@@ -3,8 +3,7 @@
 static GtkWindow* window_a;
 static GtkWindow* window_b;
 
-static void callback_0()
-{
+static void callback_0() {
     window_a = create_default_window();
     window_b = create_default_window();
 
@@ -17,8 +16,7 @@ static void callback_0()
     gtk_window_present(window_b);
 }
 
-static void callback_1()
-{
+static void callback_1() {
     ASSERT(gtk_layer_is_layer_window(window_a));
     ASSERT(!gtk_layer_is_layer_window(window_b));
 }

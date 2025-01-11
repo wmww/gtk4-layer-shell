@@ -11,7 +11,8 @@ int main(int argc, char** argv)
         "%d.%d.%d",
         gtk_layer_get_major_version(),
         gtk_layer_get_minor_version(),
-        gtk_layer_get_micro_version());
+        gtk_layer_get_micro_version()
+    );
 
     ASSERT_STR_EQ(version_provided_by_gtk_layer_shell, argv[1]);
 

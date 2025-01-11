@@ -1,8 +1,7 @@
 #include "mock-server.h"
 #include "linux/input.h"
 
-typedef enum
-{
+typedef enum {
     SURFACE_ROLE_NONE = 0,
     SURFACE_ROLE_XDG_TOPLEVEL,
     SURFACE_ROLE_XDG_POPUP,
@@ -11,8 +10,7 @@ typedef enum
 
 typedef struct SurfaceData SurfaceData;
 
-struct SurfaceData
-{
+struct SurfaceData {
     SurfaceRole role;
     struct wl_resource* surface;
     struct wl_resource* pending_frame;
@@ -38,8 +36,7 @@ static struct wl_resource* pointer_global = NULL;
 static struct wl_resource* output_global = NULL;
 
 // Needs to be called before any role objects are assigned
-static void surface_data_set_role(SurfaceData* data, SurfaceRole role)
-{
+static void surface_data_set_role(SurfaceData* data, SurfaceRole role) {
     if (data->role != SURFACE_ROLE_NONE) {
         ASSERT_EQ(data->role, role, "%u");
     }
@@ -73,8 +70,7 @@ static void surface_data_add_pupup(SurfaceData* parent, SurfaceData* popup) {
     popup->popup_parent = parent;
 }
 
-static void wl_surface_frame(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void wl_surface_frame(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     NEW_ID_ARG(callback, 0);
     SurfaceData* data = wl_resource_get_user_data(resource);
     ASSERT(!data->pending_frame);
@@ -85,48 +81,40 @@ static void wl_surface_frame(struct wl_resource *resource, const struct wl_messa
         callback);
 }
 
-static void wl_surface_attach(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void wl_surface_attach(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     RESOURCE_ARG(wl_buffer, buffer, 0);
     SurfaceData* data = wl_resource_get_user_data(resource);
     data->pending_buffer = buffer;
     data->buffer_cleared = buffer == NULL;
 }
 
-static void wl_surface_commit(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void wl_surface_commit(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     SurfaceData* data = wl_resource_get_user_data(resource);
-    if (data->buffer_cleared)
-    {
+    if (data->buffer_cleared) {
         data->has_committed_buffer = 0;
         data->buffer_cleared = 0;
     }
-    else if (data->pending_buffer)
-    {
+    else if (data->pending_buffer) {
         data->has_committed_buffer = 1;
     }
 
-    if (data->pending_buffer)
-    {
+    if (data->pending_buffer) {
         wl_buffer_send_release(data->pending_buffer);
         data->pending_buffer = NULL;
     }
 
-    if (data->pending_frame)
-    {
+    if (data->pending_frame) {
         wl_callback_send_done(data->pending_frame, 0);
         wl_resource_destroy(data->pending_frame);
         data->pending_frame = NULL;
     }
 
-    if (data->initial_commit_for_role)
-    {
+    if (data->initial_commit_for_role) {
         ASSERT(!data->has_committed_buffer);
         data->initial_commit_for_role = 0;
     }
 
-    if (data->layer_surface && data->layer_send_configure)
-    {
+    if (data->layer_surface && data->layer_send_configure) {
         char horiz = (
             (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT) &&
             (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT));
@@ -148,8 +136,7 @@ static void wl_surface_commit(struct wl_resource *resource, const struct wl_mess
     }
 }
 
-static void wl_surface_destroy(struct wl_resource* resource, const struct wl_message* message, union wl_argument* args)
-{
+static void wl_surface_destroy(struct wl_resource* resource, const struct wl_message* message, union wl_argument* args) {
     SurfaceData* data = wl_resource_get_user_data(resource);
     ASSERT(!data->xdg_popup);
     ASSERT(!data->xdg_toplevel);
@@ -160,8 +147,7 @@ static void wl_surface_destroy(struct wl_resource* resource, const struct wl_mes
     // We're employing the missile memory management pattern here https://x.com/pomeranian99/status/858856994438094848
 }
 
-static void wl_compositor_create_surface(struct wl_resource* resource, const struct wl_message* message, union wl_argument* args)
-{
+static void wl_compositor_create_surface(struct wl_resource* resource, const struct wl_message* message, union wl_argument* args) {
     NEW_ID_ARG(id, 0);
     struct wl_resource* surface = wl_resource_create(
         wl_resource_get_client(resource),
@@ -174,24 +160,21 @@ static void wl_compositor_create_surface(struct wl_resource* resource, const str
     wl_resource_set_user_data(surface, data);
 }
 
-void wl_seat_bind(struct wl_client* client, void* data, uint32_t version, uint32_t id)
-{
+void wl_seat_bind(struct wl_client* client, void* data, uint32_t version, uint32_t id) {
     ASSERT(!seat_global);
     seat_global = wl_resource_create(client, &wl_seat_interface, version, id);
     use_default_impl(seat_global);
     wl_seat_send_capabilities(seat_global, WL_SEAT_CAPABILITY_POINTER | WL_SEAT_CAPABILITY_KEYBOARD);
 };
 
-void wl_output_bind(struct wl_client* client, void* data, uint32_t version, uint32_t id)
-{
+void wl_output_bind(struct wl_client* client, void* data, uint32_t version, uint32_t id) {
     ASSERT(!output_global);
     output_global = wl_resource_create(client, &wl_output_interface, version, id);
     use_default_impl(output_global);
     wl_output_send_done(output_global);
 };
 
-static void wl_seat_get_pointer(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void wl_seat_get_pointer(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     NEW_ID_ARG(id, 0);
     ASSERT(!pointer_global);
     pointer_global = wl_resource_create(
@@ -202,8 +185,7 @@ static void wl_seat_get_pointer(struct wl_resource *resource, const struct wl_me
     use_default_impl(pointer_global);
 }
 
-static void xdg_wm_base_get_xdg_surface(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void xdg_wm_base_get_xdg_surface(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     NEW_ID_ARG(id, 0);
     RESOURCE_ARG(wl_surface, surface, 1);
     struct wl_resource* xdg_surface = wl_resource_create(
@@ -217,16 +199,14 @@ static void xdg_wm_base_get_xdg_surface(struct wl_resource *resource, const stru
     data->xdg_surface = xdg_surface;
 }
 
-static void xdg_surface_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void xdg_surface_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     SurfaceData* data = wl_resource_get_user_data(resource);
     ASSERT(!data->xdg_toplevel);
     ASSERT(!data->xdg_popup);
     data->xdg_surface = NULL;
 }
 
-static void xdg_surface_get_toplevel(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void xdg_surface_get_toplevel(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     NEW_ID_ARG(id, 0);
     struct wl_resource* toplevel = wl_resource_create(
         wl_resource_get_client(resource),
@@ -245,16 +225,14 @@ static void xdg_surface_get_toplevel(struct wl_resource *resource, const struct 
     data->xdg_toplevel = toplevel;
 }
 
-static void xdg_toplevel_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void xdg_toplevel_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     SurfaceData* data = wl_resource_get_user_data(resource);
     ASSERT(data->xdg_surface);
     data->xdg_toplevel = NULL;
     surface_data_unmap(data);
 }
 
-static void xdg_surface_get_popup(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void xdg_surface_get_popup(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     NEW_ID_ARG(id, 0);
     RESOURCE_ARG(xdg_surface, parent, 1);
     struct wl_resource* popup = wl_resource_create(
@@ -275,32 +253,28 @@ static void xdg_surface_get_popup(struct wl_resource *resource, const struct wl_
     }
 }
 
-static void xdg_popup_grab(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void xdg_popup_grab(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     SurfaceData* data = wl_resource_get_user_data(resource);
     RESOURCE_ARG(wl_seat, seat, 0);
     ASSERT_EQ(seat, seat_global, "%p");
     ASSERT(data->popup_parent);
 }
 
-static void xdg_popup_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void xdg_popup_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     SurfaceData* data = wl_resource_get_user_data(resource);
     ASSERT(data->xdg_surface);
     data->xdg_popup = NULL;
     surface_data_unmap(data);
 }
 
-static void zwlr_layer_surface_v1_set_anchor(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void zwlr_layer_surface_v1_set_anchor(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     UINT_ARG(anchor, 0);
     SurfaceData* data = wl_resource_get_user_data(resource);
     data->layer_send_configure = 1;
     data->layer_anchor = anchor;
 }
 
-static void zwlr_layer_surface_v1_set_size(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void zwlr_layer_surface_v1_set_size(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     UINT_ARG(width, 0);
     UINT_ARG(height, 1);
     SurfaceData* data = wl_resource_get_user_data(resource);
@@ -309,8 +283,7 @@ static void zwlr_layer_surface_v1_set_size(struct wl_resource *resource, const s
     data->layer_set_h = height;
 }
 
-static void zwlr_layer_surface_v1_get_popup(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void zwlr_layer_surface_v1_get_popup(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     RESOURCE_ARG(xdg_popup, popup, 0);
     SurfaceData* data = wl_resource_get_user_data(resource);
     SurfaceData* popup_data = wl_resource_get_user_data(popup);
@@ -318,8 +291,7 @@ static void zwlr_layer_surface_v1_get_popup(struct wl_resource *resource, const 
     surface_data_add_pupup(data, popup_data);
 }
 
-static void zwlr_layer_shell_v1_get_layer_surface(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void zwlr_layer_shell_v1_get_layer_surface(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     NEW_ID_ARG(id, 0);
     RESOURCE_ARG(wl_surface, surface, 1);
     struct wl_resource* layer_surface = wl_resource_create(
@@ -335,15 +307,13 @@ static void zwlr_layer_shell_v1_get_layer_surface(struct wl_resource *resource, 
     data->layer_surface = layer_surface;
 }
 
-static void zwlr_layer_surface_v1_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args)
-{
+static void zwlr_layer_surface_v1_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
     SurfaceData* data = wl_resource_get_user_data(resource);
     data->layer_surface = NULL;
     surface_data_unmap(data);
 }
 
-void init()
-{
+void init() {
     OVERRIDE_REQUEST(wl_surface, commit);
     OVERRIDE_REQUEST(wl_surface, frame);
     OVERRIDE_REQUEST(wl_surface, attach);
