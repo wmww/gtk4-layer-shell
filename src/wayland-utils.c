@@ -6,7 +6,6 @@
 #include <stdio.h>
 
 static struct wl_display* cached_display = NULL;
-static struct wl_registry* wl_registry_global = NULL;
 static struct zwlr_layer_shell_v1* layer_shell_global = NULL;
 
 static void wl_registry_handle_global(
@@ -30,11 +29,7 @@ static void wl_registry_handle_global(
     }
 }
 
-static void wl_registry_handle_global_remove(
-    void* _data,
-    struct wl_registry* _registry,
-    uint32_t _id
-) {
+static void wl_registry_handle_global_remove(void* _data, struct wl_registry* _registry, uint32_t _id) {
     (void)_data;
     (void)_registry;
     (void)_id;
@@ -51,9 +46,10 @@ struct zwlr_layer_shell_v1* get_layer_shell_global_from_display(struct wl_displa
             fprintf(stderr, "Wayland display changed, binding a new layer shell global\n");
         }
         cached_display = display;
-        wl_registry_global = wl_display_get_registry(display);
-        wl_registry_add_listener(wl_registry_global, &wl_registry_listener, NULL);
+        struct wl_registry* registry = wl_display_get_registry(display);
+        wl_registry_add_listener(registry, &wl_registry_listener, NULL);
         wl_display_roundtrip(display);
+        wl_registry_destroy(registry);
         if (!layer_shell_global) {
             fprintf(stderr, "it appears your Wayland compositor does not support the Layer Shell protocol\n");
         }
