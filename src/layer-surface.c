@@ -169,6 +169,24 @@ static void layer_surface_send_set_margin(struct layer_surface_t* self) {
     }
 }
 
+static void layer_surface_send_set_keyboard_interactivity(struct layer_surface_t* self) {
+    if (self->layer_surface) {
+        enum zwlr_layer_surface_v1_keyboard_interactivity mode = self->keyboard_mode;
+        if (mode == ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND) {
+            uint32_t version = wl_proxy_get_version((struct wl_proxy*)self->layer_surface);
+            if (version < ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND_SINCE_VERSION) {
+                fprintf(
+                    stderr,
+                    "compositor uses layer shell version %d, which does not support on-demand keyboard interactivity\n",
+                    version
+                );
+                mode = ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE;
+            }
+        }
+        zwlr_layer_surface_v1_set_keyboard_interactivity(self->layer_surface, mode);
+    }
+}
+
 static void layer_surface_create_surface_object(struct layer_surface_t* self, struct wl_surface* wl_surface) {
     struct zwlr_layer_shell_v1* layer_shell_global = gtk_wayland_get_layer_shell_global();
     if (!layer_shell_global) {
@@ -188,7 +206,7 @@ static void layer_surface_create_surface_object(struct layer_surface_t* self, st
     assert(self->layer_surface);
     zwlr_layer_surface_v1_add_listener(self->layer_surface, &layer_surface_listener, self);
 
-    zwlr_layer_surface_v1_set_keyboard_interactivity(self->layer_surface, self->keyboard_mode);
+    layer_surface_send_set_keyboard_interactivity(self);
     zwlr_layer_surface_v1_set_exclusive_zone(self->layer_surface, self->exclusive_zone);
     layer_surface_send_set_anchor(self);
     layer_surface_send_set_margin(self);
@@ -369,22 +387,10 @@ void layer_surface_auto_exclusive_zone_enable(struct layer_surface_t* self) {
 }
 
 void layer_surface_set_keyboard_mode(struct layer_surface_t* self, enum zwlr_layer_surface_v1_keyboard_interactivity mode) {
-    if (mode == ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND) {
-        struct zwlr_layer_shell_v1* layer_shell_global = gtk_wayland_get_layer_shell_global();
-        uint32_t version = layer_shell_global ? zwlr_layer_shell_v1_get_version(layer_shell_global) : 0;
-        if (version < ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND_SINCE_VERSION) {
-            fprintf(
-                stderr,
-                "compositor uses layer shell version %d, which does not support on-demand keyboard interactivity\n",
-                version
-            );
-            mode = ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE;
-        }
-    }
     if (self->keyboard_mode != mode) {
         self->keyboard_mode = mode;
         if (self->layer_surface) {
-            zwlr_layer_surface_v1_set_keyboard_interactivity(self->layer_surface, self->keyboard_mode);
+            layer_surface_send_set_keyboard_interactivity(self);
             layer_surface_needs_commit(self);
         }
     }
