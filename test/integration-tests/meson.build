@@ -10,6 +10,7 @@ integration_tests = [
     'test-get-layer',
     'test-set-margin',
     'test-get-margin',
+    'test-uses-widget-size',
     'test-set-default-size',
     'test-adapts-to-screen-size',
     'test-auto-exclusive-zone-no-margin',
