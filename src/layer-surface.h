@@ -20,8 +20,7 @@ struct geom_size_t {
 // Functions that mutate this structure should all be in layer-surface.c to make the logic easier to understand
 // Struct is declared in this header to prevent the need for excess getters
 struct layer_surface_t {
-    // Virtual functions (never NULL, should be set to no-op or default implementations by default, and can be
-    // overrided by the user of this struct)
+    // Virtual functions (NULL by default, can be overridden by the user of this library)
 
     // Ask the toolkit to unmap and remap the surface
     void (*remap)(struct layer_surface_t* super);

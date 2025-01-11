@@ -67,7 +67,7 @@ static void layer_surface_configure_xdg_surface(
     }
 
     // Ideally this wouldn't be needed, see the layer_surface_t.get_preferred_size documentation
-    if (size.width == 0 || size.height == 0) {
+    if (self->get_preferred_size && (size.width == 0 || size.height == 0)) {
         struct geom_size_t preferred = self->get_preferred_size(self);
         if (size.width == 0 && preferred.width > 0) {
             size.width = preferred.width;
@@ -251,19 +251,8 @@ static void layer_surface_update_auto_exclusive_zone(struct layer_surface_t* sel
     }
 }
 
-static void layer_surface_default_remap(struct layer_surface_t* self) {
-    (void)self;
-}
-
-static struct geom_size_t layer_surface_default_get_preferred_size(struct layer_surface_t* self) {
-    (void)self;
-    return (struct geom_size_t){-1, -1};
-}
-
 struct layer_surface_t layer_surface_make() {
     struct layer_surface_t ret = {
-        .remap = layer_surface_default_remap,
-        .get_preferred_size = layer_surface_default_get_preferred_size,
         .cached_xdg_configure_size = GEOM_SIZE_UNSET,
         .last_xdg_window_geom_size = GEOM_SIZE_UNSET,
         .cached_layer_size_set = GEOM_SIZE_UNSET,
@@ -283,7 +272,7 @@ void layer_surface_uninit(struct layer_surface_t* self) {
 void layer_surface_set_output(struct layer_surface_t* self, struct wl_output* output) {
     if (self->output != output) {
         self->output = output;
-        if (self->layer_surface) {
+        if (self->layer_surface && self->remap) {
             self->remap(self);
         }
     }
@@ -293,7 +282,7 @@ void layer_surface_set_name_space(struct layer_surface_t* self, char const* name
     if (strcmp(self->name_space ? self->name_space : "", name_space ? name_space : "") != 0) {
         free((void*)self->name_space);
         self->name_space = (name_space && *name_space) ? strdup(name_space) : NULL;
-        if (self->layer_surface) {
+        if (self->layer_surface && self->remap) {
             self->remap(self);
         }
     }
@@ -315,7 +304,7 @@ void layer_surface_set_layer(struct layer_surface_t* self, enum zwlr_layer_shell
             if (version >= ZWLR_LAYER_SURFACE_V1_SET_LAYER_SINCE_VERSION) {
                 zwlr_layer_surface_v1_set_layer(self->layer_surface, layer);
                 layer_surface_needs_commit(self);
-            } else {
+            } else if (self->remap) {
                 self->remap(self);
             }
         }
