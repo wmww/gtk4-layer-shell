@@ -76,7 +76,7 @@ static gint find_layer_surface_with_wl_surface(gconstpointer layer_surface, gcon
     return wl_surface == needle ? 0 : 1;
 }
 
-static struct layer_surface_t* get_layer_surface_for_wl_surface_impl(struct wl_surface* wl_surface) {
+static struct layer_surface_t* layer_surface_hook_callback_impl(struct wl_surface* wl_surface) {
     GList* layer_surface_entry = g_list_find_custom(
         all_layer_surfaces,
         wl_surface,
@@ -139,7 +139,11 @@ void gtk_layer_init_for_window(GtkWindow* window) {
         return;
     }
 
-    get_layer_surface_for_wl_surface = get_layer_surface_for_wl_surface_impl;
+    static gboolean has_installed_hook = false;
+    if (!has_installed_hook) {
+        has_installed_hook = true;
+        layer_surface_install_hook(layer_surface_hook_callback_impl);
+    }
 
     struct gtk_layer_surface_t* layer_surface = g_new0(struct gtk_layer_surface_t, 1);
     layer_surface->gtk_window = window;
