@@ -77,12 +77,12 @@ static gint find_layer_surface_with_wl_surface(gconstpointer layer_surface, gcon
 }
 
 static struct layer_surface_t* layer_surface_hook_callback_impl(struct wl_surface* wl_surface) {
-    GList* layer_surface_entry = g_list_find_custom(
+    GList* entry = g_list_find_custom(
         all_layer_surfaces,
         wl_surface,
         find_layer_surface_with_wl_surface
     );
-    return layer_surface_entry ? layer_surface_entry->data : NULL;
+    return entry ? entry->data : NULL;
 }
 
 static struct geom_size_t gtk_layer_surface_get_preferred_size(struct layer_surface_t* super) {
