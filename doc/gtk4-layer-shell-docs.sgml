@@ -70,6 +70,7 @@
       </para>
     </partintro>
     <xi:include href="xml/gtk4-layer-shell.xml"/>
+    <xi:include href="xml/gtk4-session-lock.xml"/>
   </part>
 
   <index id="api-index-full">

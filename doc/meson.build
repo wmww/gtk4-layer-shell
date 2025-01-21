@@ -9,6 +9,7 @@ gnome.gtkdoc(
     main_xml: 'gtk4-layer-shell-docs.sgml',
     src_dir: [
         join_paths(meson.source_root(), 'include'),
+        join_paths(meson.source_root(), 'src'),
         join_paths(meson.build_root(), 'include'),
     ],
     dependencies: [ gtk, wayland_client, wayland_scanner, ],

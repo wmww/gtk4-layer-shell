@@ -5,6 +5,14 @@
 
 G_BEGIN_DECLS
 
+/**
+ * GtkSessionLockSingleton:
+ *
+ * The singleton object used to register signals relating to the lock screen's state. `locked`
+ * is fired when the screen is successfully locked, and `finished` is fired when the session is
+ * not locked (either it failed to lock or has been unlocked by the compositor). `finished` is
+ * not fired when gtk_session_lock_unlock() is called.
+ */
 G_DECLARE_FINAL_TYPE(GtkSessionLockSingleton, gtk_session_lock_singleton, GTK_SESSION_LOCK, SESSION_LOCK, GObject)
 
 /**
@@ -14,8 +22,36 @@ G_DECLARE_FINAL_TYPE(GtkSessionLockSingleton, gtk_session_lock_singleton, GTK_SE
  */
 GtkSessionLockSingleton* gtk_session_lock_get_singleton();
 
+/**
+ * gtk_session_lock_lock:
+ *
+ * Lock the screen. This should be called before assigning any windows to monitors.
+ */
 void gtk_session_lock_lock();
+
+/**
+ * gtk_session_lock_unlock:
+ *
+ * Unlock the screen. Has no effect if called when the screen is not locked.
+ */
 void gtk_session_lock_unlock();
+
+/**
+ * gtk_session_lock_is_locked:
+ *
+ * Returns if the screen is currently locked by this library in this process.
+ */
+gboolean gtk_session_lock_is_locked();
+
+/**
+ * gtk_session_lock_assign_window_to_monitor:
+ * @window: The GTK Window to use as a lock surface
+ * @monitor: The monitor to show it on
+ *
+ * This should be called with a different window once for each monitor immediately after calling
+ * gtk_session_lock_lock(). Hiding a window that is active on a monitor or not letting a window be resized by the
+ * library may result in a protocol error.
+ */
 void gtk_session_lock_assign_window_to_monitor(GtkWindow *window, GdkMonitor *monitor);
 
 G_END_DECLS

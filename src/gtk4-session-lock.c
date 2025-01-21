@@ -7,6 +7,7 @@
 
 static const char* lock_surface_key = "wayland_layer_surface";
 static GList* all_lock_surfaces = NULL;
+static gboolean is_locked = FALSE;
 
 static struct ext_session_lock_manager_v1* init_and_get_session_lock_global() {
     gtk_init();
@@ -70,6 +71,7 @@ GtkSessionLockSingleton* gtk_session_lock_get_singleton() {
 }
 
 static void session_lock_locked_callback_impl(bool locked) {
+    is_locked = locked;
     g_signal_emit(
         gtk_session_lock_get_singleton(),
         session_lock_signals[locked ? SESSION_LOCK_SIGNAL_LOCKED : SESSION_LOCK_SIGNAL_FINISHED],
@@ -78,15 +80,33 @@ static void session_lock_locked_callback_impl(bool locked) {
 }
 
 void gtk_session_lock_lock() {
+    if (is_locked) {
+        g_warning("Tried to lock multiple times without unlocking");
+        return;
+    }
     GdkDisplay* gdk_display = gdk_display_get_default();
-    g_return_if_fail(gdk_display);
-    struct wl_display* wl_display = gdk_wayland_display_get_wl_display(gdk_display);
-    g_return_if_fail(wl_display);
+    struct wl_display* wl_display = GDK_IS_WAYLAND_DISPLAY(gdk_display) ?
+        gdk_wayland_display_get_wl_display(gdk_display) :
+        NULL;
+    if (!wl_display) {
+        g_critical("Failed to get Wayland display");
+        g_signal_emit(gtk_session_lock_get_singleton(), session_lock_signals[SESSION_LOCK_SIGNAL_FINISHED], 0);
+        return;
+    }
+    if (!get_session_lock_global_from_display(wl_display)) {
+        g_critical("Session Lock protocol not supported");
+        g_signal_emit(gtk_session_lock_get_singleton(), session_lock_signals[SESSION_LOCK_SIGNAL_FINISHED], 0);
+        return;
+    }
     session_lock_lock(wl_display, session_lock_locked_callback_impl);
 }
 
 void gtk_session_lock_unlock() {
     session_lock_unlock();
+}
+
+gboolean gtk_session_lock_is_locked() {
+    return is_locked;
 }
 
 struct gtk_lock_surface_t {
