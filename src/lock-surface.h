@@ -11,6 +11,9 @@ struct lock_surface_t {
     struct ext_session_lock_surface_v1* lock_surface;
     struct wl_output* output;
     uint32_t pending_configure_serial;
+    struct {
+        int width, height;
+    } last_configure;
     struct wl_surface* wl_surface;
     struct xdg_surface* client_facing_xdg_surface;
     struct xdg_toplevel* client_facing_xdg_toplevel;

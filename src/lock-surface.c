@@ -75,20 +75,7 @@ void session_lock_unlock() {
     is_locked = false;
 }
 
-static void lock_surface_handle_configure(
-    void* data,
-    struct ext_session_lock_surface_v1* surface,
-    uint32_t serial,
-    uint32_t width,
-    uint32_t height
-) {
-    (void)surface;
-    (void)serial;
-    (void)width;
-    (void)height;
-    struct lock_surface_t* self = data;
-    self->pending_configure_serial = serial;
-
+static void lock_surface_send_xdg_configure(struct lock_surface_t* self) {
     struct wl_array states;
     wl_array_init(&states); {
         uint32_t* state = wl_array_add(&states, sizeof(uint32_t));
@@ -104,7 +91,7 @@ static void lock_surface_handle_configure(
         xdg_toplevel_listener,
         configure,
         self->client_facing_xdg_toplevel,
-        width, height,
+        self->last_configure.width, self->last_configure.height,
         &states);
     wl_array_release(&states);
 
@@ -112,7 +99,24 @@ static void lock_surface_handle_configure(
         xdg_surface_listener,
         configure,
         self->client_facing_xdg_surface,
-        serial);
+        self->pending_configure_serial);
+}
+
+static void lock_surface_handle_configure(
+    void* data,
+    struct ext_session_lock_surface_v1* surface,
+    uint32_t serial,
+    uint32_t width,
+    uint32_t height
+) {
+    (void)surface;
+    struct lock_surface_t* self = data;
+
+    self->pending_configure_serial = serial;
+    self->last_configure.width = width;
+    self->last_configure.height = height;
+
+    lock_surface_send_xdg_configure(self);
 }
 
 static const struct ext_session_lock_surface_v1_listener lock_surface_listener = {
