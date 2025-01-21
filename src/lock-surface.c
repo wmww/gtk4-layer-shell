@@ -148,6 +148,11 @@ void lock_surface_map(struct lock_surface_t* self) {
     self->lock_surface = ext_session_lock_v1_get_lock_surface(current_lock, self->wl_surface, self->output);
     assert(self->lock_surface);
     ext_session_lock_surface_v1_add_listener(self->lock_surface, &lock_surface_listener, self);
+
+    // Not strictly necessary, but roundtripping here will hopefully let us handle our initial configure before this
+    // function returns, which may reduce the chance of GTK committing the surface before that initial configure for one
+    // reasons or another (which is a protocol error).
+    wl_display_roundtrip(libwayland_shim_proxy_get_display((struct wl_proxy*)self->wl_surface));
 }
 
 static void lock_surface_unmap(struct lock_surface_t* self) {
