@@ -9,6 +9,9 @@ protocols = [
     join_paths(
         wayland_protocols.get_variable(pkgconfig: 'pkgdatadir'),
         'stable/xdg-shell/xdg-shell.xml'),
+    join_paths(
+        wayland_protocols.get_variable(pkgconfig: 'pkgdatadir'),
+        'staging/ext-session-lock/ext-session-lock-v1.xml'),
 ]
 
 if get_option('tests')
