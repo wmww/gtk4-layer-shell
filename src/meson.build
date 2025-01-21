@@ -3,6 +3,7 @@ srcs = files(
     'stolen-from-libwayland.c',
     'libwayland-shim.c',
     'layer-surface.c',
+    'lock-surface.c',
     'wayland-utils.c')
 
 version_args = [
