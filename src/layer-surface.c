@@ -1,6 +1,6 @@
 #include "layer-surface.h"
 
-#include "wayland-utils.h"
+#include "registry.h"
 #include "libwayland-shim.h"
 
 #include "xdg-shell-client.h"
@@ -8,13 +8,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-
-static struct layer_surface_t* default_get_layer_surface_for_wl_surface(struct wl_surface* wl_surface) {
-    (void)wl_surface;
-    return NULL;
-}
-struct layer_surface_t* (*get_layer_surface_for_wl_surface)(struct wl_surface* wl_surface)
-    = default_get_layer_surface_for_wl_surface;
 
 static void layer_surface_send_set_size(struct layer_surface_t* self) {
     if (!self->layer_surface) return;
@@ -214,9 +207,7 @@ static void layer_surface_create_surface_object(struct layer_surface_t* self, st
     layer_surface_send_set_size(self);
 }
 
-static void layer_surface_unmap(struct layer_surface_t* super) {
-    struct layer_surface_t* self = (struct layer_surface_t*)super;
-
+static void layer_surface_unmap(struct layer_surface_t* self) {
     if (self->layer_surface) {
         zwlr_layer_surface_v1_destroy(self->layer_surface);
         self->layer_surface = NULL;
@@ -473,8 +464,9 @@ static bool xdg_wm_base_get_xdg_surface_hook(
     (void)create_interface;
     (void)flags;
 
+    layer_surface_hook_callback_t callback = data;
     struct wl_surface* wl_surface = (struct wl_surface*)args[1].o;
-    struct layer_surface_t* self = get_layer_surface_for_wl_surface(wl_surface);
+    struct layer_surface_t* self = callback(wl_surface);
 
     if (self) {
         struct wl_proxy* xdg_surface = libwayland_shim_create_client_proxy(
@@ -538,18 +530,22 @@ static bool xdg_surface_get_popup_hook(
     }
 }
 
-__attribute__((constructor))
-static void init_hooks() {
+void layer_surface_install_hook(layer_surface_hook_callback_t callback) {
     libwayland_shim_install_request_hook(
         &xdg_wm_base_interface,
         XDG_WM_BASE_GET_XDG_SURFACE,
         xdg_wm_base_get_xdg_surface_hook,
-        NULL
+        callback
     );
-    libwayland_shim_install_request_hook(
-        &xdg_surface_interface,
-        XDG_SURFACE_GET_POPUP,
-        xdg_surface_get_popup_hook,
-        NULL
-    );
+
+    static bool popup_hook_initialized = false;
+    if (!popup_hook_initialized) {
+        popup_hook_initialized = true;
+        libwayland_shim_install_request_hook(
+            &xdg_surface_interface,
+            XDG_SURFACE_GET_POPUP,
+            xdg_surface_get_popup_hook,
+            NULL
+        );
+    }
 }

@@ -22,7 +22,7 @@ struct request_hook {
     void* data;
 };
 
-static bool has_initialized = NULL;
+static bool has_initialized = false;
 
 static struct wl_proxy* (*real_wl_proxy_marshal_array_flags)(
     struct wl_proxy* proxy,
@@ -47,7 +47,7 @@ static void libwayland_shim_init() {
     if (has_initialized) return;
 
 #define INIT_SYM(name) \
-    if (!(real_##name = dlsym(RTLD_NEXT, #name))) {\
+    if (!(real_##name = dlsym(RTLD_NEXT, #name))) { \
         fprintf(stderr, "libwayland_shim: dlsym failed to load %s\n", #name); \
         exit(1); \
     }

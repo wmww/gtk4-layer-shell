@@ -23,11 +23,6 @@
       <para> The MIT License (MIT) </para>
 
       <copyright>
-        <year>2014</year>
-        <holder>Dennis Blommesteijn</holder>
-      </copyright>
-
-      <copyright>
         <year>2019</year>
         <holder>Sophie Winter</holder>
       </copyright>
@@ -61,7 +56,7 @@
     <partintro>
       <para>
         gtk4-layer-shell is a library to write <ulink type ="http" url="https://www.gtk.org/">GTK</ulink>
-         applications that use <ulink type="https" url="https://github.com/swaywm/wlr-protocols/blob/master/unstable/wlr-layer-shell-unstable-v1.xml">Layer Shell</ulink>.
+         applications that use <ulink type="https" url="https://wayland.app/protocols/wlr-layer-shell-unstable-v1">Layer Shell</ulink>.
          Layer Shell is a Wayland protocol for desktop shell components,
          such as panels, notifications and wallpapers. You can use it to anchor
          your windows to a corner or edge of the output, or stretch them across
@@ -75,6 +70,7 @@
       </para>
     </partintro>
     <xi:include href="xml/gtk4-layer-shell.xml"/>
+    <xi:include href="xml/gtk4-session-lock.xml"/>
   </part>
 
   <index id="api-index-full">

@@ -3,10 +3,6 @@
 #include <stdbool.h>
 #include "wlr-layer-shell-unstable-v1-client.h"
 
-struct wl_surface;
-struct xdg_surface;
-struct xdg_positioner;
-
 struct geom_edges_t {
     int left, right, top, bottom;
 };
@@ -17,8 +13,6 @@ struct geom_size_t {
 
 #define GEOM_SIZE_UNSET (struct geom_size_t){-1, -1}
 
-// Functions that mutate this structure should all be in layer-surface.c to make the logic easier to understand
-// Struct is declared in this header to prevent the need for excess getters
 struct layer_surface_t {
     // Virtual functions (NULL by default, can be overridden by the user of this library)
 
@@ -91,4 +85,8 @@ void layer_surface_set_keyboard_mode(
 );
 void layer_surface_invalidate_preferred_size(struct layer_surface_t* self); // Called when preferred size may have changed
 
-extern struct layer_surface_t* (*get_layer_surface_for_wl_surface)(struct wl_surface* wl_surface);
+// Each time the current process attempts to create a new xdg_surface out of a wl_surface this callback will be called.
+// If the given callback returns a non-null pointer, this layer surface is used to override the XDG surface. Else the
+// XDG surface is created normally. Thus must be used for any layer surfaces to be displayed.
+typedef struct layer_surface_t* (*layer_surface_hook_callback_t)(struct wl_surface*);
+void layer_surface_install_hook(layer_surface_hook_callback_t callback);

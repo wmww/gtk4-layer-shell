@@ -9,6 +9,7 @@ gnome.gtkdoc(
     main_xml: 'gtk4-layer-shell-docs.sgml',
     src_dir: [
         join_paths(meson.source_root(), 'include'),
+        join_paths(meson.source_root(), 'src'),
         join_paths(meson.build_root(), 'include'),
     ],
     dependencies: [ gtk, wayland_client, wayland_scanner, ],
@@ -17,7 +18,7 @@ gnome.gtkdoc(
         '--extra-dir=@0@'.format(join_paths(glib_docpath, 'glib')),
         '--extra-dir=@0@'.format(join_paths(glib_docpath, 'gobject')),
         '--extra-dir=@0@'.format(join_paths(glib_docpath, 'gio')),
-        '--extra-dir=@0@'.format(join_paths(glib_docpath, 'gtk3')),
+        '--extra-dir=@0@'.format(join_paths(glib_docpath, 'gtk4')),
     ],
     install_dir: 'gtk4-layer-shell',
     install: true
