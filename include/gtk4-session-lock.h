@@ -8,12 +8,22 @@ G_BEGIN_DECLS
 /**
  * GtkSessionLockSingleton:
  *
- * The singleton object used to register signals relating to the lock screen's state. `locked`
- * is fired when the screen is successfully locked, and `finished` is fired when the session is
- * not locked (either it failed to lock or has been unlocked by the compositor). `finished` is
- * not fired when gtk_session_lock_unlock() is called.
+ * The singleton object used to register signals relating to the lock screen's state.
  */
 G_DECLARE_FINAL_TYPE(GtkSessionLockSingleton, gtk_session_lock_singleton, GTK_SESSION_LOCK, SESSION_LOCK, GObject)
+
+/**
+ * GtkSessionLockSingleton::locked:
+ *
+ * The ::locked signal is fired when the screen is successfully locked.
+ */
+
+/**
+ * GtkSessionLockSingleton::finished:
+ *
+ * The ::finished signal is fired when the session is not locked (either it failed to lock or has been unlocked by the
+ * compositor). `finished` is not fired when gtk_session_lock_unlock() is called.
+ */
 
 /**
  * gtk_session_lock_get_singleton:
