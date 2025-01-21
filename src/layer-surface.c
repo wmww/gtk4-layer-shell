@@ -1,6 +1,6 @@
 #include "layer-surface.h"
 
-#include "wayland-utils.h"
+#include "registry.h"
 #include "libwayland-shim.h"
 
 #include "xdg-shell-client.h"

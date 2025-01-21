@@ -1,6 +1,6 @@
 #include "gtk4-session-lock.h"
 #include "lock-surface.h"
-#include "wayland-utils.h"
+#include "registry.h"
 #include "libwayland-shim.h"
 
 #include <gdk/wayland/gdkwayland.h>

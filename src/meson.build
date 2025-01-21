@@ -5,7 +5,7 @@ srcs = files(
     'libwayland-shim.c',
     'layer-surface.c',
     'lock-surface.c',
-    'wayland-utils.c')
+    'registry.c')
 
 version_args = [
     '-DGTK_LAYER_SHELL_MAJOR=' + meson.project_version().split('.')[0],

@@ -1,4 +1,4 @@
-#include "wayland-utils.h"
+#include "registry.h"
 #include <wayland-client-core.h>
 #include <wayland-client-protocol.h>
 #include "wlr-layer-shell-unstable-v1-client.h"
