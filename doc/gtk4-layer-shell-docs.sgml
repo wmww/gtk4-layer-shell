@@ -8,65 +8,24 @@
 ]>
 <book id="index">
   <bookinfo>
-    <title>&package_name; Reference Manual</title>
+    <title>&package_name;</title>
     <releaseinfo>
       <para>
         This document is the API reference for for &package_name; &package_version;.
       </para>
-      <para>
-        If you find any issues in this API reference, please report it using
-        <ulink type="http" url="&package_bugreport;">the online bug reporting tool</ulink>.
-      </para>
     </releaseinfo>
-
-    <legalnotice>
-      <para> The MIT License (MIT) </para>
-
-      <copyright>
-        <year>2019</year>
-        <holder>Sophie Winter</holder>
-      </copyright>
-
-      <para>
-        Permission is hereby granted, free of charge, to any person obtaining a copy
-        of this software and associated documentation files (the "Software"), to deal
-        in the Software without restriction, including without limitation the rights
-        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-        copies of the Software, and to permit persons to whom the Software is
-        furnished to do so, subject to the following conditions:
-      </para>
-      <para>
-        The above copyright notice and this permission notice shall be included in all
-        copies or substantial portions of the Software.
-      </para>
-      <para>
-        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-        SOFTWARE.
-      </para>
-    </legalnotice>
   </bookinfo>
 
   <part id="gtk4-layer-shell">
     <title>API Reference</title>
     <partintro>
       <para>
-        gtk4-layer-shell is a library to write <ulink type ="http" url="https://www.gtk.org/">GTK</ulink>
-         applications that use <ulink type="https" url="https://wayland.app/protocols/wlr-layer-shell-unstable-v1">Layer Shell</ulink>.
-         Layer Shell is a Wayland protocol for desktop shell components,
-         such as panels, notifications and wallpapers. You can use it to anchor
-         your windows to a corner or edge of the output, or stretch them across
-         the entire output.
+        gtk4-layer-shell is a library to use Wayland protocol extensions (primarily Layer Shell) with
+        <ulink type ="http" url="https://www.gtk.org/">GTK4</ulink>.
       </para>
       <para>
-        This library only makes sense on Wayland compositors that support Layer
-        Shell, and will not work on X11. It supports all Layer Shell features
-        including popups and popovers (GTK popups Just Work™). Please open issues
-        for any bugs you come across.
+        Source code repo
+        <ulink type="http" url="&package_url;">here</ulink>.
       </para>
     </partintro>
     <xi:include href="xml/gtk4-layer-shell.xml"/>

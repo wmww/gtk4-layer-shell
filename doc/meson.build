@@ -12,7 +12,7 @@ gnome.gtkdoc(
         join_paths(meson.source_root(), 'src'),
         join_paths(meson.build_root(), 'include'),
     ],
-    dependencies: [ gtk, wayland_client, wayland_scanner, ],
+    dependencies: [gtk_layer_shell, gtk, wayland_client, wayland_scanner],
     fixxref_args: [
         '--html-dir=@0@'.format(docpath),
         '--extra-dir=@0@'.format(join_paths(glib_docpath, 'glib')),
@@ -20,6 +20,7 @@ gnome.gtkdoc(
         '--extra-dir=@0@'.format(join_paths(glib_docpath, 'gio')),
         '--extra-dir=@0@'.format(join_paths(glib_docpath, 'gtk4')),
     ],
+    scan_args: ['--rebuild-types'],
     install_dir: 'gtk4-layer-shell',
     install: true
 )
