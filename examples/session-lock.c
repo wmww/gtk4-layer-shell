@@ -1,8 +1,6 @@
 #include "gtk4-session-lock.h"
 #include <gtk/gtk.h>
 
-static gboolean has_locked = FALSE;
-
 static void unlock(GtkButton *button, void *data) {
     (void)button;
     GtkApplication* app = data;
@@ -14,20 +12,23 @@ static void unlock(GtkButton *button, void *data) {
 static void locked(GtkSessionLockSingleton *session_lock, void *data) {
     (void)data;
     (void)session_lock;
+
     g_message("Session locked successfully");
-    has_locked = TRUE;
 }
 
-static void finished(GtkSessionLockSingleton *session_lock, void *data) {
+static void failed(GtkSessionLockSingleton *session_lock, void *data) {
+    (void)data;
+    (void)session_lock;
+
+    g_critical("The session could not be locked");
+}
+
+static void unlocked(GtkSessionLockSingleton *session_lock, void *data) {
     (void)session_lock;
     GtkApplication* app = data;
 
-    if (has_locked) {
-        g_message("The compositor unlocked us");
-        g_application_quit(G_APPLICATION(app));
-    } else {
-        g_critical("The session could not be locked");
-    }
+    g_message("Session unlocked");
+    g_application_quit(G_APPLICATION(app));
 }
 
 static void activate(GtkApplication* app, void *data) {
@@ -39,7 +40,8 @@ static void activate(GtkApplication* app, void *data) {
     guint n_monitors = g_list_model_get_n_items(monitors);
 
     g_signal_connect(gtk_session_lock_get_singleton(), "locked", G_CALLBACK(locked), app);
-    g_signal_connect(gtk_session_lock_get_singleton(), "finished", G_CALLBACK(finished), app);
+    g_signal_connect(gtk_session_lock_get_singleton(), "failed", G_CALLBACK(failed), app);
+    g_signal_connect(gtk_session_lock_get_singleton(), "unlocked", G_CALLBACK(unlocked), app);
 
     gtk_session_lock_lock();
 

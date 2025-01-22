@@ -34,10 +34,15 @@ G_DECLARE_FINAL_TYPE(GtkSessionLockSingleton, gtk_session_lock_singleton, GTK_SE
  */
 
 /**
- * GtkSessionLockSingleton::finished:
+ * GtkSessionLockSingleton::failed:
  *
- * The ::finished signal is fired when the session is not locked (either it failed to lock or has been unlocked by the
- * compositor). `finished` is not fired when gtk_session_lock_unlock() is called.
+ * The ::failed signal is fired when the lock could not be acquired.
+ */
+
+/**
+ * GtkSessionLockSingleton::unlocked:
+ *
+ * The ::unlocked signal is fired when the session is unlocked.
  */
 
 /**

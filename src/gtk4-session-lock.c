@@ -27,7 +27,8 @@ static GtkSessionLockSingleton* session_lock_singleton = NULL;
 
 enum {
     SESSION_LOCK_SIGNAL_LOCKED,
-    SESSION_LOCK_SIGNAL_FINISHED,
+    SESSION_LOCK_SIGNAL_FAILED,
+    SESSION_LOCK_SIGNAL_UNLOCKED,
     SESSION_LOCK_SIGNAL_LAST,
 };
 
@@ -35,28 +36,13 @@ static guint session_lock_signals[SESSION_LOCK_SIGNAL_LAST] = {0};
 
 static void gtk_session_lock_singleton_class_init(GtkSessionLockSingletonClass *cclass) {
     session_lock_signals[SESSION_LOCK_SIGNAL_LOCKED] = g_signal_new(
-        "locked",
-        G_TYPE_FROM_CLASS(cclass),
-        G_SIGNAL_RUN_FIRST,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        G_TYPE_NONE,
-        0
-    );
+        "locked", G_TYPE_FROM_CLASS(cclass), G_SIGNAL_RUN_FIRST, 0, NULL, NULL, NULL, G_TYPE_NONE, 0);
 
-    session_lock_signals[SESSION_LOCK_SIGNAL_FINISHED] = g_signal_new(
-        "finished",
-        G_TYPE_FROM_CLASS(cclass),
-        G_SIGNAL_RUN_FIRST,
-        0,
-        NULL,
-        NULL,
-        NULL,
-        G_TYPE_NONE,
-        0
-    );
+    session_lock_signals[SESSION_LOCK_SIGNAL_FAILED] = g_signal_new(
+        "failed", G_TYPE_FROM_CLASS(cclass), G_SIGNAL_RUN_FIRST, 0, NULL, NULL, NULL, G_TYPE_NONE, 0);
+
+    session_lock_signals[SESSION_LOCK_SIGNAL_UNLOCKED] = g_signal_new(
+        "unlocked", G_TYPE_FROM_CLASS(cclass), G_SIGNAL_RUN_FIRST, 0, NULL, NULL, NULL, G_TYPE_NONE, 0);
 }
 
 static void gtk_session_lock_singleton_init(GtkSessionLockSingleton *self) {
@@ -71,10 +57,15 @@ GtkSessionLockSingleton* gtk_session_lock_get_singleton() {
 }
 
 static void session_lock_locked_callback_impl(bool locked) {
+    gboolean was_locked = is_locked;
     is_locked = locked;
     g_signal_emit(
         gtk_session_lock_get_singleton(),
-        session_lock_signals[locked ? SESSION_LOCK_SIGNAL_LOCKED : SESSION_LOCK_SIGNAL_FINISHED],
+        session_lock_signals[
+            locked ? SESSION_LOCK_SIGNAL_LOCKED : (
+                was_locked ? SESSION_LOCK_SIGNAL_UNLOCKED : SESSION_LOCK_SIGNAL_FAILED
+            )
+        ],
         0
     );
 }
@@ -90,19 +81,22 @@ void gtk_session_lock_lock() {
         NULL;
     if (!wl_display) {
         g_critical("Failed to get Wayland display");
-        g_signal_emit(gtk_session_lock_get_singleton(), session_lock_signals[SESSION_LOCK_SIGNAL_FINISHED], 0);
+        g_signal_emit(gtk_session_lock_get_singleton(), session_lock_signals[SESSION_LOCK_SIGNAL_FAILED], 0);
         return;
     }
     if (!get_session_lock_global_from_display(wl_display)) {
         g_critical("Session Lock protocol not supported");
-        g_signal_emit(gtk_session_lock_get_singleton(), session_lock_signals[SESSION_LOCK_SIGNAL_FINISHED], 0);
+        g_signal_emit(gtk_session_lock_get_singleton(), session_lock_signals[SESSION_LOCK_SIGNAL_FAILED], 0);
         return;
     }
     session_lock_lock(wl_display, session_lock_locked_callback_impl);
 }
 
 void gtk_session_lock_unlock() {
-    session_lock_unlock();
+    if (is_locked) {
+        g_signal_emit(gtk_session_lock_get_singleton(), session_lock_signals[SESSION_LOCK_SIGNAL_UNLOCKED], 0);
+        session_lock_unlock();
+    }
 }
 
 gboolean gtk_session_lock_is_locked() {
