@@ -3,6 +3,21 @@
 
 #include <gtk/gtk.h>
 
+/**
+ * SECTION:gtk4-session-lock
+ * @title: GTK4 Session Lock
+ * @short_description: GTK4 support for the Session Lock Wayland protocol
+ *
+ * [Session Lock](https://wayland.app/protocols/ext-session-lock-v1)
+ * is a Wayland protocol for lock screens. Use it to lock the compositor
+ * and display the lock screen. This library and the underlying Wayland
+ * protocol do not handle authentication.
+ *
+ * # Note On Linking
+ * If you link against libwayland you must link this library before libwayland. See
+ * [linking.md](https://github.com/wmww/gtk4-layer-shell/blob/main/linking.md) for details.
+ */
+
 G_BEGIN_DECLS
 
 /**

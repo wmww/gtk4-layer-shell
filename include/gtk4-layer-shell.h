@@ -6,9 +6,19 @@
 /**
  * SECTION:gtk4-layer-shell
  * @title: GTK4 Layer Shell
- * @short_description: A library to use the Layer Shell Wayland protocol with GTK4
+ * @short_description: GTK4 support for the Layer Shell Wayland protocol
  *
- * # Linking against this library and libwayland
+ * [Layer Shell](https://wayland.app/protocols/wlr-layer-shell-unstable-v1)
+ * is a Wayland protocol for desktop shell components,
+ * such as panels, notifications and wallpapers. You can use it to anchor
+ * your windows to a corner or edge of the output, or stretch them across
+ * the entire output. This library aims to support all Layer Shell features,
+ * and supports GTK popups and popovers.
+ *
+ * This library only functions on Wayland compositors that the support Layer Shell.
+ * __It does not work on X11 or GNOME on Wayland.__
+ *
+ * # Note On Linking
  * If you link against libwayland you must link this library before libwayland. See
  * [linking.md](https://github.com/wmww/gtk4-layer-shell/blob/main/linking.md) for details.
  *
