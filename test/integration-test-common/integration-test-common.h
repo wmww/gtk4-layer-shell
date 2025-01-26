@@ -15,7 +15,7 @@ extern int step_time;
 // Tell the test script that a request containing the given space-separated components is expected
 #define EXPECT_MESSAGE(message) fprintf(stderr, "EXPECT: %s\n", #message)
 // Tell the test script this request is not expected
-#define DONT_EXPECT_MESSAGE(message) fprintf(stderr, "DONT_EXPECT: %s\n", #message)
+#define UNEXPECT_MESSAGE(message) fprintf(stderr, "UNEXPECT: %s\n", #message)
 // Tell the test script that all expected messages should now be fulfilled
 // (called automatically before each callback and at the end of the test)
 #define CHECK_EXPECTATIONS() fprintf(stderr, "CHECK EXPECTATIONS COMPLETED\n")

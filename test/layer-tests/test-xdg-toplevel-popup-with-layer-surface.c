@@ -28,8 +28,8 @@ static void callback_1() {
     EXPECT_MESSAGE(xdg_surface .get_popup xdg_surface);
     EXPECT_MESSAGE(xdg_popup .grab);
 
-    DONT_EXPECT_MESSAGE(zwlr_layer_surface_v1 .get_popup);
-    DONT_EXPECT_MESSAGE(xdg_popup .destroy);
+    UNEXPECT_MESSAGE(zwlr_layer_surface_v1 .get_popup);
+    UNEXPECT_MESSAGE(xdg_popup .destroy);
 
     g_signal_emit_by_name(normal_dropdown, "activate", NULL);
 }

@@ -222,7 +222,7 @@ def verify_result(lines: List[str]):
         if line.startswith('EXPECT: '):
             assertions.append(line.split()[1:])
             set_expectation = True
-        elif line.startswith('DONT_EXPECT: '):
+        elif line.startswith('UNEXPECT: '):
             negative_assertions.append(line.split()[1:])
             set_expectation = True
         elif line.startswith('[') and line.endswith(')') and ('@' in line or '#' in line):

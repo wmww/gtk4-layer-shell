@@ -23,7 +23,7 @@ static void callback_1() {
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .get_popup);
     EXPECT_MESSAGE(xdg_popup .grab);
 
-    DONT_EXPECT_MESSAGE(xdg_popup .destroy);
+    UNEXPECT_MESSAGE(xdg_popup .destroy);
 
     g_signal_emit_by_name(layer_dropdown, "activate", NULL);
 }
