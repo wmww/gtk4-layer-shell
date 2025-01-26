@@ -21,63 +21,93 @@
 G_BEGIN_DECLS
 
 /**
- * GtkSessionLockSingleton:
+ * gtk_session_lock_is_supported:
  *
- * The singleton object used to register signals relating to the lock screen's state.
+ * May block for a Wayland roundtrip the first time it's called.
+ *
+ * Returns: %TRUE if the platform is Wayland and Wayland compositor supports the
+ * Session Lock protocol.
  */
-G_DECLARE_FINAL_TYPE(GtkSessionLockSingleton, gtk_session_lock_singleton, GTK_SESSION_LOCK, SESSION_LOCK, GObject)
+gboolean gtk_session_lock_is_supported();
 
 /**
- * GtkSessionLockSingleton::locked:
+ * GtkSessionLockInstance:
+ *
+ * An instance of the object used to control locking the screen.
+ * Multiple instances can exist at once, but only one can be locked at a time.
+ */
+G_DECLARE_FINAL_TYPE(GtkSessionLockInstance, gtk_session_lock_instance, GTK_SESSION_LOCK, INSTANCE, GObject)
+
+/**
+ * GtkSessionLockInstance::locked:
  *
  * The ::locked signal is fired when the screen is successfully locked.
  */
 
 /**
- * GtkSessionLockSingleton::finished:
+ * GtkSessionLockInstance::failed:
  *
- * The ::finished signal is fired when the session is not locked (either it failed to lock or has been unlocked by the
- * compositor). `finished` is not fired when gtk_session_lock_unlock() is called.
+ * The ::failed signal is fired when the lock could not be acquired.
  */
 
 /**
- * gtk_session_lock_get_singleton:
+ * GtkSessionLockInstance::unlocked:
  *
- * Returns: (transfer none): The singleton instance (created on first call).
+ * The ::unlocked signal is fired when the session is unlocked, which may have been caused by a call to
+ * gtk_session_lock_instance_unlock() or by the compositor.
  */
-GtkSessionLockSingleton* gtk_session_lock_get_singleton();
 
 /**
- * gtk_session_lock_lock:
+ * gtk_session_lock_instance_new:
  *
- * Lock the screen. This should be called before assigning any windows to monitors.
+ * Returns: new session lock instance
  */
-void gtk_session_lock_lock();
+GtkSessionLockInstance* gtk_session_lock_instance_new();
 
 /**
- * gtk_session_lock_unlock:
+ * gtk_session_lock_instance_lock:
+ * @self: the instance to lock
  *
- * Unlock the screen. Has no effect if called when the screen is not locked.
+ * Lock the screen. This should be called before assigning any windows to monitors. If this function fails the ::failed
+ * signal is emitted, if it succeeds the ::locked signal is emitted. The ::failed signal may be emitted before the
+ * function returns (for example, if another #GtkSessionLockInstance holds a lock) or later (if another process holds a
+ * lock)
+ *
+ * Returns: false on immediate fail, true if lock acquisition was successfully started
  */
-void gtk_session_lock_unlock();
+gboolean gtk_session_lock_instance_lock(GtkSessionLockInstance* self);
 
 /**
- * gtk_session_lock_is_locked:
+ * gtk_session_lock_instance_unlock:
+ * @self: the instance to unlock
  *
- * Returns if the screen is currently locked by this library in this process.
+ * If the screen is locked by this instance unlocks it and fires ::unlocked. Otherwise has no effect
  */
-gboolean gtk_session_lock_is_locked();
+void gtk_session_lock_instance_unlock(GtkSessionLockInstance* self);
 
 /**
- * gtk_session_lock_assign_window_to_monitor:
+ * gtk_session_lock_instance_is_locked:
+ * @self: the instance
+ *
+ * Returns if this instance currently holds a lock.
+ */
+gboolean gtk_session_lock_instance_is_locked(GtkSessionLockInstance* self);
+
+/**
+ * gtk_session_lock_instance_assign_window_to_monitor:
+ * @self: the instance to use
  * @window: The GTK Window to use as a lock surface
  * @monitor: The monitor to show it on
  *
  * This should be called with a different window once for each monitor immediately after calling
  * gtk_session_lock_lock(). Hiding a window that is active on a monitor or not letting a window be resized by the
- * library may result in a protocol error.
+ * library may result in a Wayland protocol error.
  */
-void gtk_session_lock_assign_window_to_monitor(GtkWindow *window, GdkMonitor *monitor);
+void gtk_session_lock_instance_assign_window_to_monitor(
+    GtkSessionLockInstance* self,
+    GtkWindow *window,
+    GdkMonitor *monitor
+);
 
 G_END_DECLS
 

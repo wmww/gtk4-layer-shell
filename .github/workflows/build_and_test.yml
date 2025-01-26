@@ -14,7 +14,7 @@ jobs:
     - name: Apt update
       run: sudo apt update
     - name: Install depends
-      run: sudo apt install meson libwayland-dev libgtk-4-dev gobject-introspection libgirepository1.0-dev valac luajit luarocks gtk-doc-tools
+      run: sudo apt install meson libwayland-dev libgtk-4-dev gobject-introspection libgirepository1.0-dev valac gtk-doc-tools
     - name: Meson
       run: meson setup -Dexamples=true -Ddocs=true -Dtests=true build
       env:
