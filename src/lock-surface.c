@@ -12,6 +12,7 @@
 struct wl_display* current_display = NULL;
 struct ext_session_lock_v1* current_lock = NULL;
 static session_lock_locked_callback_t current_callback = NULL;
+static void* current_callback_data = NULL;
 static bool is_locked = false;
 
 static void session_lock_handle_locked(void* data, struct ext_session_lock_v1* session_lock) {
@@ -22,7 +23,7 @@ static void session_lock_handle_locked(void* data, struct ext_session_lock_v1* s
     }
     is_locked = true;
     if (current_callback) {
-        current_callback(true);
+        current_callback(true, current_callback_data);
     }
 }
 
@@ -34,8 +35,9 @@ static void session_lock_handle_finished(void* data, struct ext_session_lock_v1*
     }
     is_locked = false;
     if (current_callback) {
-        current_callback(false);
+        current_callback(false, current_callback_data);
         current_callback = NULL;
+        current_callback_data = NULL;
     }
 }
 
@@ -44,21 +46,23 @@ static const struct ext_session_lock_v1_listener session_lock_listener = {
     .finished = session_lock_handle_finished,
 };
 
-void session_lock_lock(struct wl_display* display, session_lock_locked_callback_t callback) {
+bool session_lock_lock(struct wl_display* display, session_lock_locked_callback_t callback, void* data) {
     if (current_lock) {
-        callback(false);
-        return;
+        callback(false, data);
+        return false;
     }
     struct ext_session_lock_manager_v1* manager = get_session_lock_global_from_display(display);
     if (!manager) {
-        callback(false);
-        return;
+        callback(false, data);
+        return false;
     }
     current_display = display;
     current_lock = ext_session_lock_manager_v1_lock(manager);
     current_callback = callback;
+    current_callback_data = data;
     is_locked = false;
-    ext_session_lock_v1_add_listener(current_lock, &session_lock_listener, callback);
+    ext_session_lock_v1_add_listener(current_lock, &session_lock_listener, NULL);
+    return true;
 }
 
 void session_lock_unlock() {
@@ -72,6 +76,7 @@ void session_lock_unlock() {
     current_display = NULL;
     current_lock = NULL;
     current_callback = NULL;
+    current_callback_data = NULL;
     is_locked = false;
 }
 
@@ -130,13 +135,18 @@ struct lock_surface_t lock_surface_make(struct wl_output* output) {
     return ret;
 }
 
-void lock_surface_map(struct lock_surface_t* self) {
+void lock_surface_map(struct lock_surface_t* self, void* lock_callback_data) {
     if (self->lock_surface) {
         return;
     }
 
     if (!current_lock) {
         fprintf(stderr, "failed to create lock surface, no current lock in place\n");
+        return;
+    }
+
+    if (lock_callback_data != current_callback_data) {
+        fprintf(stderr, "failed to create lock surface, callback data doesn't match\n");
         return;
     }
 
