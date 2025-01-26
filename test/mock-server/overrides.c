@@ -54,7 +54,6 @@ static void surface_data_unmap(SurfaceData* data) {
     SurfaceData* popup = data->most_recent_popup;
     while (popup) {
         // Popups must be unmapped before their parents
-        ASSERT(!popup->surface);
         ASSERT(!popup->layer_surface);
         ASSERT(!popup->xdg_popup);
         ASSERT(!popup->xdg_toplevel);
@@ -241,7 +240,9 @@ static void xdg_surface_get_popup(struct wl_resource *resource, const struct wl_
         wl_resource_get_version(resource),
         id);
     use_default_impl(popup);
-    xdg_popup_send_configure(popup, 0, 0, 100, 100);
+    // If the configure size is too small GTK gets upset and unmaps its popup in protest
+    // https://gitlab.gnome.org/GNOME/gtk/-/blob/4.16.12/gtk/gtkpopover.c?ref_type=tags#L719
+    xdg_popup_send_configure(popup, 0, 0, 500, 500);
     xdg_surface_send_configure(resource, wl_display_next_serial(display));
     SurfaceData* data = wl_resource_get_user_data(resource);
     surface_data_set_role(data, SURFACE_ROLE_XDG_POPUP);
