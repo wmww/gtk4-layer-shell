@@ -21,6 +21,16 @@
 G_BEGIN_DECLS
 
 /**
+ * gtk_session_lock_is_supported:
+ *
+ * May block for a Wayland roundtrip the first time it's called.
+ *
+ * Returns: %TRUE if the platform is Wayland and Wayland compositor supports the
+ * Session Lock protocol.
+ */
+gboolean gtk_session_lock_is_supported();
+
+/**
  * GtkSessionLockInstance:
  *
  * An instance of the object used to control locking the screen.

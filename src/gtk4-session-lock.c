@@ -8,6 +8,16 @@
 static const char* lock_surface_key = "wayland_layer_surface";
 static GList* all_lock_surfaces = NULL;
 
+gboolean gtk_session_lock_is_supported() {
+    gtk_init();
+    GdkDisplay* gdk_display = gdk_display_get_default();
+    struct wl_display* wl_display = GDK_IS_WAYLAND_DISPLAY(gdk_display) ?
+        gdk_wayland_display_get_wl_display(gdk_display) : NULL;
+    struct ext_session_lock_manager_v1* global = wl_display ?
+        get_session_lock_global_from_display(wl_display) : NULL;
+    return global != NULL;
+}
+
 struct _GtkSessionLockInstance {
     GObject parent_instance;
     gboolean is_locked;

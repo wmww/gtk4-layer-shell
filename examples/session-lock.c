@@ -77,6 +77,10 @@ static void activate(GtkApplication* app, void *data) {
 }
 
 int main(int argc, char **argv) {
+    if (!gtk_session_lock_is_supported()) {
+        g_message("Session lock not supported");
+        return 1;
+    }
     app = gtk_application_new(
         "com.github.wmww.gtk4-layer-shell.session-lock-example",
         G_APPLICATION_DEFAULT_FLAGS
