@@ -87,7 +87,7 @@ static void layer_surface_configure_xdg_surface(
         } {
             uint32_t* state = wl_array_add(&states, sizeof(uint32_t));
             assert(state);
-            *state = XDG_TOPLEVEL_STATE_MAXIMIZED;
+            *state = XDG_TOPLEVEL_STATE_FULLSCREEN;
         }
 
         LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(
