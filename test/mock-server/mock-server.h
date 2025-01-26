@@ -12,6 +12,7 @@
 #include <wayland-server.h>
 #include "xdg-shell-server.h"
 #include "xdg-dialog-v1-server.h"
+#include "ext-session-lock-v1-server.h"
 #include "wlr-layer-shell-unstable-v1-server.h"
 
 extern struct wl_display* display;

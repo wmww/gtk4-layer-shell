@@ -217,11 +217,12 @@ def verify_result(lines: List[str]):
     section_start = 0
     set_expectation = False
     checked_expectation = False
+
     for i, line in enumerate(lines):
         if line.startswith('EXPECT: '):
             assertions.append(line.split()[1:])
             set_expectation = True
-        elif line.startswith('DONT_EXPECT: '):
+        elif line.startswith('UNEXPECT: '):
             negative_assertions.append(line.split()[1:])
             set_expectation = True
         elif line.startswith('[') and line.endswith(')') and ('@' in line or '#' in line):
@@ -231,12 +232,15 @@ def verify_result(lines: List[str]):
                 if line_contains(line, negative_assertion):
                     section = format_stream('relevant section', '\n'.join(lines[section_start:i + 1]))
                     raise TestError(section + '\n\nunexpected message matching "' + ' '.join(negative_assertion) + '"')
-        elif line == 'CHECK EXPECTATIONS COMPLETED' or i == len(lines) - 1:
+
+        if line == 'CHECK EXPECTATIONS COMPLETED' or i == len(lines) - 1:
             checked_expectation = True
             if assertions:
                 section = format_stream('relevant section', '\n'.join(lines[section_start:i]))
                 raise TestError(section + '\n\ndid not find "' + ' '.join(assertions[0]) + '"')
             section_start = i + 1
+            negative_assertions = []
+
     if not set_expectation or not checked_expectation:
         # If the test didn't use the right expectation format or something we don't want to silently pass
         raise TestError('test did not correctly set and check an expectation')

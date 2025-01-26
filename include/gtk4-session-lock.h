@@ -71,7 +71,7 @@ GtkSessionLockInstance* gtk_session_lock_instance_new();
  * Lock the screen. This should be called before assigning any windows to monitors. If this function fails the ::failed
  * signal is emitted, if it succeeds the ::locked signal is emitted. The ::failed signal may be emitted before the
  * function returns (for example, if another #GtkSessionLockInstance holds a lock) or later (if another process holds a
- * lock)
+ * lock). The only case where neither signal is triggered is if the instance is already locked.
  *
  * Returns: false on immediate fail, true if lock acquisition was successfully started
  */

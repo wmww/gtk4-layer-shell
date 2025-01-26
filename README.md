@@ -87,7 +87,10 @@ pacman -S --needed meson ninja gtk4 wayland gobject-introspection libgirepositor
 
 ### Running the Tests
 * `ninja -C build test`
-* Or, to run a specific test and print the complete output `meson test <testname> --verbose -C build`
+* Or, to run a specific test and print the complete output `meson test -C build --verbose <testname>`
+* To watch a specific test run against the currently active Wayland compositor `ninja -C build && ./build/test/<testname> --auto`
+* To run the test in interactive mode it's same as above, but without the `--auto` flag
+* If you have [wayland-debug](https://github.com/wmww/wayland-debug), `wayland-debug -f 'zwlr_*, xdg_*' -r ./build/test/<testname> --auto` can be helpful for debugging
 
 ## Licensing
 100% MIT (unlike the GTK3 version of this library which contained GPL code copied from GTK)

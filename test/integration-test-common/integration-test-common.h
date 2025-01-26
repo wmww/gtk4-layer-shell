@@ -2,6 +2,7 @@
 #define TEST_CLIENT_COMMON_H
 
 #include "gtk4-layer-shell.h"
+#include "gtk4-session-lock.h"
 #include "test-common.h"
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
@@ -14,7 +15,7 @@ extern int step_time;
 // Tell the test script that a request containing the given space-separated components is expected
 #define EXPECT_MESSAGE(message) fprintf(stderr, "EXPECT: %s\n", #message)
 // Tell the test script this request is not expected
-#define DONT_EXPECT_MESSAGE(message) fprintf(stderr, "DONT_EXPECT: %s\n", #message)
+#define UNEXPECT_MESSAGE(message) fprintf(stderr, "UNEXPECT: %s\n", #message)
 // Tell the test script that all expected messages should now be fulfilled
 // (called automatically before each callback and at the end of the test)
 #define CHECK_EXPECTATIONS() fprintf(stderr, "CHECK EXPECTATIONS COMPLETED\n")
@@ -27,5 +28,13 @@ extern void (* test_callbacks[])(void);
 #define TEST_CALLBACKS(...) void (* test_callbacks[])(void) = {__VA_ARGS__ NULL};
 
 GtkWindow* create_default_window();
+
+enum lock_state_t {
+    LOCK_STATE_UNLOCKED = 0,
+    LOCK_STATE_LOCKED,
+    LOCK_STATE_FAILED,
+};
+void connect_lock_signals(GtkSessionLockInstance* lock, enum lock_state_t* state);
+void create_lock_windows(GtkSessionLockInstance* lock);
 
 #endif // TEST_CLIENT_COMMON_H
