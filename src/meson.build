@@ -1,11 +1,14 @@
-srcs = files(
-    'gtk4-layer-shell.c',
-    'gtk4-session-lock.c',
+core_srcs = files(
     'stolen-from-libwayland.c',
     'libwayland-shim.c',
     'layer-surface.c',
     'lock-surface.c',
     'registry.c')
+
+gtk_srcs = files(
+    'gtk4-layer-shell.c',
+    'gtk4-session-lock.c',
+    )
 
 version_args = [
     '-DGTK_LAYER_SHELL_MAJOR=' + meson.project_version().split('.')[0],
@@ -14,12 +17,18 @@ version_args = [
 ]
 
 gtk_layer_shell_lib = library('gtk4-layer-shell',
-    srcs, client_protocol_srcs,
+    gtk_srcs, core_srcs, client_protocol_srcs,
     c_args: version_args,
     include_directories: [gtk_layer_shell_inc],
     dependencies: [gtk, wayland_client],
     version: meson.project_version(),
     soversion: lib_so_version,
+    install: true)
+
+layer_shell_preload_lib = library('layer-shell-preload',
+    files('layer-shell-preload.c'), core_srcs, client_protocol_srcs,
+    include_directories: [gtk_layer_shell_inc],
+    dependencies: [wayland_client],
     install: true)
 
 pkg_config_name = 'gtk4-layer-shell-0'
@@ -29,7 +38,7 @@ if get_option('introspection')
     gir_layer = gnome.generate_gir(
         gtk_layer_shell_lib,
         dependencies: [gtk],
-        sources: srcs + files('../include/gtk4-layer-shell.h'),
+        sources: files('../include/gtk4-layer-shell.h') + gtk_srcs + core_srcs,
         namespace: 'Gtk4LayerShell',
         nsversion: '1.0',
         identifier_prefix: 'GtkLayerShell',
@@ -42,7 +51,7 @@ if get_option('introspection')
     gir_lock = gnome.generate_gir(
         gtk_layer_shell_lib,
         dependencies: [gtk],
-        sources: srcs + files('../include/gtk4-session-lock.h'),
+        sources: files('../include/gtk4-session-lock.h') + gtk_srcs + core_srcs,
         namespace: 'Gtk4SessionLock',
         nsversion: '1.0',
         identifier_prefix: 'GtkSessionLock',
