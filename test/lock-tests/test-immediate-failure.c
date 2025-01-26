@@ -18,6 +18,7 @@ static void callback_0() {
     connect_lock_signals(lock_b, &state_b);
 
     ASSERT(gtk_session_lock_instance_lock(lock_b));
+    ASSERT(!gtk_session_lock_instance_lock(lock_b));
     create_lock_windows(lock_b);
 }
 

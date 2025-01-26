@@ -21,6 +21,7 @@ gboolean gtk_session_lock_is_supported() {
 struct _GtkSessionLockInstance {
     GObject parent_instance;
     gboolean is_locked;
+    gboolean has_requested_lock;
     gboolean failed;
 };
 
@@ -48,6 +49,7 @@ static void gtk_session_lock_instance_class_init(GtkSessionLockInstanceClass *cc
 
 static void gtk_session_lock_instance_init(GtkSessionLockInstance *self) {
     self->is_locked = FALSE;
+    self->has_requested_lock = FALSE;
     self->failed = FALSE;
 }
 
@@ -61,6 +63,9 @@ static void session_lock_locked_callback_impl(bool locked, void* data) {
         self->failed = TRUE;
     }
     self->is_locked = locked;
+    if (!locked) {
+        self->has_requested_lock = FALSE;
+    }
     g_signal_emit(
         self,
         session_lock_signals[
@@ -73,9 +78,8 @@ static void session_lock_locked_callback_impl(bool locked, void* data) {
 }
 
 gboolean gtk_session_lock_instance_lock(GtkSessionLockInstance* self) {
-    if (self->is_locked) {
+    if (self->has_requested_lock) {
         g_warning("Tried to lock multiple times without unlocking");
-        g_signal_emit(self, session_lock_signals[SESSION_LOCK_SIGNAL_FAILED], 0);
         return false;
     }
 
@@ -101,17 +105,20 @@ gboolean gtk_session_lock_instance_lock(GtkSessionLockInstance* self) {
         g_message("Move gtk4-layer-shell before libwayland-client in the linker options.");
         g_message("You may be able to fix with without recompiling by setting LD_PRELOAD=/path/to/libgtk4-layer-shell.so");
         g_message("See https://github.com/wmww/gtk4-layer-shell/blob/main/linking.md for more info");
+        g_signal_emit(self, session_lock_signals[SESSION_LOCK_SIGNAL_FAILED], 0);
         return false;
     }
 
+    self->has_requested_lock = TRUE;
     session_lock_lock(wl_display, session_lock_locked_callback_impl, self);
     return !self->failed;
 }
 
 void gtk_session_lock_instance_unlock(GtkSessionLockInstance* self) {
     if (self->is_locked) {
-        g_signal_emit(self, session_lock_signals[SESSION_LOCK_SIGNAL_UNLOCKED], 0);
         self->is_locked = FALSE;
+        self->has_requested_lock = FALSE;
+        g_signal_emit(self, session_lock_signals[SESSION_LOCK_SIGNAL_UNLOCKED], 0);
         session_lock_unlock();
     }
 }
