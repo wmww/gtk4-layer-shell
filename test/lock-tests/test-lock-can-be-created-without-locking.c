@@ -1,10 +1,20 @@
 #include "integration-test-common.h"
 
-static void callback_0() {
-    UNEXPECT_MESSAGE(ext_session_lock_v1 .lock);
+enum lock_state_t state = 0;
+GtkSessionLockInstance* lock;
 
-    GtkSessionLockInstance* lock = gtk_session_lock_instance_new();
+static void callback_0() {
+    UNEXPECT_MESSAGE(ext_session_lock_manager_v1 .lock);
+    UNEXPECT_MESSAGE(ext_session_lock_v1 .get_lock_surface);
+    UNEXPECT_MESSAGE(ext_session_lock_v1 .locked);
+
+    ASSERT(gtk_session_lock_is_supported());
+
+    lock = gtk_session_lock_instance_new();
+    connect_lock_signals(lock, &state);
     g_object_unref(lock);
+
+    ASSERT_EQ(state, LOCK_STATE_NOT_YET_LOCKED, "%d");
 }
 
 TEST_CALLBACKS(
