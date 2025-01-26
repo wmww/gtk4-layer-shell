@@ -14,7 +14,7 @@ static void callback_0() {
     connect_lock_signals(lock, &state);
     g_object_unref(lock);
 
-    ASSERT_EQ(state, LOCK_STATE_NOT_YET_LOCKED, "%d");
+    ASSERT_EQ(state, LOCK_STATE_UNLOCKED, "%d");
 }
 
 TEST_CALLBACKS(

@@ -18,7 +18,7 @@ foreach test_list : [['layer', layer_tests], ['lock', lock_tests]]
         test_full_name = test_prefix + '-' + test_name
         exe = executable(
             test_full_name,
-            files(join_paths(test_dir, test_name + '.c')),
+            files(join_paths(test_dir, test_name + '.c')), client_protocol_srcs,
             dependencies: [gtk, wayland_client, gtk_layer_shell, integration_test_common])
         test(
             test_full_name,

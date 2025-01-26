@@ -41,14 +41,14 @@ struct lock_signal_data_t {
 static void on_locked(GtkSessionLockInstance *lock, void *data) {
     (void)lock;
     enum lock_state_t* state = data;
-    ASSERT_EQ(*state, LOCK_STATE_NOT_YET_LOCKED, "%d");
+    ASSERT_EQ(*state, LOCK_STATE_UNLOCKED, "%d");
     *state = LOCK_STATE_LOCKED;
 }
 
 static void on_failed(GtkSessionLockInstance *lock, void *data) {
     (void)lock;
     enum lock_state_t* state = data;
-    ASSERT_EQ(*state, LOCK_STATE_NOT_YET_LOCKED, "%d");
+    ASSERT_EQ(*state, LOCK_STATE_UNLOCKED, "%d");
     *state = LOCK_STATE_FAILED;
 }
 

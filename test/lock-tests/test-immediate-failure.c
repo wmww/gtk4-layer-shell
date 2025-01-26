@@ -22,7 +22,7 @@ static void callback_0() {
 }
 
 static void callback_1() {
-    ASSERT_EQ(state_a, LOCK_STATE_NOT_YET_LOCKED, "%d");
+    ASSERT_EQ(state_a, LOCK_STATE_UNLOCKED, "%d");
     ASSERT_EQ(state_b, LOCK_STATE_LOCKED, "%d");
     UNEXPECT_MESSAGE(ext_session_lock_manager_v1 .lock);
     UNEXPECT_MESSAGE(ext_session_lock_v1 .get_lock_surface);

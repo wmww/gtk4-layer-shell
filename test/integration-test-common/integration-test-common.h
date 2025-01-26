@@ -30,10 +30,9 @@ extern void (* test_callbacks[])(void);
 GtkWindow* create_default_window();
 
 enum lock_state_t {
-    LOCK_STATE_NOT_YET_LOCKED = 0,
+    LOCK_STATE_UNLOCKED = 0,
     LOCK_STATE_LOCKED,
     LOCK_STATE_FAILED,
-    LOCK_STATE_UNLOCKED,
 };
 void connect_lock_signals(GtkSessionLockInstance* lock, enum lock_state_t* state);
 void create_lock_windows(GtkSessionLockInstance* lock);
