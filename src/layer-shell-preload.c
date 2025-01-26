@@ -92,7 +92,7 @@ static struct geom_size_t get_preferred_size(struct layer_surface_t* surface) {
 
 static struct layer_surface_t* layer_surface_hook_callback_impl(struct wl_surface* wl_surface) {
     (void)wl_surface;
-    if (has_created_layer_surface) {
+    if (has_created_layer_surface && !get_bool_from_env("LAYER_ALL_SURFACES")) {
         return NULL;
     }
     has_created_layer_surface = true;
