@@ -2,6 +2,7 @@
 #define TEST_CLIENT_COMMON_H
 
 #include "gtk4-layer-shell.h"
+#include "gtk4-session-lock.h"
 #include "test-common.h"
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>

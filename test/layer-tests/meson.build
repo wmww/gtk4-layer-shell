@@ -1,4 +1,4 @@
-integration_tests = [
+layer_tests = [
     'test-is-supported-true',
     'test-layer-surface-not-created',
     'test-creation-properties',

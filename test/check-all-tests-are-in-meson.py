@@ -31,7 +31,8 @@ def check_dir(dir_path):
 
 if __name__ == '__main__':
     test_dir = path.dirname(path.realpath(__file__))
-    check_dir(path.join(test_dir, 'integration-tests'))
+    check_dir(path.join(test_dir, 'layer-tests'))
+    check_dir(path.join(test_dir, 'lock-tests'))
     check_dir(path.join(test_dir, 'smoke-tests'))
     check_dir(path.join(test_dir, 'unit-tests'))
     if dead_tests:
