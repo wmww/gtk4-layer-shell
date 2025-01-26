@@ -18,7 +18,7 @@ This directory is home to the gtk4-layer-shell test suite.
 Most of the potential bugs in GTK Layer Shell arise from interactions between the library, GTK and the Wayland compositor, so unit tests aren't particularly useful. Instead, most of our tests are integration tests.
 
 ### Integration test app
-Each integration test is a single unique GTK app that uses GTK Layer Shell. All test clients are located in `integration-tests`. Anything common to multiple tests gets pulled into `integration-test-common` or `test-common`. Tests consist of a sequence of callbacks. At the start of each callback the app can state that specific Wayland messages should be sent during or after the callback is run (see expectations format below). Each meson test runs a single integration test.
+Each integration test is a single unique GTK app that uses GTK Layer Shell. All test clients are located in an integration test subdirectory (eg `layer-tests/`). Anything common to multiple tests gets pulled into `integration-test-common` or `test-common`. Tests consist of a sequence of callbacks. At the start of each callback the app can state that specific Wayland messages should be sent during or after the callback is run (see expectations format below). Each meson test runs a single integration test.
 
 Integration tests can be run directly on a normal Wayland compositor (this may be useful for debugging). When run without arguments, they open an additional layer shell window with a `Continue ->` button to manually advance the test. Pass `--auto` to run each test callback with a timeout the way they are run when automated.
 
