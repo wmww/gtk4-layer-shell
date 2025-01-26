@@ -22,6 +22,6 @@ jobs:
     - name: Build
       run: ninja -C build
     - name: Test
-      run: ninja -C build test
+      run: meson test -C build --verbose
     - name: Install
       run: sudo ninja -C build install
