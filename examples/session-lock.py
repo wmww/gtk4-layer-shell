@@ -13,53 +13,60 @@ from gi.repository import Gtk
 from gi.repository import Gdk
 from gi.repository import Gtk4SessionLock as SessionLock
 
-def on_locked(lock_instance):
-    print('Locked!')
+class ScreenLock:
+    def __init__(self):
+        self.lock_instance = SessionLock.Instance.new()
+        self.lock_instance.connect('locked', self._on_locked)
+        self.lock_instance.connect('unlocked', self._on_unlocked)
+        self.lock_instance.connect('failed', self._on_failed)
 
-def on_unlocked(lock_instance):
-    print('Unlocked!')
-    app.quit()
+    def _on_locked(self, lock_instance):
+        print('Locked!')
 
-def on_failed(lock_instance):
-    print('Failed to lock :(')
-    app.quit()
+    def _on_unlocked(self, lock_instance):
+        print('Unlocked!')
+        app.quit()
 
-def create_lock_window(lock_instance, monitor):
-    window = Gtk.Window(application=app)
+    def _on_failed(self, lock_instance):
+        print('Failed to lock :(')
+        app.quit()
 
-    box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-    box.set_halign(Gtk.Align.CENTER)
-    box.set_valign(Gtk.Align.CENTER)
-    window.set_child(box)
+    def _on_unlock_clicked(self, button):
+        self.lock_instance.unlock()
 
-    label = Gtk.Label(label="GTK Session Lock with Python")
-    box.append(label)
+    def _create_lock_window(self, monitor):
+        window = Gtk.Window(application=app)
 
-    def on_unlock_clicked(button):
-        lock_instance.unlock()
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        box.set_halign(Gtk.Align.CENTER)
+        box.set_valign(Gtk.Align.CENTER)
+        window.set_child(box)
 
-    button = Gtk.Button(label='Unlock')
-    button.connect('clicked', on_unlock_clicked)
-    box.append(button)
+        label = Gtk.Label(label="GTK Session Lock with Python")
+        box.append(label)
 
-    lock_instance.assign_window_to_monitor(window, monitor)
-    window.present()
+        button = Gtk.Button(label='Unlock')
+        button.connect('clicked', self._on_unlock_clicked)
+        box.append(button)
 
-def on_activate(app):
-    lock_instance = SessionLock.Instance.new()
-    lock_instance.connect('locked', on_locked)
-    lock_instance.connect('unlocked', on_unlocked)
-    lock_instance.connect('failed', on_failed)
+        self.lock_instance.assign_window_to_monitor(window, monitor)
+        window.present()
 
-    if not lock_instance.lock():
-        # Failure has already been handled in on_failed()
-        return
+    def lock(self):
+        if not self.lock_instance.lock():
+            # Failure has already been handled in on_failed()
+            return
 
-    display = Gdk.Display.get_default()
+        display = Gdk.Display.get_default()
 
-    for monitor in display.get_monitors():
-        create_lock_window(lock_instance, monitor)
+        for monitor in display.get_monitors():
+            self._create_lock_window(monitor)
 
 app = Gtk.Application(application_id='com.github.wmww.gtk4-layer-shell.py-session-lock')
+lock = ScreenLock()
+
+def on_activate(app):
+    lock.lock()
+
 app.connect('activate', on_activate)
 app.run(None)
