@@ -111,6 +111,7 @@ gboolean gtk_session_lock_instance_lock(GtkSessionLockInstance* self) {
 void gtk_session_lock_instance_unlock(GtkSessionLockInstance* self) {
     if (self->is_locked) {
         g_signal_emit(self, session_lock_signals[SESSION_LOCK_SIGNAL_UNLOCKED], 0);
+        self->is_locked = FALSE;
         session_lock_unlock();
     }
 }
