@@ -1,7 +1,7 @@
 #include "integration-test-common.h"
 
 static void callback_0() {
-    EXPECT_MESSAGE(ext_session_lock_v1 .lock);
+    DONT_EXPECT_MESSAGE(ext_session_lock_v1 .lock);
 
     GtkSessionLockInstance* lock = gtk_session_lock_instance_new();
     g_object_unref(lock);
