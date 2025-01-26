@@ -6,7 +6,7 @@ from ctypes import CDLL
 CDLL('libgtk4-layer-shell.so')
 
 import gi
-gi.require_version("Gtk", "4.0")
+gi.require_version('Gtk', '4.0')
 gi.require_version('Gtk4LayerShell', '1.0')
 
 from gi.repository import Gtk
@@ -23,7 +23,7 @@ def on_activate(app):
     LayerShell.set_margin(window, LayerShell.Edge.TOP, 20)
     LayerShell.auto_exclusive_zone_enable(window)
 
-    button = Gtk.Button(label="GTK4 Layer Shell with Python")
+    button = Gtk.Button(label='GTK4 Layer Shell with Python')
     button.connect('clicked', lambda x: window.close())
     window.set_child(button)
     window.present()
