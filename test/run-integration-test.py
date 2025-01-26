@@ -239,6 +239,7 @@ def verify_result(lines: List[str]):
                 section = format_stream('relevant section', '\n'.join(lines[section_start:i]))
                 raise TestError(section + '\n\ndid not find "' + ' '.join(assertions[0]) + '"')
             section_start = i + 1
+            negative_assertions = []
 
     if not set_expectation or not checked_expectation:
         # If the test didn't use the right expectation format or something we don't want to silently pass
