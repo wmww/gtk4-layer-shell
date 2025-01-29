@@ -17,7 +17,7 @@ struct wrapped_proxy {
 
 struct request_hook {
     const char* interface_name;
-    uint32_t opcode;
+    int opcode;
     libwayland_shim_request_handler_func_t handler;
     void* data;
 };
@@ -62,7 +62,7 @@ static void libwayland_shim_init() {
 
 void libwayland_shim_install_request_hook(
     struct wl_interface const* interface,
-    uint32_t opcode,
+    int opcode,
     libwayland_shim_request_handler_func_t handler,
     void* data
 ) {
@@ -282,7 +282,9 @@ struct wl_proxy* wl_proxy_marshal_array_flags(
     } else {
         const char* interface_name = proxy->object.interface->name;
         for (int i = 0; i < request_hook_count; i++) {
-            if (strcmp(request_hooks[i].interface_name, interface_name) == 0 && request_hooks[i].opcode == opcode) {
+            if (strcmp(request_hooks[i].interface_name, interface_name) == 0 &&
+                (request_hooks[i].opcode < 0 || request_hooks[i].opcode == (int)opcode)
+            ) {
                 struct wl_proxy* ret_proxy = NULL;
                 if (request_hooks[i].handler(
                     request_hooks[i].data,

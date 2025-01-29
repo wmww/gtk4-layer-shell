@@ -25,10 +25,10 @@ typedef void (*libwayland_shim_destroy_handler_func_t)(void* data, struct wl_pro
 bool libwayland_shim_has_initialized();
 
 // The handler will be called and can optionally handle all matching requests. There is no way to uninstall a hook, and
-// installing too many hooks may hurt performance.
+// installing too many hooks may hurt performance. If opcode < 0 all requests are matched for that interface.
 void libwayland_shim_install_request_hook(
     struct wl_interface const* interface,
-    uint32_t opcode,
+    int opcode,
     libwayland_shim_request_handler_func_t handler,
     void* data
 );
