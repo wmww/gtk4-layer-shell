@@ -2,8 +2,10 @@
 
 #include "registry.h"
 #include "libwayland-shim.h"
+#include "stubbed-surface.h"
 
-#include "xdg-shell-client.h"
+#include <xdg-shell-client.h>
+#include <wayland-client-protocol.h>
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -183,13 +185,13 @@ void lock_surface_uninit(struct lock_surface_t* self) {
     lock_surface_unmap(self);
 }
 
-static void client_xdg_toplevel_handle_destroy(void* data, struct wl_proxy* proxy) {
+static void xdg_toplevel_handle_destroy(void* data, struct wl_proxy* proxy) {
     (void)proxy;
-    struct lock_surface_t* self = (struct lock_surface_t*)data;
+    struct lock_surface_t* self = data;
     lock_surface_unmap(self);
 }
 
-static bool client_xdg_surface_handle_request(
+static bool xdg_surface_handle_request(
     void* data,
     struct wl_proxy* proxy,
     uint32_t opcode,
@@ -200,14 +202,14 @@ static bool client_xdg_surface_handle_request(
     struct wl_proxy** ret_proxy
 ) {
     (void)interface; (void)flags;
-    struct lock_surface_t* self = (struct lock_surface_t*)data;
+    struct lock_surface_t* self = data;
     if (opcode == XDG_SURFACE_GET_TOPLEVEL) {
         *ret_proxy = libwayland_shim_create_client_proxy(
             proxy,
             &xdg_toplevel_interface,
             version,
             NULL,
-            client_xdg_toplevel_handle_destroy,
+            xdg_toplevel_handle_destroy,
             data
         );
         self->client_facing_xdg_toplevel = (struct xdg_toplevel*)*ret_proxy;
@@ -230,9 +232,9 @@ static bool client_xdg_surface_handle_request(
     }
 }
 
-static void client_xdg_surface_handle_destroy(void* data, struct wl_proxy* proxy) {
+static void xdg_surface_handle_destroy(void* data, struct wl_proxy* proxy) {
     (void)proxy;
-    struct lock_surface_t* self = (struct lock_surface_t*)data;
+    struct lock_surface_t* self = data;
     lock_surface_unmap(self);
 }
 
@@ -261,48 +263,25 @@ static bool xdg_wm_base_get_xdg_surface_hook(
             proxy,
             &xdg_surface_interface,
             create_version,
-            client_xdg_surface_handle_request,
-            client_xdg_surface_handle_destroy,
+            xdg_surface_handle_request,
+            xdg_surface_handle_destroy,
             self
         );
         self->client_facing_xdg_surface = (struct xdg_surface*)xdg_surface;
         *ret_proxy = xdg_surface;
         return true;
-    } else {
-        return false;
-    }
-}
-
-static bool xdg_surface_get_popup_hook(
-    void* data,
-    struct wl_proxy* proxy,
-    uint32_t opcode,
-    const struct wl_interface* create_interface,
-    uint32_t create_version,
-    uint32_t flags,
-    union wl_argument* args,
-    struct wl_proxy** ret_proxy
-) {
-    (void)data;
-    (void)opcode;
-    (void)create_interface;
-    (void)flags;
-
-    struct lock_surface_t* self = libwayland_shim_get_client_proxy_data(
-        (struct wl_proxy*)args[1].o,
-        client_xdg_surface_handle_request
-    );
-
-    if (self) {
-        fprintf(stderr, "popups not supported for session lock surfaces\n");
-        *ret_proxy = libwayland_shim_create_client_proxy(
-            proxy,
-            &xdg_popup_interface,
-            create_version,
-            NULL, NULL, NULL
-        );
+    } else if (current_lock) {
+        // A new XDG surface is being created while the screen is locked, but it's not a lock surface. Few possibilities
+        // 1. it's going to be a toplevel
+        // 2. it's going to be a popup on a non-lock toplevel
+        // 3. it's going to be a popup on a lock surface
+        // For 1 and 2 it could be created as normal, but it wont be slown until the lock surface is closed. 3 is most
+        // likely, but if we allow the creation of an XDG surface for it there's no easy way to avoid a protocol error.
+        // Therefore we create a stub surface that won't display anything, but will keep GTK happy.
+        fprintf(stderr, "non-lock surface created while screen locked, it will not displayed\n");
+        *ret_proxy = (struct wl_proxy*)stubbed_surface_init((struct xdg_wm_base*)proxy, wl_surface);
         return true;
-    } else {
+    } {
         return false;
     }
 }
@@ -314,15 +293,4 @@ void lock_surface_install_hook(lock_surface_hook_callback_t callback) {
         xdg_wm_base_get_xdg_surface_hook,
         callback
     );
-
-    static bool popup_hook_initialized = false;
-    if (!popup_hook_initialized) {
-        popup_hook_initialized = true;
-        libwayland_shim_install_request_hook(
-            &xdg_surface_interface,
-            XDG_SURFACE_GET_POPUP,
-            xdg_surface_get_popup_hook,
-            NULL
-        );
-    }
 }
