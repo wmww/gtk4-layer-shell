@@ -34,7 +34,7 @@ static void stubbed_role_created(struct xdg_surface_server_t* super) {
     // back from the compositor and send configure when it arrives, which solves this problem. HOWEVER the GDK
     // surface is dispatching on a specific event queue. Our callback needs to be on the same queue, or else it
     // wont get processed and everything will lock up.
-    struct wl_event_queue* queue = wl_proxy_get_queue((struct wl_proxy*)self->super.xdg_surface);
+    struct wl_event_queue* queue = libwayland_shim_proxy_get_queue((struct wl_proxy*)self->super.xdg_surface);
     struct wl_display* display = libwayland_shim_proxy_get_display((struct wl_proxy*)self->super.xdg_surface);
     struct wl_display* wrapped_display = wl_proxy_create_wrapper(display);
     wl_proxy_set_queue((struct wl_proxy*)wrapped_display, queue);

@@ -45,7 +45,7 @@ static void lock_surface_configure_acked(struct xdg_surface_server_t* super, uin
     }
 }
 
-static void lock_surface_toplevel_destroyed(struct xdg_surface_server_t* super) {
+static void lock_surface_role_destroyed(struct xdg_surface_server_t* super) {
     struct lock_surface_t* self = (void*)super;
     if (self->lock_surface) {
         ext_session_lock_surface_v1_destroy(self->lock_surface);
@@ -58,7 +58,8 @@ struct lock_surface_t lock_surface_make(struct wl_output* output) {
     struct lock_surface_t ret = {
         .super = {
             .configure_acked = lock_surface_configure_acked,
-            .toplevel_destroyed = lock_surface_toplevel_destroyed,
+            .toplevel_destroyed = lock_surface_role_destroyed,
+            .popup_destroyed = lock_surface_role_destroyed,
         },
         .output = output
     };
