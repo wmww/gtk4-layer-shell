@@ -15,6 +15,9 @@ struct zwlr_layer_shell_v1* layer_shell_global = NULL;
 bool session_lock_requested = false;
 struct ext_session_lock_manager_v1* session_lock_global = NULL;
 
+bool subcompositor_requested = false;
+struct wl_subcompositor* subcompositor_global = NULL;
+
 static void wl_registry_handle_global(
     void* _data,
     struct wl_registry* registry,
@@ -25,7 +28,15 @@ static void wl_registry_handle_global(
     (void)_data;
 
     // pull out needed globals
-    if (layer_shell_requested && strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
+    if (subcompositor_requested && strcmp(interface, wl_subcompositor_interface.name) == 0) {
+        uint32_t supported_version = wl_subcompositor_interface.version;
+        subcompositor_global = wl_registry_bind(
+            registry,
+            id,
+            &wl_subcompositor_interface,
+            supported_version < version ? supported_version : version
+        );
+    } else if (layer_shell_requested && strcmp(interface, zwlr_layer_shell_v1_interface.name) == 0) {
         uint32_t supported_version = zwlr_layer_shell_v1_interface.version;
         layer_shell_global = wl_registry_bind(
             registry,
@@ -88,10 +99,19 @@ struct zwlr_layer_shell_v1* get_layer_shell_global_from_display(struct wl_displa
 struct ext_session_lock_manager_v1* get_session_lock_global_from_display(struct wl_display* display) {
     if (!session_lock_requested) {
         session_lock_requested = true;
+        subcompositor_requested = true; // If session lock is in use the subcompositor will likely be needed
         bind_globals(display);
         if (!session_lock_global) {
             fprintf(stderr, "it appears your Wayland compositor does not support the Session Lock protocol\n");
         }
     }
     return session_lock_global;
+}
+
+struct wl_subcompositor* get_subcompositor_global_from_display(struct wl_display* display) {
+    if (!subcompositor_requested) {
+        subcompositor_requested = true;
+        bind_globals(display);
+    }
+    return subcompositor_global;
 }
