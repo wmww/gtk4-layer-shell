@@ -3,6 +3,7 @@ core_srcs = files(
     'libwayland-shim.c',
     'xdg-surface-server.c',
     'layer-surface.c',
+    'session-lock.c',
     'lock-surface.c',
     'stubbed-surface.c',
     'registry.c')

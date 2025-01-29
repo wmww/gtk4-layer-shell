@@ -1,4 +1,5 @@
 #include "gtk4-session-lock.h"
+#include "session-lock.h"
 #include "lock-surface.h"
 #include "registry.h"
 #include "libwayland-shim.h"
@@ -20,6 +21,7 @@ gboolean gtk_session_lock_is_supported() {
 
 struct _GtkSessionLockInstance {
     GObject parent_instance;
+    void* wayland_object;
     gboolean is_locked;
     gboolean has_requested_lock;
     gboolean failed;
@@ -111,6 +113,7 @@ gboolean gtk_session_lock_instance_lock(GtkSessionLockInstance* self) {
 
     self->has_requested_lock = TRUE;
     session_lock_lock(wl_display, session_lock_locked_callback_impl, self);
+    self->wayland_object = self->failed ? NULL : (void*)session_lock_get_active_lock();
     return !self->failed;
 }
 
@@ -160,7 +163,11 @@ static struct lock_surface_t* lock_surface_hook_callback_impl(struct wl_surface*
 static void on_window_mapped(GtkWindow *window, gpointer data) {
     (void)window;
     struct gtk_lock_surface_t* self = data;
-    lock_surface_map(&self->super, self->lock);
+    if (self->lock->wayland_object == session_lock_get_active_lock()) {
+        lock_surface_map(&self->super);
+    } else {
+        g_warning("Not showing lock surface because the session lock it is linked to is not active");
+    }
 }
 
 void gtk_session_lock_instance_assign_window_to_monitor(
