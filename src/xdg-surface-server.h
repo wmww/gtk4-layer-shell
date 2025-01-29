@@ -33,3 +33,7 @@ void xdg_surface_server_send_configure(
     int width, int height,
     uint32_t serial
 );
+
+// Simulates a destruction of the proxies. They are cleared, the *_destroyed virtual functions are called and any future
+// requests made to them will be safely ignored. This object can be safely re-used.
+void xdg_surface_server_uninit(struct xdg_surface_server_t* self);

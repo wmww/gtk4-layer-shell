@@ -178,3 +178,19 @@ void xdg_surface_server_send_configure(
         );
     }
 }
+
+void xdg_surface_server_uninit(struct xdg_surface_server_t* self) {
+    struct wl_proxy* proxy;
+    if ((proxy = (struct wl_proxy*)self->xdg_popup)) {
+        libwayland_shim_clear_client_proxy_data(proxy);
+        xdg_popup_handle_destroy(self, proxy);
+    }
+    if ((proxy = (struct wl_proxy*)self->xdg_toplevel)) {
+        libwayland_shim_clear_client_proxy_data(proxy);
+        xdg_toplevel_handle_destroy(self, proxy);
+    }
+    if ((proxy = (struct wl_proxy*)self->xdg_surface)) {
+        libwayland_shim_clear_client_proxy_data(proxy);
+        xdg_surface_handle_destroy(self, proxy);
+    }
+}
