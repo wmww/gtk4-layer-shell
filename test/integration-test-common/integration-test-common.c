@@ -65,7 +65,7 @@ void connect_lock_signals(GtkSessionLockInstance* lock, enum lock_state_t* state
     g_signal_connect(lock, "unlocked", G_CALLBACK(on_unlocked), state);
 }
 
-void create_lock_windows(GtkSessionLockInstance* lock) {
+void create_lock_windows(GtkSessionLockInstance* lock, GtkWindow* (*builder)()) {
     GdkDisplay *display = gdk_display_get_default();
     GListModel *monitors = gdk_display_get_monitors(display);
     guint n_monitors = g_list_model_get_n_items(monitors);
@@ -73,10 +73,14 @@ void create_lock_windows(GtkSessionLockInstance* lock) {
     for (guint i = 0; i < n_monitors; ++i) {
         GdkMonitor *monitor = g_list_model_get_item(monitors, i);
 
-        GtkWindow* window = create_default_window();
+        GtkWindow* window = builder();
         gtk_session_lock_instance_assign_window_to_monitor(lock, window, monitor);
         gtk_window_present(window);
     }
+}
+
+void create_default_lock_windows(GtkSessionLockInstance* lock) {
+    create_lock_windows(lock, create_default_window);
 }
 
 static void continue_button_callback(GtkWidget* _widget, gpointer _data) {

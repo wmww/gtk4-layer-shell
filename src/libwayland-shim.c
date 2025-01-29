@@ -128,6 +128,10 @@ struct wl_display* libwayland_shim_proxy_get_display(struct wl_proxy* proxy) {
     return proxy->display;
 }
 
+struct wl_event_queue* libwayland_shim_proxy_get_queue(struct wl_proxy* proxy) {
+    return proxy->queue;
+}
+
 // Returns true if any arguments are proxies created by us(not known to libwayland)
 static bool args_contains_client_facing_proxy(
     struct wl_proxy* proxy,

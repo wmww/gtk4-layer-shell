@@ -71,6 +71,9 @@ static void activate(GtkApplication* app, void *data) {
         g_signal_connect(button, "clicked", G_CALLBACK(unlock), app);
         gtk_box_append(GTK_BOX(box), button);
 
+        // Not displayed, but allows testing that creating popups doesn't crash GTK
+        gtk_widget_set_tooltip_text(button, "Foo Bar Baz");
+
         gtk_window_set_child(GTK_WINDOW(gtk_window), box);
         gtk_window_present(gtk_window);
     }

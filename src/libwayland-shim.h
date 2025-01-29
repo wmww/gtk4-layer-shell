@@ -60,6 +60,8 @@ void* libwayland_shim_get_client_proxy_data(struct wl_proxy* proxy, void* expect
 // Yes wl_proxy_get_display exists, but only in libwayland >=1.23. This can be replaced with that once we can drop
 // support for older libwaylands (though no rush, this works)
 struct wl_display* libwayland_shim_proxy_get_display(struct wl_proxy* proxy);
+// Same deal, wl_proxy_get_queue() exists but is new
+struct wl_event_queue* libwayland_shim_proxy_get_queue(struct wl_proxy* proxy);
 
 #define LIBWAYLAND_SHIM_FIRST_ARG(first, ...) first
 #define LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(listener, event, ...) \

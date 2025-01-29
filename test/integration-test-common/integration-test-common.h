@@ -35,6 +35,7 @@ enum lock_state_t {
     LOCK_STATE_FAILED,
 };
 void connect_lock_signals(GtkSessionLockInstance* lock, enum lock_state_t* state);
-void create_lock_windows(GtkSessionLockInstance* lock);
+void create_lock_windows(GtkSessionLockInstance* lock, GtkWindow* (*builder)());
+void create_default_lock_windows(GtkSessionLockInstance* lock);
 
 #endif // TEST_CLIENT_COMMON_H

@@ -1,14 +1,16 @@
 core_srcs = files(
     'stolen-from-libwayland.c',
     'libwayland-shim.c',
+    'xdg-surface-server.c',
     'layer-surface.c',
+    'session-lock.c',
     'lock-surface.c',
+    'stubbed-surface.c',
     'registry.c')
 
 gtk_srcs = files(
     'gtk4-layer-shell.c',
-    'gtk4-session-lock.c',
-    )
+    'gtk4-session-lock.c')
 
 version_args = [
     '-DGTK_LAYER_SHELL_MAJOR=' + meson.project_version().split('.')[0],
