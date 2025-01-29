@@ -31,7 +31,8 @@
  * If width or height is 0, the default is used for that axis. If the window is
  * anchored to opposite edges of the output(see gtk_layer_set_anchor()), the
  * size requested here is ignored. If you later wish to use the default window size
- * repeat the call with both width and height as 0.
+ * repeat the call with both width and height as 0. Setting to 1, 1 is sometimes useful
+ * to keep the window the smallest it can be while still fitting its contents.
  */
 
 G_BEGIN_DECLS
