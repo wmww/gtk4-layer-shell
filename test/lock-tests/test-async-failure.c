@@ -26,7 +26,7 @@ static void callback_1() {
 
     ASSERT(gtk_session_lock_instance_lock(lock));
     ASSERT_EQ(state, LOCK_STATE_UNLOCKED, "%d");
-    create_lock_windows(lock);
+    create_default_lock_windows(lock);
 }
 
 static void callback_2() {

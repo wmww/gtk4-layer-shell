@@ -12,7 +12,7 @@ static void callback_0() {
     connect_lock_signals(lock, &state);
 
     ASSERT(gtk_session_lock_instance_lock(lock));
-    create_lock_windows(lock);
+    create_default_lock_windows(lock);
 }
 
 static void callback_1() {
