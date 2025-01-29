@@ -28,6 +28,7 @@ static void session_lock_handle_finished(void* data, struct ext_session_lock_v1*
         return;
     }
     is_locked = false;
+    current_lock = NULL;
     if (current_callback) {
         current_callback(false, current_callback_data);
         current_callback = NULL;
