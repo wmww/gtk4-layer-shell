@@ -82,33 +82,6 @@ void session_lock_unlock() {
     is_locked = false;
 }
 
-static void lock_surface_send_xdg_configure(struct lock_surface_t* self) {
-    struct wl_array states;
-    wl_array_init(&states); {
-        uint32_t* state = wl_array_add(&states, sizeof(uint32_t));
-        assert(state);
-        *state = XDG_TOPLEVEL_STATE_ACTIVATED;
-    } {
-        uint32_t* state = wl_array_add(&states, sizeof(uint32_t));
-        assert(state);
-        *state = XDG_TOPLEVEL_STATE_FULLSCREEN;
-    }
-
-    LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(
-        xdg_toplevel_listener,
-        configure,
-        self->client_facing_xdg_toplevel,
-        self->last_configure.width, self->last_configure.height,
-        &states);
-    wl_array_release(&states);
-
-    LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(
-        xdg_surface_listener,
-        configure,
-        self->client_facing_xdg_surface,
-        self->pending_configure_serial);
-}
-
 static void lock_surface_handle_configure(
     void* data,
     struct ext_session_lock_surface_v1* surface,
@@ -123,15 +96,41 @@ static void lock_surface_handle_configure(
     self->last_configure.width = width;
     self->last_configure.height = height;
 
-    lock_surface_send_xdg_configure(self);
+    xdg_surface_server_send_configure(
+        &self->super,
+        0, 0,
+        self->last_configure.width, self->last_configure.height,
+        self->pending_configure_serial
+    );
 }
 
 static const struct ext_session_lock_surface_v1_listener lock_surface_listener = {
     .configure = lock_surface_handle_configure,
 };
 
+static void lock_surface_configure_acked(struct xdg_surface_server_t* super, uint32_t serial) {
+    struct lock_surface_t* self = (void*)super;
+    if (serial && serial == self->pending_configure_serial) {
+        self->pending_configure_serial = 0;
+        ext_session_lock_surface_v1_ack_configure(self->lock_surface, serial);
+    }
+}
+
+static void lock_surface_toplevel_destroyed(struct xdg_surface_server_t* super) {
+    struct lock_surface_t* self = (void*)super;
+    if (self->lock_surface) {
+        ext_session_lock_surface_v1_destroy(self->lock_surface);
+        self->lock_surface = NULL;
+    }
+    self->pending_configure_serial = 0;
+}
+
 struct lock_surface_t lock_surface_make(struct wl_output* output) {
     struct lock_surface_t ret = {
+        .super = {
+            .configure_acked = lock_surface_configure_acked,
+            .toplevel_destroyed = lock_surface_toplevel_destroyed,
+        },
         .output = output
     };
     return ret;
@@ -152,90 +151,23 @@ void lock_surface_map(struct lock_surface_t* self, void* lock_callback_data) {
         return;
     }
 
-    if (!self->wl_surface) {
+    if (!self->super.wl_surface) {
         fprintf(stderr, "failed to create lock surface, no wl_surface set\n");
         return;
     }
 
-    self->lock_surface = ext_session_lock_v1_get_lock_surface(current_lock, self->wl_surface, self->output);
+    self->lock_surface = ext_session_lock_v1_get_lock_surface(current_lock, self->super.wl_surface, self->output);
     assert(self->lock_surface);
     ext_session_lock_surface_v1_add_listener(self->lock_surface, &lock_surface_listener, self);
 
     // Not strictly necessary, but roundtripping here will hopefully let us handle our initial configure before this
     // function returns, which may reduce the chance of GTK committing the surface before that initial configure for one
     // reasons or another (which is a protocol error).
-    wl_display_roundtrip(libwayland_shim_proxy_get_display((struct wl_proxy*)self->wl_surface));
-}
-
-static void lock_surface_unmap(struct lock_surface_t* self) {
-    if (self->lock_surface) {
-        ext_session_lock_surface_v1_destroy(self->lock_surface);
-        self->lock_surface = NULL;
-    }
-
-    libwayland_shim_clear_client_proxy_data((struct wl_proxy*)self->client_facing_xdg_surface);
-    libwayland_shim_clear_client_proxy_data((struct wl_proxy*)self->client_facing_xdg_toplevel);
-
-    self->client_facing_xdg_surface = NULL;
-    self->client_facing_xdg_toplevel = NULL;
-    self->pending_configure_serial = 0;
+    wl_display_roundtrip(libwayland_shim_proxy_get_display((struct wl_proxy*)self->super.wl_surface));
 }
 
 void lock_surface_uninit(struct lock_surface_t* self) {
-    lock_surface_unmap(self);
-}
-
-static void xdg_toplevel_handle_destroy(void* data, struct wl_proxy* proxy) {
-    (void)proxy;
-    struct lock_surface_t* self = data;
-    lock_surface_unmap(self);
-}
-
-static bool xdg_surface_handle_request(
-    void* data,
-    struct wl_proxy* proxy,
-    uint32_t opcode,
-    const struct wl_interface* interface,
-    uint32_t version,
-    uint32_t flags,
-    union wl_argument* args,
-    struct wl_proxy** ret_proxy
-) {
-    (void)interface; (void)flags;
-    struct lock_surface_t* self = data;
-    if (opcode == XDG_SURFACE_GET_TOPLEVEL) {
-        *ret_proxy = libwayland_shim_create_client_proxy(
-            proxy,
-            &xdg_toplevel_interface,
-            version,
-            NULL,
-            xdg_toplevel_handle_destroy,
-            data
-        );
-        self->client_facing_xdg_toplevel = (struct xdg_toplevel*)*ret_proxy;
-        return true;
-    } else if (opcode == XDG_SURFACE_GET_POPUP) {
-        fprintf(stderr, "XDG surface intercepted, but is now being used as popup\n");
-        *ret_proxy = libwayland_shim_create_client_proxy(proxy, &xdg_popup_interface, version, NULL, NULL, NULL);
-        return true;
-    } else if (opcode == XDG_SURFACE_SET_WINDOW_GEOMETRY) {
-        return false;
-    } else if (opcode == XDG_SURFACE_ACK_CONFIGURE) {
-        uint32_t serial = args[0].u;
-        if (serial && serial == self->pending_configure_serial) {
-            self->pending_configure_serial = 0;
-            ext_session_lock_surface_v1_ack_configure(self->lock_surface, serial);
-        }
-        return false;
-    } else {
-        return false;
-    }
-}
-
-static void xdg_surface_handle_destroy(void* data, struct wl_proxy* proxy) {
-    (void)proxy;
-    struct lock_surface_t* self = data;
-    lock_surface_unmap(self);
+    xdg_surface_server_uninit(&self->super);
 }
 
 static bool xdg_wm_base_get_xdg_surface_hook(
@@ -251,6 +183,7 @@ static bool xdg_wm_base_get_xdg_surface_hook(
     (void)data;
     (void)opcode;
     (void)create_interface;
+    (void)create_version;
     (void)flags;
 
     lock_surface_hook_callback_t callback = data;
@@ -258,17 +191,7 @@ static bool xdg_wm_base_get_xdg_surface_hook(
     struct lock_surface_t* self = callback(wl_surface);
 
     if (self) {
-        self->wl_surface = wl_surface;
-        struct wl_proxy* xdg_surface = libwayland_shim_create_client_proxy(
-            proxy,
-            &xdg_surface_interface,
-            create_version,
-            xdg_surface_handle_request,
-            xdg_surface_handle_destroy,
-            self
-        );
-        self->client_facing_xdg_surface = (struct xdg_surface*)xdg_surface;
-        *ret_proxy = xdg_surface;
+        *ret_proxy = xdg_surface_server_get_xdg_surface(&self->super, (struct xdg_wm_base*)proxy, wl_surface);
         return true;
     } else if (current_lock) {
         // A new XDG surface is being created while the screen is locked, but it's not a lock surface. Few possibilities

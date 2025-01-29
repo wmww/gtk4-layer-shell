@@ -1,22 +1,22 @@
 #pragma once
 
+#include "xdg-surface-server.h"
+
 #include <stdbool.h>
-#include "ext-session-lock-v1-client.h"
+#include <ext-session-lock-v1-client.h>
 
 typedef void (*session_lock_locked_callback_t)(bool locked, void* data);
 bool session_lock_lock(struct wl_display* display, session_lock_locked_callback_t callback, void* data);
 void session_lock_unlock();
 
 struct lock_surface_t {
+    struct xdg_surface_server_t super;
     struct ext_session_lock_surface_v1* lock_surface;
     struct wl_output* output;
     uint32_t pending_configure_serial;
     struct {
         int width, height;
     } last_configure;
-    struct wl_surface* wl_surface;
-    struct xdg_surface* client_facing_xdg_surface;
-    struct xdg_toplevel* client_facing_xdg_toplevel;
 };
 
 struct lock_surface_t lock_surface_make(struct wl_output* output);
