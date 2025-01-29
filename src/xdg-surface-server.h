@@ -20,7 +20,7 @@ struct xdg_surface_server_t {
 };
 
 // Used in .get_popup to create a "stubbed" XDG popup, which is not displayed but shouldn't lock up GTK
-struct xdg_surface* xdg_surface_server_get_xdg_surface(
+struct wl_proxy* xdg_surface_server_get_xdg_surface(
     struct xdg_surface_server_t* self,
     struct xdg_wm_base* creating_object,
     struct wl_surface* surface

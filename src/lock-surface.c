@@ -279,7 +279,7 @@ static bool xdg_wm_base_get_xdg_surface_hook(
         // likely, but if we allow the creation of an XDG surface for it there's no easy way to avoid a protocol error.
         // Therefore we create a stub surface that won't display anything, but will keep GTK happy.
         fprintf(stderr, "non-lock surface created while screen locked, it will not displayed\n");
-        *ret_proxy = (struct wl_proxy*)stubbed_surface_init((struct xdg_wm_base*)proxy, wl_surface);
+        *ret_proxy = stubbed_surface_init((struct xdg_wm_base*)proxy, wl_surface);
         return true;
     } {
         return false;

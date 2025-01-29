@@ -107,16 +107,17 @@ static void xdg_surface_handle_destroy(void* data, struct wl_proxy* proxy) {
     struct xdg_surface_server_t* self = data;
     self->xdg_surface = NULL;
     if (self->surface_destroyed) self->surface_destroyed(self);
+    self->wl_surface = NULL;
 }
 
-struct xdg_surface* xdg_surface_server_get_xdg_surface(
+struct wl_proxy* xdg_surface_server_get_xdg_surface(
     struct xdg_surface_server_t* self,
     struct xdg_wm_base* creating_object,
     struct wl_surface* surface
 ) {
     assert(!self->xdg_surface);
     self->wl_surface = surface;
-    self->xdg_surface = (struct xdg_surface*)libwayland_shim_create_client_proxy(
+    struct wl_proxy* xdg_surface = libwayland_shim_create_client_proxy(
         (struct wl_proxy*)creating_object,
         &xdg_surface_interface,
         1, // XDG shell v1 is simpler to implement, for example this stops GTK from trying to reposition popups
@@ -124,7 +125,8 @@ struct xdg_surface* xdg_surface_server_get_xdg_surface(
         xdg_surface_handle_destroy,
         self
     );
-    return self->xdg_surface;
+    self->xdg_surface = (struct xdg_surface*)xdg_surface;
+    return xdg_surface;
 }
 
 void xdg_surface_server_send_configure(

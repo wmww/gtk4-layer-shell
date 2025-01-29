@@ -48,7 +48,7 @@ void stubbed_surface_destroyed(struct xdg_surface_server_t* super) {
     free(self);
 }
 
-struct xdg_surface* stubbed_surface_init(struct xdg_wm_base* creating_object, struct wl_surface* surface) {
+struct wl_proxy* stubbed_surface_init(struct xdg_wm_base* creating_object, struct wl_surface* surface) {
     struct stubbed_surface_t* self = calloc(1, sizeof(struct stubbed_surface_t));
     self->super.popup_created = stubbed_role_created;
     self->super.toplevel_created = stubbed_role_created;
