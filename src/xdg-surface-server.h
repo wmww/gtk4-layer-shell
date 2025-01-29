@@ -1,0 +1,35 @@
+#pragma once
+
+#include <wayland-client.h>
+#include <xdg-shell-client.h>
+
+struct xdg_surface_server_t {
+    // Virtual functions, can be null
+    void (*window_geometry_set)(struct xdg_surface_server_t* super, int width, int height);
+    void (*configure_acked)(struct xdg_surface_server_t* super, uint32_t serial);
+    void (*toplevel_created)(struct xdg_surface_server_t* super);
+    void (*toplevel_destroyed)(struct xdg_surface_server_t* super);
+    void (*popup_created)(struct xdg_surface_server_t* super);
+    void (*popup_destroyed)(struct xdg_surface_server_t* super);
+    void (*surface_destroyed)(struct xdg_surface_server_t* super);
+
+    struct wl_surface* wl_surface;
+    struct xdg_surface* xdg_surface;
+    struct xdg_popup* xdg_popup;
+    struct xdg_toplevel* xdg_toplevel;
+};
+
+// Used in .get_popup to create a "stubbed" XDG popup, which is not displayed but shouldn't lock up GTK
+struct xdg_surface* xdg_surface_server_get_xdg_surface(
+    struct xdg_surface_server_t* self,
+    struct xdg_wm_base* creating_object,
+    struct wl_surface* surface
+);
+
+// x and y are only used for popups
+void xdg_surface_server_send_configure(
+    struct xdg_surface_server_t* self,
+    int x, int y,
+    int width, int height,
+    uint32_t serial
+);
