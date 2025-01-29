@@ -19,6 +19,9 @@ struct xdg_surface_server_t {
     struct xdg_toplevel* xdg_toplevel;
 };
 
+// If the xdg_surface is managed by a surface server, this returns the surface server
+struct xdg_surface_server_t* get_xdg_surface_server_from_xdg_surface(struct xdg_surface* source);
+
 // Used in .get_popup to create a "stubbed" XDG popup, which is not displayed but shouldn't lock up GTK
 struct wl_proxy* xdg_surface_server_get_xdg_surface(
     struct xdg_surface_server_t* self,

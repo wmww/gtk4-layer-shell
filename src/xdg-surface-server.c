@@ -110,6 +110,10 @@ static void xdg_surface_handle_destroy(void* data, struct wl_proxy* proxy) {
     self->wl_surface = NULL;
 }
 
+struct xdg_surface_server_t* get_xdg_surface_server_from_xdg_surface(struct xdg_surface* source) {
+    return libwayland_shim_get_client_proxy_data((struct wl_proxy*)source, xdg_surface_handle_request);
+}
+
 struct wl_proxy* xdg_surface_server_get_xdg_surface(
     struct xdg_surface_server_t* self,
     struct xdg_wm_base* creating_object,
