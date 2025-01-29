@@ -13,6 +13,10 @@
  * and display the lock screen. This library and the underlying Wayland
  * protocol do not handle authentication.
  *
+ * # Note on popups
+ * Popups (such as menus and tooltips) do not currently display while the screen is locked. Please use alternatives,
+ * such as GtkPopover (which is backed by a subsurface instead of a popup).
+ *
  * # Note On Linking
  * If you link against libwayland you must link this library before libwayland. See
  * [linking.md](https://github.com/wmww/gtk4-layer-shell/blob/main/linking.md) for details.

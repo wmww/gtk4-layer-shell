@@ -39,10 +39,6 @@ static void layer_surface_configure_xdg_surface(
     uint32_t serial, // Can be 0
     bool send_even_if_size_unchanged
 ) {
-    if (!self->client_facing_xdg_surface || !self->client_facing_xdg_toplevel) {
-        return;
-    }
-
     if (!self->has_initial_layer_shell_configure) {
         // skip sending xdg_toplevel and xdg_surface configure to the client program since layer shell surface has not
         // been configured yet and attaching a buffer to an unconfigured surface is a protocol error
@@ -79,30 +75,7 @@ static void layer_surface_configure_xdg_surface(
             self->pending_configure_serial = serial;
         }
 
-        struct wl_array states;
-        wl_array_init(&states); {
-            uint32_t* state = wl_array_add(&states, sizeof(uint32_t));
-            assert(state);
-            *state = XDG_TOPLEVEL_STATE_ACTIVATED;
-        } {
-            uint32_t* state = wl_array_add(&states, sizeof(uint32_t));
-            assert(state);
-            *state = XDG_TOPLEVEL_STATE_FULLSCREEN;
-        }
-
-        LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(
-            xdg_toplevel_listener,
-            configure,
-            self->client_facing_xdg_toplevel,
-            size.width, size.height,
-            &states);
-        wl_array_release(&states);
-
-        LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(
-            xdg_surface_listener,
-            configure,
-            self->client_facing_xdg_surface,
-            serial);
+        xdg_surface_server_send_configure(&self->super, 0, 0, size.width, size.height, serial);
     }
 }
 
@@ -128,8 +101,8 @@ static void layer_surface_handle_configure(
 static void layer_surface_handle_closed(void* data, struct zwlr_layer_surface_v1* _surface) {
     (void)_surface;
     struct layer_surface_t* self = data;
-    if (self->client_facing_xdg_toplevel) {
-        LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(xdg_toplevel_listener, close, self->client_facing_xdg_toplevel);
+    if (self->super.xdg_toplevel) {
+        LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(xdg_toplevel_listener, close, self->super.xdg_toplevel);
     }
 }
 
@@ -207,27 +180,6 @@ static void layer_surface_create_surface_object(struct layer_surface_t* self, st
     layer_surface_send_set_size(self);
 }
 
-static void layer_surface_unmap(struct layer_surface_t* self) {
-    if (self->layer_surface) {
-        zwlr_layer_surface_v1_destroy(self->layer_surface);
-        self->layer_surface = NULL;
-    }
-
-    libwayland_shim_clear_client_proxy_data((struct wl_proxy*)self->client_facing_xdg_surface);
-    libwayland_shim_clear_client_proxy_data((struct wl_proxy*)self->client_facing_xdg_toplevel);
-
-    self->client_facing_xdg_surface = NULL;
-    self->client_facing_xdg_toplevel = NULL;
-    self->has_initial_layer_shell_configure = false;
-
-    self->cached_xdg_configure_size = GEOM_SIZE_UNSET;
-    self->last_xdg_window_geom_size = GEOM_SIZE_UNSET;
-    self->cached_layer_size_set = GEOM_SIZE_UNSET;
-    self->last_layer_configured_size = GEOM_SIZE_UNSET;
-
-    self->pending_configure_serial = 0;
-}
-
 static void layer_surface_update_auto_exclusive_zone(struct layer_surface_t* self) {
     if (!self->auto_exclusive_zone) return;
 
@@ -261,8 +213,48 @@ static void layer_surface_update_auto_exclusive_zone(struct layer_surface_t* sel
     }
 }
 
+static void layer_surface_window_geometry_set(struct xdg_surface_server_t* super, int width, int height) {
+    struct layer_surface_t* self = (void*)super;
+
+    self->last_xdg_window_geom_size = (struct geom_size_t){width, height};
+    layer_surface_send_set_size(self);
+    layer_surface_update_auto_exclusive_zone(self);
+}
+
+void layer_surface_configure_acked(struct xdg_surface_server_t* super, uint32_t serial) {
+    struct layer_surface_t* self = (void*)super;
+
+    if (serial && serial == self->pending_configure_serial) {
+        self->pending_configure_serial = 0;
+        zwlr_layer_surface_v1_ack_configure(self->layer_surface, serial);
+    }
+}
+
+static void layer_surface_role_destroyed(struct xdg_surface_server_t* super) {
+    struct layer_surface_t* self = (void*)super;
+
+    if (self->layer_surface) {
+        zwlr_layer_surface_v1_destroy(self->layer_surface);
+        self->layer_surface = NULL;
+    }
+
+    self->cached_xdg_configure_size = GEOM_SIZE_UNSET;
+    self->last_xdg_window_geom_size = GEOM_SIZE_UNSET;
+    self->cached_layer_size_set = GEOM_SIZE_UNSET;
+    self->last_layer_configured_size = GEOM_SIZE_UNSET;
+
+    self->pending_configure_serial = 0;
+    self->has_initial_layer_shell_configure = false;
+}
+
 struct layer_surface_t layer_surface_make() {
     struct layer_surface_t ret = {
+        .super = {
+            .window_geometry_set = layer_surface_window_geometry_set,
+            .configure_acked = layer_surface_configure_acked,
+            .toplevel_destroyed = layer_surface_role_destroyed,
+            .popup_destroyed = layer_surface_role_destroyed,
+        },
         .cached_xdg_configure_size = GEOM_SIZE_UNSET,
         .last_xdg_window_geom_size = GEOM_SIZE_UNSET,
         .cached_layer_size_set = GEOM_SIZE_UNSET,
@@ -275,7 +267,7 @@ struct layer_surface_t layer_surface_make() {
 }
 
 void layer_surface_uninit(struct layer_surface_t* self) {
-    layer_surface_unmap(self);
+    xdg_surface_server_uninit(&self->super);
     free((void*)self->name_space);
 }
 
@@ -392,63 +384,6 @@ void layer_surface_invalidate_preferred_size(struct layer_surface_t* self) {
     layer_surface_configure_xdg_surface(self, 0, false);
 }
 
-static void stubbed_xdg_toplevel_handle_destroy(void* data, struct wl_proxy* proxy) {
-    (void)proxy;
-    struct layer_surface_t* self = (struct layer_surface_t*)data;
-    layer_surface_unmap(self);
-}
-
-static bool stubbed_xdg_surface_handle_request(
-    void* data,
-    struct wl_proxy* proxy,
-    uint32_t opcode,
-    const struct wl_interface* interface,
-    uint32_t version,
-    uint32_t flags,
-    union wl_argument* args,
-    struct wl_proxy** ret_proxy
-) {
-    (void)interface; (void)flags;
-    struct layer_surface_t* self = (struct layer_surface_t*)data;
-    if (opcode == XDG_SURFACE_GET_TOPLEVEL) {
-        *ret_proxy = libwayland_shim_create_client_proxy(
-            proxy,
-            &xdg_toplevel_interface,
-            version,
-            NULL,
-            stubbed_xdg_toplevel_handle_destroy,
-            data
-        );
-        self->client_facing_xdg_toplevel = (struct xdg_toplevel*)*ret_proxy;
-        return true;
-    } else if (opcode == XDG_SURFACE_GET_POPUP) {
-        fprintf(stderr, "XDG surface intercepted, but is now being used as popup\n");
-        *ret_proxy = libwayland_shim_create_client_proxy(proxy, &xdg_popup_interface, version, NULL, NULL, NULL);
-        return true;
-    } else if (opcode == XDG_SURFACE_SET_WINDOW_GEOMETRY) {
-        struct geom_size_t size = {args[2].i, args[3].i};
-        self->last_xdg_window_geom_size = size;
-        layer_surface_send_set_size(self);
-        layer_surface_update_auto_exclusive_zone(self);
-        return false;
-    } else if (opcode == XDG_SURFACE_ACK_CONFIGURE) {
-        uint32_t serial = args[0].u;
-        if (serial && serial == self->pending_configure_serial) {
-            self->pending_configure_serial = 0;
-            zwlr_layer_surface_v1_ack_configure(self->layer_surface, serial);
-        }
-        return false;
-    } else {
-        return false;
-    }
-}
-
-static void stubbed_xdg_surface_handle_destroy(void* data, struct wl_proxy* proxy) {
-    (void)proxy;
-    struct layer_surface_t* self = (struct layer_surface_t*)data;
-    layer_surface_unmap(self);
-}
-
 static bool xdg_wm_base_get_xdg_surface_hook(
     void* data,
     struct wl_proxy* proxy,
@@ -462,6 +397,7 @@ static bool xdg_wm_base_get_xdg_surface_hook(
     (void)data;
     (void)opcode;
     (void)create_interface;
+    (void)create_version;
     (void)flags;
 
     layer_surface_hook_callback_t callback = data;
@@ -469,17 +405,8 @@ static bool xdg_wm_base_get_xdg_surface_hook(
     struct layer_surface_t* self = callback(wl_surface);
 
     if (self) {
-        struct wl_proxy* xdg_surface = libwayland_shim_create_client_proxy(
-            proxy,
-            &xdg_surface_interface,
-            create_version,
-            stubbed_xdg_surface_handle_request,
-            stubbed_xdg_surface_handle_destroy,
-            self
-        );
-        self->client_facing_xdg_surface = (struct xdg_surface*)xdg_surface;
+        *ret_proxy = xdg_surface_server_get_xdg_surface(&self->super, (struct xdg_wm_base*)proxy, wl_surface);
         layer_surface_create_surface_object(self, wl_surface);
-        *ret_proxy = xdg_surface;
         return true;
     } else {
         return false;
@@ -499,35 +426,30 @@ static bool xdg_surface_get_popup_hook(
     (void)data;
     (void)opcode;
     (void)create_interface;
+    (void)create_version;
     (void)flags;
 
-    struct layer_surface_t* self = libwayland_shim_get_client_proxy_data(
-        (struct wl_proxy*)args[1].o,
-        stubbed_xdg_surface_handle_request
-    );
+    struct xdg_surface* parent_xdg_surface = (struct xdg_surface*)args[1].o;
+    struct xdg_surface_server_t* super = get_xdg_surface_server_from_xdg_surface(parent_xdg_surface);
+    // If super is non-null it's a valid xdg_surface_server_t, but we don't know it's part of a layer_surface_t. Check
+    // to make sure one of its virtual functions match before casting it (basically a dynamic_case<>).
+    struct layer_surface_t* self =
+        super && super->configure_acked == layer_surface_configure_acked ?
+        (void*)super : NULL;
 
     if (self) {
         if (self->layer_surface) {
-            struct xdg_popup* xdg_popup = xdg_surface_get_popup(
-                (struct xdg_surface*)proxy,
-                NULL,
-                (struct xdg_positioner*)args[2].o
-            );
+            struct xdg_surface* popup_xdg_surface = (struct xdg_surface*)proxy;
+            struct xdg_positioner* positioner = (struct xdg_positioner*)args[2].o;
+            struct xdg_popup* xdg_popup = xdg_surface_get_popup(popup_xdg_surface, NULL, positioner);
             zwlr_layer_surface_v1_get_popup(self->layer_surface, xdg_popup);
             *ret_proxy = (struct wl_proxy*)xdg_popup;
+            return true;
         } else {
-            fprintf(stderr, "tried to create popup before layer shell surface\n");
-            *ret_proxy = libwayland_shim_create_client_proxy(
-                proxy,
-                &xdg_popup_interface,
-                create_version,
-                NULL, NULL, NULL
-            );
+            fprintf(stderr, "tried to create popup before layer shell surface\n");;
         }
-        return true;
-    } else {
-        return false;
     }
+    return false;
 }
 
 void layer_surface_install_hook(layer_surface_hook_callback_t callback) {

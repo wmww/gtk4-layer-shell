@@ -1,7 +1,9 @@
 #pragma once
 
+#include "xdg-surface-server.h"
+
 #include <stdbool.h>
-#include "wlr-layer-shell-unstable-v1-client.h"
+#include <wlr-layer-shell-unstable-v1-client.h>
 
 struct geom_edges_t {
     int left, right, top, bottom;
@@ -14,11 +16,11 @@ struct geom_size_t {
 #define GEOM_SIZE_UNSET (struct geom_size_t){-1, -1}
 
 struct layer_surface_t {
-    // Virtual functions (NULL by default, can be overridden by the user of this library)
+    struct xdg_surface_server_t super;
 
+    // Virtual functions (NULL by default, can be overridden by the user of this library)
     // Ask the toolkit to unmap and remap the surface
     void (*remap)(struct layer_surface_t* super);
-
     // Get the preferred size of the surface from the client program. -1 (as is returned for both axes by the default
     // implementation) means to figure it out based on Wayland messages. In general this default behavior is correct,
     // however GTK seems to have a bug where if its configured with EITHER width or height as 0 it uses its preferred
@@ -58,8 +60,7 @@ struct layer_surface_t {
     // surface and will ack it once the client program acks its configure. Otherwise this is zero, all acks from the
     // client program can be ignored (they are for configures not originating from the compositor)
     uint32_t pending_configure_serial;
-    struct xdg_surface* client_facing_xdg_surface;
-    struct xdg_toplevel* client_facing_xdg_toplevel;
+    // If this layer surface has gotten its first configure from the compositor
     bool has_initial_layer_shell_configure;
 };
 
