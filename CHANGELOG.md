@@ -1,6 +1,22 @@
 # Changelog
 
 ## [Unreleased]
+## [1.1.0] - 29 Jan 2024
+This release includes two important new features.
+
+### ext_session_lock_v1
+A 2nd Wayland protocol, is used to build lock screens for [these compositors](https://wayland.app/protocols/ext-session-lock-v1#compositor-support).
+
+### liblayer-shell-preload.so
+Hack for running arbitrary Wayland windows as Layer Shell surfaces without recompiling. More details [here](https://github.com/wmww/gtk4-layer-shell/blob/main/layer_shell_preload.md).
+
+Changelog:
+- Major refactor and improvements to internal architecture, made new features possible but this release is more likely to introduce bugs than others
+- Use `RTLD_NEXT` in libwayland-shim, dlopening libwayland is no longer needed
+- Add support for `ext_session_lock_v1` protocol (thanks @happenslol for the initial implementation!)
+- Add examples, tests and docs for Session Lock support
+- Add and document `liblayer-shell-preload.so`
+
 ## [1.0.4] - 4 Nov 2024
 - Fix protocol error on Wayfire, due to sending zwlr_layer_shell_surface_v1->configure too early
 - Fix crash when hovering over a tooltip on Hyprland, due to using an old copy of xdg-shell.xml
