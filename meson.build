@@ -43,6 +43,8 @@ gtk_layer_shell = declare_dependency(
     link_with: gtk_layer_shell_lib,
     include_directories: gtk_layer_shell_inc)
 
+meson.override_dependency('gtk4-layer-shell', gtk_layer_shell)
+
 subdir('examples')
 
 if get_option('docs')
