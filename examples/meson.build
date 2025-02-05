@@ -22,7 +22,7 @@ executable(
     install: false)
 
 if get_option('vapi')
-    add_languages('vala')
+    add_languages('vala', native: false)
     executable(
         'simple-example-vala',
         files('simple-example.vala'),
