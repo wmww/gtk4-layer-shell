@@ -12,6 +12,7 @@ add_project_arguments(
         '-Wno-pedantic',
         '-Werror=implicit-function-declaration',
         '-Werror=return-type',
+        '-fvisibility=hidden',
     ],
     language: 'c')
 
