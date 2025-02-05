@@ -52,6 +52,7 @@ wl_argument_from_va_list(const char *signature, union wl_argument *args,
 // override all functions that call it.
 
 // wayland-client.c
+__attribute__((__visibility__("default")))
 struct wl_proxy *
 wl_proxy_marshal_flags(struct wl_proxy *proxy, uint32_t opcode,
 		       const struct wl_interface *interface,
@@ -70,6 +71,7 @@ wl_proxy_marshal_flags(struct wl_proxy *proxy, uint32_t opcode,
 }
 
 // wayland-client.c
+__attribute__((__visibility__("default")))
 void
 wl_proxy_marshal(struct wl_proxy *proxy, uint32_t opcode, ...)
 {
@@ -85,6 +87,7 @@ wl_proxy_marshal(struct wl_proxy *proxy, uint32_t opcode, ...)
 }
 
 // wayland-client.c
+__attribute__((__visibility__("default")))
 void
 wl_proxy_marshal_array(struct wl_proxy *proxy, uint32_t opcode,
 		       union wl_argument *args)
@@ -93,6 +96,7 @@ wl_proxy_marshal_array(struct wl_proxy *proxy, uint32_t opcode,
 }
 
 // wayland-client.c
+__attribute__((__visibility__("default")))
 struct wl_proxy *
 wl_proxy_marshal_constructor(struct wl_proxy *proxy,
 			     uint32_t opcode,
@@ -112,6 +116,7 @@ wl_proxy_marshal_constructor(struct wl_proxy *proxy,
 }
 
 // wayland-client.c
+__attribute__((__visibility__("default")))
 struct wl_proxy *
 wl_proxy_marshal_constructor_versioned(struct wl_proxy *proxy,
 				       uint32_t opcode,
@@ -133,6 +138,7 @@ wl_proxy_marshal_constructor_versioned(struct wl_proxy *proxy,
 }
 
 // wayland-client.c
+__attribute__((__visibility__("default")))
 struct wl_proxy *
 wl_proxy_marshal_array_constructor(struct wl_proxy *proxy,
 				   uint32_t opcode, union wl_argument *args,
@@ -144,6 +150,7 @@ wl_proxy_marshal_array_constructor(struct wl_proxy *proxy,
 }
 
 // wayland-client.c
+__attribute__((__visibility__("default")))
 struct wl_proxy *
 wl_proxy_marshal_array_constructor_versioned(struct wl_proxy *proxy,
 					     uint32_t opcode,

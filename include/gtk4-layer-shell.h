@@ -35,6 +35,8 @@
  * to keep the window the smallest it can be while still fitting its contents.
  */
 
+#define GTK4_LAYER_SHELL_EXPORT __attribute__((__visibility__("default")))
+
 G_BEGIN_DECLS
 
 /**

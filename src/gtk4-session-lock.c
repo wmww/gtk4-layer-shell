@@ -9,6 +9,7 @@
 static const char* lock_surface_key = "wayland_layer_surface";
 static GList* all_lock_surfaces = NULL;
 
+GTK4_LAYER_SHELL_EXPORT
 gboolean gtk_session_lock_is_supported() {
     gtk_init();
     GdkDisplay* gdk_display = gdk_display_get_default();
@@ -55,6 +56,7 @@ static void gtk_session_lock_instance_init(GtkSessionLockInstance *self) {
     self->failed = FALSE;
 }
 
+GTK4_LAYER_SHELL_EXPORT
 GtkSessionLockInstance* gtk_session_lock_instance_new() {
     return g_object_new(gtk_session_lock_instance_get_type(), NULL);
 }
@@ -79,6 +81,7 @@ static void session_lock_locked_callback_impl(bool locked, void* data) {
     );
 }
 
+GTK4_LAYER_SHELL_EXPORT
 gboolean gtk_session_lock_instance_lock(GtkSessionLockInstance* self) {
     if (self->has_requested_lock) {
         g_warning("Tried to lock multiple times without unlocking");
@@ -117,6 +120,7 @@ gboolean gtk_session_lock_instance_lock(GtkSessionLockInstance* self) {
     return !self->failed;
 }
 
+GTK4_LAYER_SHELL_EXPORT
 void gtk_session_lock_instance_unlock(GtkSessionLockInstance* self) {
     if (self->is_locked) {
         self->is_locked = FALSE;
@@ -126,6 +130,7 @@ void gtk_session_lock_instance_unlock(GtkSessionLockInstance* self) {
     }
 }
 
+GTK4_LAYER_SHELL_EXPORT
 gboolean gtk_session_lock_instance_is_locked(GtkSessionLockInstance* self) {
     return self->is_locked;
 }
@@ -170,6 +175,7 @@ static void on_window_mapped(GtkWindow *window, gpointer data) {
     }
 }
 
+GTK4_LAYER_SHELL_EXPORT
 void gtk_session_lock_instance_assign_window_to_monitor(
     GtkSessionLockInstance* self,
     GtkWindow *window,
