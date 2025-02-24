@@ -2,7 +2,7 @@ project('gtk4-layer-shell',
     ['c'],
     version: '1.1.0',
     license: 'MIT',
-    meson_version: '>=0.51.0',
+    meson_version: '>=0.54.0',
     default_options: ['c_std=gnu11', 'warning_level=3'])
 
 lib_so_version = '0'
@@ -12,6 +12,7 @@ add_project_arguments(
         '-Wno-pedantic',
         '-Werror=implicit-function-declaration',
         '-Werror=return-type',
+        '-fvisibility=hidden',
     ],
     language: 'c')
 

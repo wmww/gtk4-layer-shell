@@ -22,6 +22,8 @@
  * [linking.md](https://github.com/wmww/gtk4-layer-shell/blob/main/linking.md) for details.
  */
 
+#define GTK4_LAYER_SHELL_EXPORT __attribute__((__visibility__("default")))
+
 G_BEGIN_DECLS
 
 /**
@@ -40,6 +42,7 @@ gboolean gtk_session_lock_is_supported();
  * An instance of the object used to control locking the screen.
  * Multiple instances can exist at once, but only one can be locked at a time.
  */
+GTK4_LAYER_SHELL_EXPORT
 G_DECLARE_FINAL_TYPE(GtkSessionLockInstance, gtk_session_lock_instance, GTK_SESSION_LOCK, INSTANCE, GObject)
 
 /**

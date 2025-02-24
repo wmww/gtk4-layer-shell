@@ -169,6 +169,7 @@ static void client_proxy_destroy(struct wl_proxy* proxy) {
 }
 
 // Overrides the function in wayland-client.c in libwayland
+__attribute__((__visibility__("default")))
 void wl_proxy_destroy(struct wl_proxy* proxy) {
     libwayland_shim_init();
     if (proxy->object.id == client_facing_proxy_id) {
@@ -241,6 +242,7 @@ static struct wl_proxy* validate_request_result(
 
 // Overrides the function in wayland-client.c in libwayland, handles requests made by the client program and optionally
 // forwards them to libwayland/the compositor
+__attribute__((__visibility__("default")))
 struct wl_proxy* wl_proxy_marshal_array_flags(
     struct wl_proxy* proxy,
     uint32_t opcode,
