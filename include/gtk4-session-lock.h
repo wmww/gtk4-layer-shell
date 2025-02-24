@@ -104,11 +104,11 @@ gboolean gtk_session_lock_instance_is_locked(GtkSessionLockInstance* self);
  * gtk_session_lock_instance_assign_window_to_monitor:
  * @self: the instance to use
  * @window: The GTK Window to use as a lock surface
- * @monitor: The monitor to show it on
+ * @monitor: (not nullable): The monitor to show it on
  *
- * This should be called with a different window once for each monitor immediately after calling
+ * This must be called with a different window once for each monitor, immediately after calling
  * gtk_session_lock_lock(). Hiding a window that is active on a monitor or not letting a window be resized by the
- * library may result in a Wayland protocol error.
+ * library is not allowed (may result in a Wayland protocol error).
  */
 void gtk_session_lock_instance_assign_window_to_monitor(
     GtkSessionLockInstance* self,

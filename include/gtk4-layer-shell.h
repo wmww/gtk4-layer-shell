@@ -151,14 +151,14 @@ gboolean gtk_layer_is_layer_window(GtkWindow* window);
  * gtk_layer_get_zwlr_layer_surface_v1:
  * @window: A layer surface.
  *
- * Returns: The underlying layer surface Wayland object
+ * Returns: (nullable): The underlying layer surface Wayland object
  */
 struct zwlr_layer_surface_v1* gtk_layer_get_zwlr_layer_surface_v1(GtkWindow* window);
 
 /**
  * gtk_layer_set_namespace:
  * @window: A layer surface.
- * @name_space: The namespace of this layer surface.
+ * @name_space: (transfer none) (nullable): The namespace of this layer surface.
  *
  * Set the "namespace" of the surface.
  *
@@ -178,7 +178,7 @@ void gtk_layer_set_namespace(GtkWindow* window, char const* name_space);
  * NOTE: this function does not return ownership of the string. Do not free the returned string.
  * Future calls into the library may invalidate the returned string.
  *
- * Returns: a reference to the namespace property. If namespace is unset, returns the
+ * Returns: (transfer none) (not nullable): a reference to the namespace property. If namespace is unset, returns the
  * default namespace("gtk4-layer-shell"). Never returns %NULL.
  */
 const char* gtk_layer_get_namespace(GtkWindow* window);
@@ -200,14 +200,14 @@ void gtk_layer_set_layer(GtkWindow* window, GtkLayerShellLayer layer);
  * gtk_layer_get_layer:
  * @window: A layer surface.
  *
- * Returns: the current layer.
+ * Returns: (nullable): the current layer.
  */
 GtkLayerShellLayer gtk_layer_get_layer(GtkWindow* window);
 
 /**
  * gtk_layer_set_monitor:
  * @window: A layer surface.
- * @monitor: The output this layer surface will be placed on(%NULL to let the compositor decide).
+ * @monitor: (nullable): The output this layer surface will be placed on (%NULL to let the compositor decide).
  *
  * Set the output for the window to be placed on, or %NULL to let the compositor choose.
  * If the window is currently mapped, it will get remapped so the change can take effect.
@@ -223,7 +223,7 @@ void gtk_layer_set_monitor(GtkWindow* window, GdkMonitor* monitor);
  * NOTE: To get which monitor the surface is actually on, use
  * gdk_display_get_monitor_at_window().
  *
- * Returns: (transfer none): the monitor this surface will/has requested to be on, can be %NULL.
+ * Returns: (transfer none) (nullable): the monitor this surface will/has requested to be on.
  */
 GdkMonitor* gtk_layer_get_monitor(GtkWindow* window);
 
