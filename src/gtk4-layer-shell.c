@@ -14,6 +14,8 @@ struct gtk_layer_surface_t {
     GdkMonitor* monitor;
 };
 
+static void gtk_layer_surface_clear_monitor(struct gtk_layer_surface_t* layer_surface);
+
 GTK4_LAYER_SHELL_EXPORT
 guint gtk_layer_get_major_version() {
     return GTK_LAYER_SHELL_MAJOR;
@@ -68,6 +70,7 @@ static struct gtk_layer_surface_t* gtk_window_get_layer_surface_or_warn(GtkWindo
 }
 
 static void gtk_layer_surface_destroy(struct gtk_layer_surface_t* self) {
+    gtk_layer_surface_clear_monitor(self);
     layer_surface_uninit(&self->super);
     all_layer_surfaces = g_list_remove(all_layer_surfaces, self);
     g_free(self);
@@ -211,6 +214,21 @@ GtkLayerShellLayer gtk_layer_get_layer(GtkWindow* window) {
     return (GtkLayerShellLayer)layer_surface->super.layer;
 }
 
+static void gtk_layer_surface_monitor_invalidated(GdkMonitor* self, struct gtk_layer_surface_t* layer_surface) {
+    if (layer_surface->monitor != self) {
+        g_error("got monitor_invalidated() signal for non-current monitor, please report to GTK4 Layer Shell");
+        return;
+    }
+    gtk_layer_set_monitor(layer_surface->gtk_window, NULL);
+}
+
+static void gtk_layer_surface_clear_monitor(struct gtk_layer_surface_t* layer_surface) {
+    if (layer_surface->monitor) {
+        g_signal_handlers_disconnect_by_data(layer_surface->monitor, layer_surface);
+        g_object_unref(G_OBJECT(layer_surface->monitor));
+    }
+}
+
 GTK4_LAYER_SHELL_EXPORT
 void gtk_layer_set_monitor(GtkWindow* window, GdkMonitor* monitor) {
     struct gtk_layer_surface_t* layer_surface = gtk_window_get_layer_surface_or_warn(window);
@@ -221,8 +239,14 @@ void gtk_layer_set_monitor(GtkWindow* window, GdkMonitor* monitor) {
         output = gdk_wayland_monitor_get_wl_output(monitor);
         g_return_if_fail(output);
     }
-    layer_surface_set_output(&layer_surface->super, output);
+    gtk_layer_surface_clear_monitor(layer_surface);
     layer_surface->monitor = monitor;
+    if (monitor) {
+        g_object_ref(G_OBJECT(monitor));
+        // Connect after hopefully allows apps to handle this first
+        g_signal_connect_after(monitor, "invalidate",  G_CALLBACK(gtk_layer_surface_monitor_invalidated), layer_surface);
+    }
+    layer_surface_set_output(&layer_surface->super, output);
 }
 
 GTK4_LAYER_SHELL_EXPORT
