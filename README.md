@@ -69,7 +69,7 @@ The easiest way to build against GTK Layer Shell is to use the `gtk-layer-shell-
 
 To install these dependencies on Ubuntu 18.04 and later:
 ```
-sudo apt install meson ninja-build libwayland-dev libgtk-4-dev gobject-introspection libgirepository1.0-dev gtk-doc-tools python3 valac
+sudo apt install meson ninja-build libwayland-dev wayland-protocols libgtk-4-dev gobject-introspection libgirepository1.0-dev gtk-doc-tools python3 valac
 ```
 
 To install on Arch Linux:
