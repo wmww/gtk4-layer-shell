@@ -74,7 +74,7 @@ sudo apt install meson ninja-build libwayland-dev libgtk-4-dev gobject-introspec
 
 To install on Arch Linux:
 ```
-pacman -S --needed meson ninja gtk4 wayland gobject-introspection libgirepository gtk-doc python vala
+pacman -S --needed meson ninja gtk4 wayland wayland-protocols gobject-introspection libgirepository gtk-doc python vala
 ```
 
 ### Meson Options
