@@ -164,7 +164,7 @@ REQUEST_OVERRIDE_IMPL(wl_surface, destroy) {
 }
 
 REQUEST_OVERRIDE_IMPL(wl_compositor, create_surface) {
-    struct surface_data_t* data = ALLOC_STRUCT(struct surface_data_t);
+    struct surface_data_t* data = calloc(1, sizeof(struct surface_data_t));
     wl_resource_set_user_data(new_resource, data);
     data->surface = new_resource;
 }

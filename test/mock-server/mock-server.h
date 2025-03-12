@@ -17,9 +17,6 @@
 
 extern struct wl_display* display;
 
-#define ALLOC_STRUCT(type) ((type*)alloc_zeroed(sizeof(type)))
-void* alloc_zeroed(size_t size);
-
 #define REQUEST_OVERRIDE_IMPL(type, method) static void type##_##method( \
     struct wl_resource* type, \
     const struct wl_message* message, \

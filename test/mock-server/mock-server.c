@@ -2,12 +2,6 @@
 
 struct wl_display* display = NULL;
 
-void* alloc_zeroed(size_t size) {
-    void* data = malloc(size);
-    memset(data, 0, size);
-    return data;
-}
-
 static const char* get_display_name() {
     const char* result = getenv("WAYLAND_DISPLAY");
     if (!result) {
@@ -31,7 +25,7 @@ void install_request_override(
 ) {
     for (int i = 0; i < interface->method_count; i++) {
         if (strcmp(name, interface->methods[i].name) == 0) {
-            struct request_override_t* override = ALLOC_STRUCT(struct request_override_t);
+            struct request_override_t* override = calloc(1, sizeof(struct request_override_t));
             override->message = &interface->methods[i];
             override->function = function;
             wl_list_insert(&request_overrides, &override->link);
