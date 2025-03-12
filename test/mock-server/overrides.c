@@ -16,20 +16,20 @@ struct SurfaceData {
     struct wl_resource* surface;
     struct wl_resource* pending_frame;
     struct wl_resource* pending_buffer; // The attached but not committed buffer
-    char buffer_cleared; // If the buffer has been explicitly cleared since the last commit
+    bool buffer_cleared; // If the buffer has been explicitly cleared since the last commit
     struct wl_resource* xdg_toplevel;
     struct wl_resource* xdg_popup;
     struct wl_resource* xdg_surface;
     struct wl_resource* layer_surface;
     struct wl_resource* lock_surface;
-    char has_committed_buffer; // This surface has a non-null committed buffer
-    char initial_commit_for_role; // Set to 1 when a role is created for a surface, and cleared after the first commit
-    char layer_send_configure; // If to send a layer surface configure on the next commit
+    bool has_committed_buffer; // This surface has a non-null committed buffer
+    bool initial_commit_for_role; // Set to 1 when a role is created for a surface, and cleared after the first commit
+    bool layer_send_configure; // If to send a layer surface configure on the next commit
     int layer_set_w; // The width to configure the layer surface with
     int layer_set_h; // The height to configure the layer surface with
     uint32_t layer_anchor; // The layer surface's anchor
     uint32_t lock_surface_pending_serial;
-    char lock_surface_initial_configure_acked;
+    bool lock_surface_initial_configure_acked;
     SurfaceData* most_recent_popup; // Start of the popup linked list
     SurfaceData* previous_popup_sibling; // Forms a linked list of popups
     SurfaceData* popup_parent;
@@ -141,10 +141,10 @@ static void wl_surface_commit(struct wl_resource *resource, const struct wl_mess
     }
 
     if (data->layer_surface && data->layer_send_configure) {
-        char horiz = (
+        bool horiz = (
             (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT) &&
             (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT));
-        char vert = (
+        bool vert = (
             (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP) &&
             (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM));
         int width = data->layer_set_w;
