@@ -16,22 +16,22 @@ static const char* get_display_name() {
     return result;
 }
 
-typedef struct {
+struct request_override_t {
     const struct wl_message* message;
-    RequestOverrideFunction function;
+    request_override_function_t function;
     struct wl_list link;
-} RequestOverride;
+};
 
 struct wl_list request_overrides;
 
 void install_request_override(
     const struct wl_interface* interface,
     const char* name,
-    RequestOverrideFunction function
+    request_override_function_t function
 ) {
     for (int i = 0; i < interface->method_count; i++) {
         if (strcmp(name, interface->methods[i].name) == 0) {
-            RequestOverride* override = ALLOC_STRUCT(RequestOverride);
+            struct request_override_t* override = ALLOC_STRUCT(struct request_override_t);
             override->message = &interface->methods[i];
             override->function = function;
             wl_list_insert(&request_overrides, &override->link);
@@ -67,7 +67,7 @@ static int default_dispatcher(
             arg++;
     }
 
-    RequestOverride* override;
+    struct request_override_t* override;
     wl_list_for_each(override, &request_overrides, link) {
         if (override->message == message) {
             override->function(resource, message, created, args);

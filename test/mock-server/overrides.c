@@ -1,18 +1,16 @@
 #include "mock-server.h"
 #include "linux/input.h"
 
-typedef enum {
+enum surface_role_t {
     SURFACE_ROLE_NONE = 0,
     SURFACE_ROLE_XDG_TOPLEVEL,
     SURFACE_ROLE_XDG_POPUP,
     SURFACE_ROLE_LAYER,
     SURFACE_ROLE_SESSION_LOCK,
-} SurfaceRole;
+};
 
-typedef struct SurfaceData SurfaceData;
-
-struct SurfaceData {
-    SurfaceRole role;
+struct surface_data_t {
+    enum surface_role_t role;
     struct wl_resource* surface;
     struct wl_resource* pending_frame;
     struct wl_resource* pending_buffer; // The attached but not committed buffer
@@ -30,9 +28,9 @@ struct SurfaceData {
     uint32_t layer_anchor; // The layer surface's anchor
     uint32_t lock_surface_pending_serial;
     bool lock_surface_initial_configure_acked;
-    SurfaceData* most_recent_popup; // Start of the popup linked list
-    SurfaceData* previous_popup_sibling; // Forms a linked list of popups
-    SurfaceData* popup_parent;
+    struct surface_data_t* most_recent_popup; // Start of the popup linked list
+    struct surface_data_t* previous_popup_sibling; // Forms a linked list of popups
+    struct surface_data_t* popup_parent;
 };
 
 static struct wl_resource* seat_global = NULL;
@@ -40,7 +38,7 @@ static struct wl_resource* pointer_global = NULL;
 static struct wl_resource* output_global = NULL;
 static struct wl_resource* current_session_lock = NULL;
 
-static void surface_data_assert_no_role(SurfaceData* data) {
+static void surface_data_assert_no_role(struct surface_data_t* data) {
     ASSERT(!data->xdg_popup);
     ASSERT(!data->xdg_toplevel);
     ASSERT(!data->xdg_surface);
@@ -49,7 +47,7 @@ static void surface_data_assert_no_role(SurfaceData* data) {
 }
 
 // Needs to be called before any role objects are assigned
-static void surface_data_set_role(SurfaceData* data, SurfaceRole role) {
+static void surface_data_set_role(struct surface_data_t* data, enum surface_role_t role) {
     if (data->role != SURFACE_ROLE_NONE) {
         ASSERT_EQ(data->role, role, "%u");
     }
@@ -70,8 +68,8 @@ static void surface_data_set_role(SurfaceData* data, SurfaceRole role) {
     data->initial_commit_for_role = 1;
 }
 
-static void surface_data_unmap(SurfaceData* data) {
-    SurfaceData* popup = data->most_recent_popup;
+static void surface_data_unmap(struct surface_data_t* data) {
+    struct surface_data_t* popup = data->most_recent_popup;
     while (popup) {
         // Popups must be unmapped before their parents
         surface_data_assert_no_role(data);
@@ -79,7 +77,7 @@ static void surface_data_unmap(SurfaceData* data) {
     }
 }
 
-static void surface_data_add_pupup(SurfaceData* parent, SurfaceData* popup) {
+static void surface_data_add_pupup(struct surface_data_t* parent, struct surface_data_t* popup) {
     ASSERT(!popup->previous_popup_sibling);
     popup->previous_popup_sibling = parent->most_recent_popup;
     parent->most_recent_popup = popup;
@@ -87,20 +85,20 @@ static void surface_data_add_pupup(SurfaceData* parent, SurfaceData* popup) {
 }
 
 REQUEST_OVERRIDE_IMPL(wl_surface, frame) {
-    SurfaceData* data = wl_resource_get_user_data(wl_surface);
+    struct surface_data_t* data = wl_resource_get_user_data(wl_surface);
     ASSERT(!data->pending_frame);
     data->pending_frame = new_resource;
 }
 
 REQUEST_OVERRIDE_IMPL(wl_surface, attach) {
     RESOURCE_ARG(wl_buffer, buffer, 0);
-    SurfaceData* data = wl_resource_get_user_data(wl_surface);
+    struct surface_data_t* data = wl_resource_get_user_data(wl_surface);
     data->pending_buffer = buffer;
     data->buffer_cleared = buffer == NULL;
 }
 
 REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
-    SurfaceData* data = wl_resource_get_user_data(wl_surface);
+    struct surface_data_t* data = wl_resource_get_user_data(wl_surface);
 
     if (data->role == SURFACE_ROLE_SESSION_LOCK) {
         if (data->buffer_cleared) {
@@ -158,7 +156,7 @@ REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
 }
 
 REQUEST_OVERRIDE_IMPL(wl_surface, destroy) {
-    SurfaceData* data = wl_resource_get_user_data(wl_surface);
+    struct surface_data_t* data = wl_resource_get_user_data(wl_surface);
     surface_data_assert_no_role(data);
     data->surface = NULL;
     // Don't free surfaces to guarantee traversing popups is always safe
@@ -166,7 +164,7 @@ REQUEST_OVERRIDE_IMPL(wl_surface, destroy) {
 }
 
 REQUEST_OVERRIDE_IMPL(wl_compositor, create_surface) {
-    SurfaceData* data = ALLOC_STRUCT(SurfaceData);
+    struct surface_data_t* data = ALLOC_STRUCT(struct surface_data_t);
     wl_resource_set_user_data(new_resource, data);
     data->surface = new_resource;
 }
@@ -192,13 +190,13 @@ REQUEST_OVERRIDE_IMPL(wl_seat, get_pointer) {
 
 REQUEST_OVERRIDE_IMPL(xdg_wm_base, get_xdg_surface) {
     RESOURCE_ARG(wl_surface, surface, 1);
-    SurfaceData* data = wl_resource_get_user_data(surface);
+    struct surface_data_t* data = wl_resource_get_user_data(surface);
     wl_resource_set_user_data(new_resource, data);
     data->xdg_surface = new_resource;
 }
 
 REQUEST_OVERRIDE_IMPL(xdg_surface, destroy) {
-    SurfaceData* data = wl_resource_get_user_data(xdg_surface);
+    struct surface_data_t* data = wl_resource_get_user_data(xdg_surface);
     ASSERT(!data->xdg_toplevel);
     ASSERT(!data->xdg_popup);
     data->xdg_surface = NULL;
@@ -210,14 +208,14 @@ REQUEST_OVERRIDE_IMPL(xdg_surface, get_toplevel) {
     xdg_toplevel_send_configure(new_resource, 0, 0, &states);
     wl_array_release(&states);
     xdg_surface_send_configure(xdg_surface, wl_display_next_serial(display));
-    SurfaceData* data = wl_resource_get_user_data(xdg_surface);
+    struct surface_data_t* data = wl_resource_get_user_data(xdg_surface);
     surface_data_set_role(data, SURFACE_ROLE_XDG_TOPLEVEL);
     wl_resource_set_user_data(new_resource, data);
     data->xdg_toplevel = new_resource;
 }
 
 REQUEST_OVERRIDE_IMPL(xdg_toplevel, destroy) {
-    SurfaceData* data = wl_resource_get_user_data(xdg_toplevel);
+    struct surface_data_t* data = wl_resource_get_user_data(xdg_toplevel);
     ASSERT(data->xdg_surface);
     data->xdg_toplevel = NULL;
     surface_data_unmap(data);
@@ -229,25 +227,25 @@ REQUEST_OVERRIDE_IMPL(xdg_surface, get_popup) {
     // https://gitlab.gnome.org/GNOME/gtk/-/blob/4.16.12/gtk/gtkpopover.c?ref_type=tags#L719
     xdg_popup_send_configure(new_resource, 0, 0, 500, 500);
     xdg_surface_send_configure(xdg_surface, wl_display_next_serial(display));
-    SurfaceData* data = wl_resource_get_user_data(xdg_surface);
+    struct surface_data_t* data = wl_resource_get_user_data(xdg_surface);
     surface_data_set_role(data, SURFACE_ROLE_XDG_POPUP);
     wl_resource_set_user_data(new_resource, data);
     data->xdg_popup = new_resource;
     if (parent) {
-        SurfaceData* parent_data = wl_resource_get_user_data(parent);
+        struct surface_data_t* parent_data = wl_resource_get_user_data(parent);
         surface_data_add_pupup(parent_data, data);
     }
 }
 
 REQUEST_OVERRIDE_IMPL(xdg_popup, grab) {
-    SurfaceData* data = wl_resource_get_user_data(xdg_popup);
+    struct surface_data_t* data = wl_resource_get_user_data(xdg_popup);
     RESOURCE_ARG(wl_seat, seat, 0);
     ASSERT_EQ(seat, seat_global, "%p");
     ASSERT(data->popup_parent);
 }
 
 REQUEST_OVERRIDE_IMPL(xdg_popup, destroy) {
-    SurfaceData* data = wl_resource_get_user_data(xdg_popup);
+    struct surface_data_t* data = wl_resource_get_user_data(xdg_popup);
     ASSERT(data->xdg_surface);
     data->xdg_popup = NULL;
     surface_data_unmap(data);
@@ -255,7 +253,7 @@ REQUEST_OVERRIDE_IMPL(xdg_popup, destroy) {
 
 REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, set_anchor) {
     UINT_ARG(anchor, 0);
-    SurfaceData* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
+    struct surface_data_t* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
     data->layer_send_configure = 1;
     data->layer_anchor = anchor;
 }
@@ -263,7 +261,7 @@ REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, set_anchor) {
 REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, set_size) {
     UINT_ARG(width, 0);
     UINT_ARG(height, 1);
-    SurfaceData* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
+    struct surface_data_t* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
     data->layer_send_configure = 1;
     data->layer_set_w = width;
     data->layer_set_h = height;
@@ -271,15 +269,15 @@ REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, set_size) {
 
 REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, get_popup) {
     RESOURCE_ARG(xdg_popup, popup, 0);
-    SurfaceData* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
-    SurfaceData* popup_data = wl_resource_get_user_data(popup);
+    struct surface_data_t* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
+    struct surface_data_t* popup_data = wl_resource_get_user_data(popup);
     ASSERT(!popup_data->popup_parent);
     surface_data_add_pupup(data, popup_data);
 }
 
 REQUEST_OVERRIDE_IMPL(zwlr_layer_shell_v1, get_layer_surface) {
     RESOURCE_ARG(wl_surface, surface, 1);
-    SurfaceData* data = wl_resource_get_user_data(surface);
+    struct surface_data_t* data = wl_resource_get_user_data(surface);
     surface_data_set_role(data, SURFACE_ROLE_LAYER);
     wl_resource_set_user_data(new_resource, data);
     data->layer_send_configure = 1;
@@ -287,7 +285,7 @@ REQUEST_OVERRIDE_IMPL(zwlr_layer_shell_v1, get_layer_surface) {
 }
 
 REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, destroy) {
-    SurfaceData* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
+    struct surface_data_t* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
     data->layer_surface = NULL;
     surface_data_unmap(data);
 }
@@ -314,7 +312,7 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, unlock_and_destroy) {
     current_session_lock = NULL;
 }
 
-static void lock_surface_send_configure(SurfaceData* data, uint32_t width, uint32_t height) {
+static void lock_surface_send_configure(struct surface_data_t* data, uint32_t width, uint32_t height) {
     data->lock_surface_pending_serial = wl_display_next_serial(display);
     ext_session_lock_surface_v1_send_configure(data->lock_surface, data->lock_surface_pending_serial, width, height);
 }
@@ -323,7 +321,7 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, get_lock_surface) {
     RESOURCE_ARG(wl_surface, surface, 1);
     RESOURCE_ARG(wl_output, output, 2);
     ASSERT_EQ(output, output_global, "%p");
-    SurfaceData* data = wl_resource_get_user_data(surface);
+    struct surface_data_t* data = wl_resource_get_user_data(surface);
     surface_data_set_role(data, SURFACE_ROLE_SESSION_LOCK);
     wl_resource_set_user_data(new_resource, data);
     data->lock_surface = new_resource;
@@ -332,7 +330,7 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, get_lock_surface) {
 
 REQUEST_OVERRIDE_IMPL(ext_session_lock_surface_v1, ack_configure) {
     UINT_ARG(serial, 0);
-    SurfaceData* data = wl_resource_get_user_data(ext_session_lock_surface_v1);
+    struct surface_data_t* data = wl_resource_get_user_data(ext_session_lock_surface_v1);
     if (serial == data->lock_surface_pending_serial) {
         data->lock_surface_initial_configure_acked = 1;
     }
