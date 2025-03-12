@@ -29,8 +29,8 @@ void* alloc_zeroed(size_t size);
 #define RESOURCE_ARG(type, name, index) ASSERT(type_code_at_index(message, index) == 'o'); ASSERT(message->types[index] == &type##_interface); struct wl_resource* name = (struct wl_resource*)args[index].o;
 #define UINT_ARG(name, index) ASSERT(type_code_at_index(message, index) == 'u'); uint32_t name = args[index].u;
 
-typedef void (*RequestOverrideFunction)(struct wl_resource* resource, const struct wl_message* message, struct wl_resource* created, union wl_argument* args);
-void install_request_override(const struct wl_interface* interface, const char* name, RequestOverrideFunction function);
+typedef void (*request_override_function_t)(struct wl_resource* resource, const struct wl_message* message, struct wl_resource* created, union wl_argument* args);
+void install_request_override(const struct wl_interface* interface, const char* name, request_override_function_t function);
 void use_default_impl(struct wl_resource* resource);
 void default_global_create(struct wl_display* display, const struct wl_interface* interface, int version);
 char type_code_at_index(const struct wl_message* message, int index);
