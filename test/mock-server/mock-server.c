@@ -48,30 +48,33 @@ static int default_dispatcher(
     const struct wl_message* message,
     union wl_argument* args
 ) {
-    // First, check if there is an override
-    RequestOverride* override;
-    wl_list_for_each(override, &request_overrides, link) {
-        if (override->message == message) {
-            override->function(resource, message, args);
-            return 0;
-        }
-    }
+    struct wl_resource* created = NULL;
 
-    // If there are any new-id type arguments, resources need to be created for them
+    // If there is a new-id type argument, a resource needs to be created for it
     // See https://wayland.freedesktop.org/docs/html/apb.html#Client-structwl__message
     int arg = 0;
     for (const char* c = message->signature; *c; c++) {
         if (*c == 'n' && args[arg].n != 0) {
-            struct wl_resource* new_resource = wl_resource_create(
+            created = wl_resource_create(
                 wl_resource_get_client(resource),
                 message->types[arg],
                 wl_resource_get_version(resource),
                 args[arg].n);
-            wl_resource_set_dispatcher(new_resource, default_dispatcher, NULL, NULL, NULL);
+            use_default_impl(created);
+            break;
         }
         if (*c >= 'a' && *c <= 'z')
             arg++;
     }
+
+    RequestOverride* override;
+    wl_list_for_each(override, &request_overrides, link) {
+        if (override->message == message) {
+            override->function(resource, message, created, args);
+            break;
+        }
+    }
+
     if (strcmp(message->name, "destroy") == 0) {
         wl_resource_destroy(resource);
     }

@@ -86,26 +86,21 @@ static void surface_data_add_pupup(SurfaceData* parent, SurfaceData* popup) {
     popup->popup_parent = parent;
 }
 
-static void wl_surface_frame(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    NEW_ID_ARG(callback, 0);
-    SurfaceData* data = wl_resource_get_user_data(resource);
+REQUEST_OVERRIDE_IMPL(wl_surface, frame) {
+    SurfaceData* data = wl_resource_get_user_data(wl_surface);
     ASSERT(!data->pending_frame);
-    data->pending_frame = wl_resource_create(
-        wl_resource_get_client(resource),
-        &wl_callback_interface,
-        wl_resource_get_version(resource),
-        callback);
+    data->pending_frame = new_resource;
 }
 
-static void wl_surface_attach(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
+REQUEST_OVERRIDE_IMPL(wl_surface, attach) {
     RESOURCE_ARG(wl_buffer, buffer, 0);
-    SurfaceData* data = wl_resource_get_user_data(resource);
+    SurfaceData* data = wl_resource_get_user_data(wl_surface);
     data->pending_buffer = buffer;
     data->buffer_cleared = buffer == NULL;
 }
 
-static void wl_surface_commit(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    SurfaceData* data = wl_resource_get_user_data(resource);
+REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
+    SurfaceData* data = wl_resource_get_user_data(wl_surface);
 
     if (data->role == SURFACE_ROLE_SESSION_LOCK) {
         if (data->buffer_cleared) {
@@ -162,25 +157,18 @@ static void wl_surface_commit(struct wl_resource *resource, const struct wl_mess
     }
 }
 
-static void wl_surface_destroy(struct wl_resource* resource, const struct wl_message* message, union wl_argument* args) {
-    SurfaceData* data = wl_resource_get_user_data(resource);
+REQUEST_OVERRIDE_IMPL(wl_surface, destroy) {
+    SurfaceData* data = wl_resource_get_user_data(wl_surface);
     surface_data_assert_no_role(data);
     data->surface = NULL;
     // Don't free surfaces to guarantee traversing popups is always safe
     // We're employing the missile memory management pattern here https://x.com/pomeranian99/status/858856994438094848
 }
 
-static void wl_compositor_create_surface(struct wl_resource* resource, const struct wl_message* message, union wl_argument* args) {
-    NEW_ID_ARG(id, 0);
-    struct wl_resource* surface = wl_resource_create(
-        wl_resource_get_client(resource),
-        &wl_surface_interface,
-        wl_resource_get_version(resource),
-        id);
+REQUEST_OVERRIDE_IMPL(wl_compositor, create_surface) {
     SurfaceData* data = ALLOC_STRUCT(SurfaceData);
-    data->surface = surface;
-    use_default_impl(surface);
-    wl_resource_set_user_data(surface, data);
+    wl_resource_set_user_data(new_resource, data);
+    data->surface = new_resource;
 }
 
 void wl_seat_bind(struct wl_client* client, void* data, uint32_t version, uint32_t id) {
@@ -197,171 +185,130 @@ void wl_output_bind(struct wl_client* client, void* data, uint32_t version, uint
     wl_output_send_done(output_global);
 };
 
-static void wl_seat_get_pointer(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    NEW_ID_ARG(id, 0);
+REQUEST_OVERRIDE_IMPL(wl_seat, get_pointer) {
     ASSERT(!pointer_global);
-    pointer_global = wl_resource_create(
-        wl_resource_get_client(resource),
-        &wl_pointer_interface,
-        wl_resource_get_version(resource),
-        id);
-    use_default_impl(pointer_global);
+    pointer_global = new_resource;
 }
 
-static void xdg_wm_base_get_xdg_surface(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    NEW_ID_ARG(id, 0);
+REQUEST_OVERRIDE_IMPL(xdg_wm_base, get_xdg_surface) {
     RESOURCE_ARG(wl_surface, surface, 1);
-    struct wl_resource* xdg_surface = wl_resource_create(
-        wl_resource_get_client(resource),
-        &xdg_surface_interface,
-        wl_resource_get_version(resource),
-        id);
-    use_default_impl(xdg_surface);
     SurfaceData* data = wl_resource_get_user_data(surface);
-    wl_resource_set_user_data(xdg_surface, data);
-    data->xdg_surface = xdg_surface;
+    wl_resource_set_user_data(new_resource, data);
+    data->xdg_surface = new_resource;
 }
 
-static void xdg_surface_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    SurfaceData* data = wl_resource_get_user_data(resource);
+REQUEST_OVERRIDE_IMPL(xdg_surface, destroy) {
+    SurfaceData* data = wl_resource_get_user_data(xdg_surface);
     ASSERT(!data->xdg_toplevel);
     ASSERT(!data->xdg_popup);
     data->xdg_surface = NULL;
 }
 
-static void xdg_surface_get_toplevel(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    NEW_ID_ARG(id, 0);
-    struct wl_resource* toplevel = wl_resource_create(
-        wl_resource_get_client(resource),
-        &xdg_toplevel_interface,
-        wl_resource_get_version(resource),
-        id);
-    use_default_impl(toplevel);
+REQUEST_OVERRIDE_IMPL(xdg_surface, get_toplevel) {
     struct wl_array states;
     wl_array_init(&states);
-    xdg_toplevel_send_configure(toplevel, 0, 0, &states);
+    xdg_toplevel_send_configure(new_resource, 0, 0, &states);
     wl_array_release(&states);
-    xdg_surface_send_configure(resource, wl_display_next_serial(display));
-    SurfaceData* data = wl_resource_get_user_data(resource);
+    xdg_surface_send_configure(xdg_surface, wl_display_next_serial(display));
+    SurfaceData* data = wl_resource_get_user_data(xdg_surface);
     surface_data_set_role(data, SURFACE_ROLE_XDG_TOPLEVEL);
-    wl_resource_set_user_data(toplevel, data);
-    data->xdg_toplevel = toplevel;
+    wl_resource_set_user_data(new_resource, data);
+    data->xdg_toplevel = new_resource;
 }
 
-static void xdg_toplevel_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    SurfaceData* data = wl_resource_get_user_data(resource);
+REQUEST_OVERRIDE_IMPL(xdg_toplevel, destroy) {
+    SurfaceData* data = wl_resource_get_user_data(xdg_toplevel);
     ASSERT(data->xdg_surface);
     data->xdg_toplevel = NULL;
     surface_data_unmap(data);
 }
 
-static void xdg_surface_get_popup(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    NEW_ID_ARG(id, 0);
+REQUEST_OVERRIDE_IMPL(xdg_surface, get_popup) {
     RESOURCE_ARG(xdg_surface, parent, 1);
-    struct wl_resource* popup = wl_resource_create(
-        wl_resource_get_client(resource),
-        &xdg_popup_interface,
-        wl_resource_get_version(resource),
-        id);
-    use_default_impl(popup);
     // If the configure size is too small GTK gets upset and unmaps its popup in protest
     // https://gitlab.gnome.org/GNOME/gtk/-/blob/4.16.12/gtk/gtkpopover.c?ref_type=tags#L719
-    xdg_popup_send_configure(popup, 0, 0, 500, 500);
-    xdg_surface_send_configure(resource, wl_display_next_serial(display));
-    SurfaceData* data = wl_resource_get_user_data(resource);
+    xdg_popup_send_configure(new_resource, 0, 0, 500, 500);
+    xdg_surface_send_configure(xdg_surface, wl_display_next_serial(display));
+    SurfaceData* data = wl_resource_get_user_data(xdg_surface);
     surface_data_set_role(data, SURFACE_ROLE_XDG_POPUP);
-    wl_resource_set_user_data(popup, data);
-    data->xdg_popup = popup;
+    wl_resource_set_user_data(new_resource, data);
+    data->xdg_popup = new_resource;
     if (parent) {
         SurfaceData* parent_data = wl_resource_get_user_data(parent);
         surface_data_add_pupup(parent_data, data);
     }
 }
 
-static void xdg_popup_grab(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    SurfaceData* data = wl_resource_get_user_data(resource);
+REQUEST_OVERRIDE_IMPL(xdg_popup, grab) {
+    SurfaceData* data = wl_resource_get_user_data(xdg_popup);
     RESOURCE_ARG(wl_seat, seat, 0);
     ASSERT_EQ(seat, seat_global, "%p");
     ASSERT(data->popup_parent);
 }
 
-static void xdg_popup_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    SurfaceData* data = wl_resource_get_user_data(resource);
+REQUEST_OVERRIDE_IMPL(xdg_popup, destroy) {
+    SurfaceData* data = wl_resource_get_user_data(xdg_popup);
     ASSERT(data->xdg_surface);
     data->xdg_popup = NULL;
     surface_data_unmap(data);
 }
 
-static void zwlr_layer_surface_v1_set_anchor(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
+REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, set_anchor) {
     UINT_ARG(anchor, 0);
-    SurfaceData* data = wl_resource_get_user_data(resource);
+    SurfaceData* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
     data->layer_send_configure = 1;
     data->layer_anchor = anchor;
 }
 
-static void zwlr_layer_surface_v1_set_size(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
+REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, set_size) {
     UINT_ARG(width, 0);
     UINT_ARG(height, 1);
-    SurfaceData* data = wl_resource_get_user_data(resource);
+    SurfaceData* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
     data->layer_send_configure = 1;
     data->layer_set_w = width;
     data->layer_set_h = height;
 }
 
-static void zwlr_layer_surface_v1_get_popup(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
+REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, get_popup) {
     RESOURCE_ARG(xdg_popup, popup, 0);
-    SurfaceData* data = wl_resource_get_user_data(resource);
+    SurfaceData* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
     SurfaceData* popup_data = wl_resource_get_user_data(popup);
     ASSERT(!popup_data->popup_parent);
     surface_data_add_pupup(data, popup_data);
 }
 
-static void zwlr_layer_shell_v1_get_layer_surface(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    NEW_ID_ARG(id, 0);
+REQUEST_OVERRIDE_IMPL(zwlr_layer_shell_v1, get_layer_surface) {
     RESOURCE_ARG(wl_surface, surface, 1);
-    struct wl_resource* layer_surface = wl_resource_create(
-        wl_resource_get_client(resource),
-        &zwlr_layer_surface_v1_interface,
-        wl_resource_get_version(resource),
-        id);
-    use_default_impl(layer_surface);
     SurfaceData* data = wl_resource_get_user_data(surface);
     surface_data_set_role(data, SURFACE_ROLE_LAYER);
-    wl_resource_set_user_data(layer_surface, data);
+    wl_resource_set_user_data(new_resource, data);
     data->layer_send_configure = 1;
-    data->layer_surface = layer_surface;
+    data->layer_surface = new_resource;
 }
 
-static void zwlr_layer_surface_v1_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    SurfaceData* data = wl_resource_get_user_data(resource);
+REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, destroy) {
+    SurfaceData* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
     data->layer_surface = NULL;
     surface_data_unmap(data);
 }
 
-static void ext_session_lock_manager_v1_lock(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    NEW_ID_ARG(id, 0);
-    struct wl_resource* lock_resource = wl_resource_create(
-        wl_resource_get_client(resource),
-        &ext_session_lock_v1_interface,
-        wl_resource_get_version(resource),
-        id);
-    use_default_impl(lock_resource);
+REQUEST_OVERRIDE_IMPL(ext_session_lock_manager_v1, lock) {
     if (current_session_lock) {
-        ext_session_lock_v1_send_finished(lock_resource);
+        ext_session_lock_v1_send_finished(new_resource);
     } else {
-        current_session_lock = lock_resource;
-        ext_session_lock_v1_send_locked(lock_resource);
+        current_session_lock = new_resource;
+        ext_session_lock_v1_send_locked(new_resource);
     }
 }
 
-static void ext_session_lock_v1_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    if (resource == current_session_lock) {
+REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, destroy) {
+    if (ext_session_lock_v1 == current_session_lock) {
         FATAL(".destroy (instead of .unlock_and_destroy) called on active lock");
     }
 }
 
-static void ext_session_lock_v1_unlock_and_destroy(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    if (resource != current_session_lock) {
+REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, unlock_and_destroy) {
+    if (ext_session_lock_v1 != current_session_lock) {
         FATAL(".unlock_and_destroy (instead of .destroy) called on inactive lock");
     }
     current_session_lock = NULL;
@@ -372,27 +319,20 @@ static void lock_surface_send_configure(SurfaceData* data, uint32_t width, uint3
     ext_session_lock_surface_v1_send_configure(data->lock_surface, data->lock_surface_pending_serial, width, height);
 }
 
-static void ext_session_lock_v1_get_lock_surface(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
-    NEW_ID_ARG(id, 0);
-    struct wl_resource* lock_surface = wl_resource_create(
-        wl_resource_get_client(resource),
-        &ext_session_lock_surface_v1_interface,
-        wl_resource_get_version(resource),
-        id);
-    use_default_impl(lock_surface);
+REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, get_lock_surface) {
     RESOURCE_ARG(wl_surface, surface, 1);
     RESOURCE_ARG(wl_output, output, 2);
     ASSERT_EQ(output, output_global, "%p");
     SurfaceData* data = wl_resource_get_user_data(surface);
     surface_data_set_role(data, SURFACE_ROLE_SESSION_LOCK);
-    wl_resource_set_user_data(lock_surface, data);
-    data->lock_surface = lock_surface;
+    wl_resource_set_user_data(new_resource, data);
+    data->lock_surface = new_resource;
     lock_surface_send_configure(data, DEFAULT_OUTPUT_WIDTH, DEFAULT_OUTPUT_HEIGHT);
 }
 
-static void ext_session_lock_surface_v1_ack_configure(struct wl_resource *resource, const struct wl_message* message, union wl_argument* args) {
+REQUEST_OVERRIDE_IMPL(ext_session_lock_surface_v1, ack_configure) {
     UINT_ARG(serial, 0);
-    SurfaceData* data = wl_resource_get_user_data(resource);
+    SurfaceData* data = wl_resource_get_user_data(ext_session_lock_surface_v1);
     if (serial == data->lock_surface_pending_serial) {
         data->lock_surface_initial_configure_acked = 1;
     }
