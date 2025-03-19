@@ -142,4 +142,5 @@ void lock_surface_install_hook(lock_surface_hook_callback_t callback) {
         xdg_wm_base_get_xdg_surface_hook,
         callback
     );
+    stubbed_surface_install_positioner_hook();
 }
