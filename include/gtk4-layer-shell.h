@@ -200,7 +200,7 @@ void gtk_layer_set_layer(GtkWindow* window, GtkLayerShellLayer layer);
  * gtk_layer_get_layer:
  * @window: A layer surface.
  *
- * Returns: (nullable): the current layer.
+ * Returns: the current layer.
  */
 GtkLayerShellLayer gtk_layer_get_layer(GtkWindow* window);
 
