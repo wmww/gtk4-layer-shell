@@ -8,6 +8,7 @@ import sys
 import shutil
 import time
 import subprocess
+import signal
 import threading
 from typing import List, Dict, Optional, Any
 
@@ -162,10 +163,16 @@ def run_test(name: str, server_args: List[str], client_args: List[str], xdg_runt
     Runs two processes: a mock server and the test client
     Does *not* check that client's message assertions pass, this must be done later using the returned output
     '''
+    server_sway = 'sway' in server_args[0]
+
     env = os.environ.copy()
     env['XDG_RUNTIME_DIR'] = xdg_runtime
-    env['WAYLAND_DISPLAY'] = wayland_display
+    env['CREATE_DISPLAY'] = wayland_display
     env['WAYLAND_DEBUG'] = '1'
+
+    if server_sway:
+        env['SWAYSOCK'] = path.join(xdg_runtime, 'swaysock')
+        env['WLR_BACKENDS'] = 'headless'
 
     server = Program('server', server_args, env)
 
@@ -174,6 +181,13 @@ def run_test(name: str, server_args: List[str], client_args: List[str], xdg_runt
     except TestError as e:
         server.kill()
         raise TestError(server.format_output() + '\n\n' + str(e))
+
+    env['WAYLAND_DISPLAY'] = wayland_display
+
+    if server_sway:
+        swaymsg = Program('swaymsg', ['swaymsg', 'output', '*', 'resolution', '1920x1080'], env)
+        swaymsg.finish(timeout=1)
+        swaymsg.check_returncode()
 
     client = Program(name, client_args, env)
 
@@ -185,6 +199,7 @@ def run_test(name: str, server_args: List[str], client_args: List[str], xdg_runt
         errors.append(str(e))
 
     try:
+        server.subprocess.send_signal(signal.SIGINT)
         server.finish(timeout=1)
         server.check_returncode()
     except TestError as e:
@@ -257,8 +272,10 @@ def main():
     assert os.access(server_bin, os.X_OK), server_bin + ' is not executable'
     wayland_display = 'wayland-test'
     xdg_runtime = get_xdg_runtime_dir()
+    #server_args = [server_bin]
+    server_args = ['/usr/bin/sway', '--config', '/home/code/gtk4-layer-shell/test/test-sway.conf']
 
-    client_stderr = run_test(name, [server_bin], [client_bin, '--auto'], xdg_runtime, wayland_display)
+    client_stderr = run_test(name, server_args, [client_bin, '--auto'], xdg_runtime, wayland_display)
     client_lines = [line.strip() for line in client_stderr.strip().splitlines()]
 
     try:
