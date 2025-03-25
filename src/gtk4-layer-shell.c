@@ -7,6 +7,7 @@
 
 static const char* layer_surface_key = "wayland_layer_surface";
 static GList* all_layer_surfaces = NULL;
+static GListModel* gtk_monitors = NULL;
 
 struct gtk_layer_surface_t {
     struct layer_surface_t super;
@@ -14,6 +15,7 @@ struct gtk_layer_surface_t {
     GdkMonitor* monitor;
 };
 
+static void gtk_layer_surface_remap(struct layer_surface_t* super);
 static void gtk_layer_surface_clear_monitor(struct gtk_layer_surface_t* layer_surface);
 
 GTK4_LAYER_SHELL_EXPORT
@@ -31,10 +33,31 @@ guint gtk_layer_get_micro_version() {
     return GTK_LAYER_SHELL_MICRO;
 }
 
+static void monitors_changed(
+    GListModel* self,
+    guint position,
+    guint removed,
+    guint added,
+    gpointer user_data
+) {
+    (void)self; (void)position; (void)removed; (void)added; (void)user_data;
+    for (GList* item = all_layer_surfaces; item; item = item->next) {
+        struct gtk_layer_surface_t* surface = item->data;
+        if (surface->monitor == NULL) {
+            // If the surface has a monitor set, it is in charge of responding to monitor changes
+            gtk_layer_surface_remap(&surface->super);
+        }
+    }
+}
+
 static struct zwlr_layer_shell_v1* init_and_get_layer_shell_global() {
     gtk_init();
     GdkDisplay* gdk_display = gdk_display_get_default();
     g_return_val_if_fail(gdk_display, NULL);
+    if (!gtk_monitors) {
+        gtk_monitors = gdk_display_get_monitors(gdk_display);
+        g_signal_connect(gtk_monitors, "items-changed",  G_CALLBACK(monitors_changed), NULL);
+    }
     g_return_val_if_fail(GDK_IS_WAYLAND_DISPLAY(gdk_display), NULL);
     struct wl_display* wl_display = gdk_wayland_display_get_wl_display(gdk_display);
     return get_layer_shell_global_from_display(wl_display);
@@ -118,6 +141,10 @@ static void gtk_layer_surface_on_default_size_set(
 }
 
 static void gtk_layer_surface_remap(struct layer_surface_t* super) {
+    if (g_list_model_get_n_items(gtk_monitors) == 0) {
+        // GTK will exit if you try to map a window while there are no monitors, so don't do that
+        return;
+    }
     struct gtk_layer_surface_t* self = (struct gtk_layer_surface_t*)super;
     gtk_widget_unrealize(GTK_WIDGET(self->gtk_window));
     gtk_widget_map(GTK_WIDGET(self->gtk_window));
