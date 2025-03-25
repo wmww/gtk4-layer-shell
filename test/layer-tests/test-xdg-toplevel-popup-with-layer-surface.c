@@ -19,7 +19,9 @@ static void callback_0() {
 
     normal_window = GTK_WINDOW(gtk_window_new());
     normal_dropdown = gtk_drop_down_new_from_strings(options);
-    gtk_window_set_child(normal_window, normal_dropdown);
+    GtkWidget *grid = gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid), normal_dropdown, 0, 0, 1, 1);
+    gtk_window_set_child(normal_window, grid);
     gtk_window_present(normal_window);
 }
 
