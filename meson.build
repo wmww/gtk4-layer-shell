@@ -1,6 +1,6 @@
 project('gtk4-layer-shell',
     ['c'],
-    version: '1.1.0',
+    version: '1.1.1',
     license: 'MIT',
     meson_version: '>=0.54.0',
     default_options: ['c_std=gnu11', 'warning_level=3'])

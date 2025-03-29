@@ -1,7 +1,13 @@
 # Changelog
 
 ## [Unreleased]
-## [1.1.0] - 29 Jan 2024
+## [1.1.1] - 29 Mar 2025
+- Bump required meson version to 0.54.0
+- Control which symbols are exported, do not expose private/unstable functions which have never been in public headers
+- Correct annotations in doc comments
+- Automatically remap surfaces when monitors change
+
+## [1.1.0] - 29 Jan 2025
 This release includes two important new features.
 
 ### ext_session_lock_v1
