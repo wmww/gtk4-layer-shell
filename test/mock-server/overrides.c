@@ -15,6 +15,7 @@ struct surface_data_t {
     struct wl_resource* pending_frame;
     struct wl_resource* pending_buffer; // The attached but not committed buffer
     bool buffer_cleared; // If the buffer has been explicitly cleared since the last commit
+    bool pending_window_geom; // If the window geom has been set since last commit
     struct wl_resource* xdg_toplevel;
     struct wl_resource* xdg_popup;
     struct wl_resource* xdg_surface;
@@ -122,6 +123,11 @@ REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
         data->pending_buffer = NULL;
     }
 
+    if (data->pending_window_geom) {
+        ASSERT(data->has_committed_buffer);
+        data->pending_window_geom = 0;
+    }
+
     if (data->pending_frame) {
         wl_callback_send_done(data->pending_frame, 0);
         wl_resource_destroy(data->pending_frame);
@@ -200,6 +206,17 @@ REQUEST_OVERRIDE_IMPL(xdg_surface, destroy) {
     ASSERT(!data->xdg_toplevel);
     ASSERT(!data->xdg_popup);
     data->xdg_surface = NULL;
+}
+
+REQUEST_OVERRIDE_IMPL(xdg_surface, set_window_geometry) {
+    //INT_ARG(x, 0);
+    //INT_ARG(y, 1);
+    INT_ARG(width, 2);
+    INT_ARG(height, 3);
+    struct surface_data_t* data = wl_resource_get_user_data(xdg_surface);
+    ASSERT(width > 0);
+    ASSERT(height > 0);
+    data->pending_window_geom = true;
 }
 
 REQUEST_OVERRIDE_IMPL(xdg_surface, get_toplevel) {
@@ -345,6 +362,7 @@ void init() {
     OVERRIDE_REQUEST(wl_seat, get_pointer);
     OVERRIDE_REQUEST(xdg_wm_base, get_xdg_surface);
     OVERRIDE_REQUEST(xdg_surface, destroy);
+    OVERRIDE_REQUEST(xdg_surface, set_window_geometry);
     OVERRIDE_REQUEST(xdg_surface, get_toplevel);
     OVERRIDE_REQUEST(xdg_toplevel, destroy);
     OVERRIDE_REQUEST(xdg_surface, get_popup);
