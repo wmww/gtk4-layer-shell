@@ -2,12 +2,6 @@
 
 struct wl_display* display = NULL;
 
-void* alloc_zeroed(size_t size) {
-    void* data = malloc(size);
-    memset(data, 0, size);
-    return data;
-}
-
 static const char* get_display_name() {
     const char* result = getenv("WAYLAND_DISPLAY");
     if (!result) {
@@ -16,22 +10,22 @@ static const char* get_display_name() {
     return result;
 }
 
-typedef struct {
+struct request_override_t {
     const struct wl_message* message;
-    RequestOverrideFunction function;
+    request_override_function_t function;
     struct wl_list link;
-} RequestOverride;
+};
 
 struct wl_list request_overrides;
 
 void install_request_override(
     const struct wl_interface* interface,
     const char* name,
-    RequestOverrideFunction function
+    request_override_function_t function
 ) {
     for (int i = 0; i < interface->method_count; i++) {
         if (strcmp(name, interface->methods[i].name) == 0) {
-            RequestOverride* override = ALLOC_STRUCT(RequestOverride);
+            struct request_override_t* override = calloc(1, sizeof(struct request_override_t));
             override->message = &interface->methods[i];
             override->function = function;
             wl_list_insert(&request_overrides, &override->link);
@@ -48,30 +42,33 @@ static int default_dispatcher(
     const struct wl_message* message,
     union wl_argument* args
 ) {
-    // First, check if there is an override
-    RequestOverride* override;
-    wl_list_for_each(override, &request_overrides, link) {
-        if (override->message == message) {
-            override->function(resource, message, args);
-            return 0;
-        }
-    }
+    struct wl_resource* created = NULL;
 
-    // If there are any new-id type arguments, resources need to be created for them
+    // If there is a new-id type argument, a resource needs to be created for it
     // See https://wayland.freedesktop.org/docs/html/apb.html#Client-structwl__message
     int arg = 0;
     for (const char* c = message->signature; *c; c++) {
         if (*c == 'n' && args[arg].n != 0) {
-            struct wl_resource* new_resource = wl_resource_create(
+            created = wl_resource_create(
                 wl_resource_get_client(resource),
                 message->types[arg],
                 wl_resource_get_version(resource),
                 args[arg].n);
-            wl_resource_set_dispatcher(new_resource, default_dispatcher, NULL, NULL, NULL);
+            use_default_impl(created);
+            break;
         }
         if (*c >= 'a' && *c <= 'z')
             arg++;
     }
+
+    struct request_override_t* override;
+    wl_list_for_each(override, &request_overrides, link) {
+        if (override->message == message) {
+            override->function(resource, message, created, args);
+            break;
+        }
+    }
+
     if (strcmp(message->name, "destroy") == 0) {
         wl_resource_destroy(resource);
     }

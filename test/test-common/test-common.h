@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define DEFAULT_OUTPUT_WIDTH 1920
 #define DEFAULT_OUTPUT_HEIGHT 1080
