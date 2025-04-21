@@ -3,9 +3,9 @@
 struct wl_display* display = NULL;
 
 static const char* get_display_name() {
-    const char* result = getenv("WAYLAND_DISPLAY");
+    const char* result = getenv("CREATE_DISPLAY");
     if (!result) {
-        FATAL("WAYLAND_DISPLAY not set");
+        FATAL("CREATE_DISPLAY not set");
     }
     return result;
 }
