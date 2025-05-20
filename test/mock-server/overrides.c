@@ -440,3 +440,8 @@ void init() {
     default_global_create(display, &ext_session_lock_manager_v1_interface, 1);
     default_global_create(display, &xdg_wm_dialog_v1_interface, 1);
 }
+
+const char* handle_command(const char* command) {
+    fprintf(stderr, "got command: %s\n", command);
+    FATAL_FMT("unkown command: %s", command);
+}
