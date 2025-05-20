@@ -66,7 +66,7 @@ static void surface_data_set_role(struct surface_data_t* data, enum surface_role
 
     ASSERT(!data->has_committed_buffer);
     data->role = role;
-    data->initial_commit_for_role = 1;
+    data->initial_commit_for_role = true;
 }
 
 static void surface_data_unmap(struct surface_data_t* data) {
@@ -112,10 +112,10 @@ REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
     }
 
     if (data->buffer_cleared) {
-        data->has_committed_buffer = 0;
-        data->buffer_cleared = 0;
+        data->has_committed_buffer = false;
+        data->buffer_cleared = false;
     } else if (data->pending_buffer) {
-        data->has_committed_buffer = 1;
+        data->has_committed_buffer = true;
     }
 
     if (data->role == SURFACE_ROLE_LAYER && data->has_committed_buffer && !data->initial_configure_acked) {
@@ -129,7 +129,7 @@ REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
 
     if (data->pending_window_geom) {
         ASSERT(data->has_committed_buffer);
-        data->pending_window_geom = 0;
+        data->pending_window_geom = false;
     }
 
     if (data->pending_frame) {
@@ -140,7 +140,7 @@ REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
 
     if (data->initial_commit_for_role && data->role != SURFACE_ROLE_SESSION_LOCK) {
         ASSERT(!data->has_committed_buffer);
-        data->initial_commit_for_role = 0;
+        data->initial_commit_for_role = false;
     }
 
     if (data->layer_surface && data->layer_send_configure) {
@@ -162,7 +162,7 @@ REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
             height = DEFAULT_OUTPUT_HEIGHT;
         data->configure_serial = wl_display_next_serial(display);
         zwlr_layer_surface_v1_send_configure(data->layer_surface, data->configure_serial, width, height);
-        data->layer_send_configure = 0;
+        data->layer_send_configure = false;
     }
 }
 
@@ -276,7 +276,7 @@ REQUEST_OVERRIDE_IMPL(xdg_popup, destroy) {
 REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, set_anchor) {
     UINT_ARG(anchor, 0);
     struct surface_data_t* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
-    data->layer_send_configure = 1;
+    data->layer_send_configure = true;
     data->layer_anchor = anchor;
 }
 
@@ -284,7 +284,7 @@ REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, set_size) {
     UINT_ARG(width, 0);
     UINT_ARG(height, 1);
     struct surface_data_t* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
-    data->layer_send_configure = 1;
+    data->layer_send_configure = true;
     data->layer_set_w = width;
     data->layer_set_h = height;
 }
@@ -302,7 +302,7 @@ REQUEST_OVERRIDE_IMPL(zwlr_layer_shell_v1, get_layer_surface) {
     struct surface_data_t* data = wl_resource_get_user_data(surface);
     surface_data_set_role(data, SURFACE_ROLE_LAYER);
     wl_resource_set_user_data(new_resource, data);
-    data->layer_send_configure = 1;
+    data->layer_send_configure = true;
     data->layer_surface = new_resource;
 }
 
