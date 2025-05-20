@@ -125,12 +125,22 @@ static struct wl_listener client_connect_listener = {
 };
 
 
-static void send_command_response(const char* command) {
+static void send_command_response(char* command) {
     const char* fifo_path = getenv("SERVER_TO_CLIENT_FIFO");
     ASSERT(fifo_path);
     int fd;
     ASSERT((fd = open(fifo_path, O_WRONLY)) >= 0);
-    const char* response = handle_command(command);
+    const char* argv[20] = {command};
+    int argc = 1;
+    while (*command) {
+        if (*command == ' ') {
+            *command = '\0';
+            argv[argc] = command + 1;
+            argc++;
+        }
+        command++;
+    }
+    const char* response = handle_command(argv);
     ASSERT(write(fd, response, strlen(response)) > 0);
     ASSERT(write(fd, "\n", 1) > 0);
     close(fd);

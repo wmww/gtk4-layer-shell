@@ -27,6 +27,7 @@ struct surface_data_t {
     int layer_set_w; // The width to configure the layer surface with
     int layer_set_h; // The height to configure the layer surface with
     uint32_t layer_anchor; // The layer surface's anchor
+    uint32_t click_serial; // The most recent serial that was used to click on this surface
     uint32_t configure_serial; // The latest serial used to configure the surface
     bool initial_configure_acked; // If the initial configure event has been acked
     struct surface_data_t* most_recent_popup; // Start of the popup linked list
@@ -39,6 +40,7 @@ static struct wl_resource* pointer_global = NULL;
 static struct wl_resource* output_global = NULL;
 static struct wl_resource* current_session_lock = NULL;
 bool configure_delay_enabled = false;
+struct surface_data_t* latest_surface = NULL;
 
 static void layer_surface_send_configure(struct surface_data_t* data);
 static void lock_surface_send_configure(struct surface_data_t* data);
@@ -187,6 +189,7 @@ REQUEST_OVERRIDE_IMPL(wl_compositor, create_surface) {
     struct surface_data_t* data = calloc(1, sizeof(struct surface_data_t));
     wl_resource_set_user_data(new_resource, data);
     data->surface = new_resource;
+    latest_surface = data;
 }
 
 void wl_seat_bind(struct wl_client* client, void* data, uint32_t version, uint32_t id) {
@@ -271,8 +274,12 @@ REQUEST_OVERRIDE_IMPL(xdg_surface, get_popup) {
 REQUEST_OVERRIDE_IMPL(xdg_popup, grab) {
     struct surface_data_t* data = wl_resource_get_user_data(xdg_popup);
     RESOURCE_ARG(wl_seat, seat, 0);
+    UINT_ARG(serial, 1);
     ASSERT_EQ(seat, seat_global, "%p");
     ASSERT(data->popup_parent);
+    if (data->popup_parent->click_serial) {
+        ASSERT_EQ(serial, data->popup_parent->click_serial, "%u");
+    }
 }
 
 REQUEST_OVERRIDE_IMPL(xdg_popup, destroy) {
@@ -441,12 +448,57 @@ void init() {
     default_global_create(display, &xdg_wm_dialog_v1_interface, 1);
 }
 
-const char* handle_command(const char* command) {
-    fprintf(stderr, "got command: %s\n", command);
-    if (strcmp(command, "enable_configure_delay") == 0) {
+static double parse_number(const char* str) {
+    bool valid = true;
+    if (str && *str) {
+        for (const char* c = str; *c; c++) {
+            if (!(*c >= '0' && *c <= '9') && *c != '.') {
+                valid = false;
+            }
+        }
+    } else {
+        valid = false;
+    }
+    if (!valid) {
+        FATAL_FMT("invalid number '%s'", str);
+    }
+    return atof(str);
+}
+
+const char* handle_command(const char** argv) {
+    fprintf(stderr, "got command:");
+    for (int i = 0; argv[i]; i++) {
+        fprintf(stderr, " %s", argv[i]);
+    }
+    fprintf(stderr, "\n");
+    if (strcmp(argv[0], "enable_configure_delay") == 0) {
         configure_delay_enabled = true;
         return "configure_delay_enabled";
+    } else if (strcmp(argv[0], "click_latest_surface") == 0) {
+        // Move the pointer onto the surface and click
+        // This is needed to trigger a tooltip or popup menu to open for the popup tests
+        ASSERT(pointer_global);
+        double x = parse_number(argv[1]);
+        double y = parse_number(argv[2]);
+        wl_pointer_send_enter(
+            pointer_global,
+            wl_display_next_serial(display),
+            latest_surface->surface,
+            wl_fixed_from_double(x), wl_fixed_from_double(y));
+        wl_pointer_send_frame(pointer_global);
+        latest_surface->click_serial = wl_display_next_serial(display);
+        wl_pointer_send_button(
+            pointer_global,
+            latest_surface->click_serial, 0,
+            BTN_LEFT, WL_POINTER_BUTTON_STATE_PRESSED);
+        wl_pointer_send_frame(pointer_global);
+        wl_pointer_send_button(
+            pointer_global,
+            wl_display_next_serial(display), 0,
+            BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
+        wl_pointer_send_frame(pointer_global);
+        return "latest_surface_clicked";
     } else {
-        FATAL_FMT("unkown command: %s", command);
+        FATAL_FMT("unkown command: %s", argv[0]);
     }
 }
