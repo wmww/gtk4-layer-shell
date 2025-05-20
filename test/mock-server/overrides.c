@@ -38,6 +38,10 @@ static struct wl_resource* seat_global = NULL;
 static struct wl_resource* pointer_global = NULL;
 static struct wl_resource* output_global = NULL;
 static struct wl_resource* current_session_lock = NULL;
+bool configure_delay_enabled = false;
+
+static void layer_surface_send_configure(struct surface_data_t* data);
+static void lock_surface_send_configure(struct surface_data_t* data);
 
 static void surface_data_assert_no_role(struct surface_data_t* data) {
     ASSERT(!data->xdg_popup);
@@ -83,6 +87,29 @@ static void surface_data_add_pupup(struct surface_data_t* parent, struct surface
     popup->previous_popup_sibling = parent->most_recent_popup;
     parent->most_recent_popup = popup;
     popup->popup_parent = parent;
+}
+
+static int surface_data_configure_timer_callback(void *userdata) {
+    struct surface_data_t* data = userdata;
+    if (data->role == SURFACE_ROLE_LAYER && data->layer_send_configure && data->layer_surface) {
+        layer_surface_send_configure(data);
+    } else if (data->role == SURFACE_ROLE_SESSION_LOCK && data->lock_surface) {
+        lock_surface_send_configure(data);
+    }
+    return 0;
+}
+
+static void surface_data_send_configure(struct surface_data_t* data) {
+    if (configure_delay_enabled) {
+        struct wl_event_source* source = wl_event_loop_add_timer(
+            wl_display_get_event_loop(display),
+            surface_data_configure_timer_callback,
+            data
+        );
+        wl_event_source_timer_update(source, 100);
+    } else {
+        surface_data_configure_timer_callback(data);
+    }
 }
 
 REQUEST_OVERRIDE_IMPL(wl_surface, frame) {
@@ -143,26 +170,8 @@ REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
         data->initial_commit_for_role = false;
     }
 
-    if (data->layer_surface && data->layer_send_configure) {
-        bool horiz = (
-            (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT) &&
-            (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT));
-        bool vert = (
-            (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP) &&
-            (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM));
-        int width = data->layer_set_w;
-        int height = data->layer_set_h;
-        if (width == 0 && !horiz)
-            FATAL("not horizontally stretched and no width given");
-        if (height == 0 && !vert)
-            FATAL("not horizontally stretched and no width given");
-        if (horiz)
-            width = DEFAULT_OUTPUT_WIDTH;
-        if (vert)
-            height = DEFAULT_OUTPUT_HEIGHT;
-        data->configure_serial = wl_display_next_serial(display);
-        zwlr_layer_surface_v1_send_configure(data->layer_surface, data->configure_serial, width, height);
-        data->layer_send_configure = false;
+    if (data->role == SURFACE_ROLE_LAYER && data->layer_send_configure) {
+        surface_data_send_configure(data);
     }
 }
 
@@ -306,6 +315,28 @@ REQUEST_OVERRIDE_IMPL(zwlr_layer_shell_v1, get_layer_surface) {
     data->layer_surface = new_resource;
 }
 
+static void layer_surface_send_configure(struct surface_data_t* data) {
+    bool horiz = (
+        (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT) &&
+        (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT));
+    bool vert = (
+        (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP) &&
+        (data->layer_anchor & ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM));
+    int width = data->layer_set_w;
+    int height = data->layer_set_h;
+    if (width == 0 && !horiz)
+        FATAL("not horizontally stretched and no width given");
+    if (height == 0 && !vert)
+        FATAL("not horizontally stretched and no width given");
+    if (horiz)
+        width = DEFAULT_OUTPUT_WIDTH;
+    if (vert)
+        height = DEFAULT_OUTPUT_HEIGHT;
+    data->configure_serial = wl_display_next_serial(display);
+    zwlr_layer_surface_v1_send_configure(data->layer_surface, data->configure_serial, width, height);
+    data->layer_send_configure = false;
+}
+
 REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, ack_configure) {
     struct surface_data_t* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
     UINT_ARG(serial, 0);
@@ -342,9 +373,14 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, unlock_and_destroy) {
     current_session_lock = NULL;
 }
 
-static void lock_surface_send_configure(struct surface_data_t* data, uint32_t width, uint32_t height) {
+static void lock_surface_send_configure(struct surface_data_t* data) {
     data->configure_serial = wl_display_next_serial(display);
-    ext_session_lock_surface_v1_send_configure(data->lock_surface, data->configure_serial, width, height);
+    ext_session_lock_surface_v1_send_configure(
+        data->lock_surface,
+        data->configure_serial,
+        DEFAULT_OUTPUT_WIDTH,
+        DEFAULT_OUTPUT_HEIGHT
+    );
 }
 
 REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, get_lock_surface) {
@@ -355,7 +391,7 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, get_lock_surface) {
     surface_data_set_role(data, SURFACE_ROLE_SESSION_LOCK);
     wl_resource_set_user_data(new_resource, data);
     data->lock_surface = new_resource;
-    lock_surface_send_configure(data, DEFAULT_OUTPUT_WIDTH, DEFAULT_OUTPUT_HEIGHT);
+    surface_data_send_configure(data);
 }
 
 REQUEST_OVERRIDE_IMPL(ext_session_lock_surface_v1, ack_configure) {
