@@ -27,8 +27,8 @@ struct surface_data_t {
     int layer_set_w; // The width to configure the layer surface with
     int layer_set_h; // The height to configure the layer surface with
     uint32_t layer_anchor; // The layer surface's anchor
-    uint32_t lock_surface_pending_serial;
-    bool lock_surface_initial_configure_acked;
+    uint32_t configure_serial; // The latest serial used to configure the surface
+    bool initial_configure_acked; // If the initial configure event has been acked
     struct surface_data_t* most_recent_popup; // Start of the popup linked list
     struct surface_data_t* previous_popup_sibling; // Forms a linked list of popups
     struct surface_data_t* popup_parent;
@@ -106,7 +106,7 @@ REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
             FATAL("null buffer committed to session lock surface");
         } else if (!data->pending_buffer && !data->has_committed_buffer) {
             FATAL("no buffer has been attached to committed session lock surface");
-        } else if (!data->lock_surface_initial_configure_acked) {
+        } else if (!data->initial_configure_acked) {
             FATAL("session lock surface committed before initial configure acked");
         }
     }
@@ -116,6 +116,10 @@ REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
         data->buffer_cleared = 0;
     } else if (data->pending_buffer) {
         data->has_committed_buffer = 1;
+    }
+
+    if (data->role == SURFACE_ROLE_LAYER && data->has_committed_buffer && !data->initial_configure_acked) {
+        FATAL("Layer surface committed buffer before initial configure");
     }
 
     if (data->pending_buffer) {
@@ -156,7 +160,8 @@ REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
             width = DEFAULT_OUTPUT_WIDTH;
         if (vert)
             height = DEFAULT_OUTPUT_HEIGHT;
-        zwlr_layer_surface_v1_send_configure(data->layer_surface, wl_display_next_serial(display), width, height);
+        data->configure_serial = wl_display_next_serial(display);
+        zwlr_layer_surface_v1_send_configure(data->layer_surface, data->configure_serial, width, height);
         data->layer_send_configure = 0;
     }
 }
@@ -301,6 +306,14 @@ REQUEST_OVERRIDE_IMPL(zwlr_layer_shell_v1, get_layer_surface) {
     data->layer_surface = new_resource;
 }
 
+REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, ack_configure) {
+    struct surface_data_t* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
+    UINT_ARG(serial, 0);
+    if (serial && serial == data->configure_serial) {
+        data->initial_configure_acked = true;
+    }
+}
+
 REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, destroy) {
     struct surface_data_t* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
     data->layer_surface = NULL;
@@ -330,8 +343,8 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, unlock_and_destroy) {
 }
 
 static void lock_surface_send_configure(struct surface_data_t* data, uint32_t width, uint32_t height) {
-    data->lock_surface_pending_serial = wl_display_next_serial(display);
-    ext_session_lock_surface_v1_send_configure(data->lock_surface, data->lock_surface_pending_serial, width, height);
+    data->configure_serial = wl_display_next_serial(display);
+    ext_session_lock_surface_v1_send_configure(data->lock_surface, data->configure_serial, width, height);
 }
 
 REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, get_lock_surface) {
@@ -348,8 +361,8 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, get_lock_surface) {
 REQUEST_OVERRIDE_IMPL(ext_session_lock_surface_v1, ack_configure) {
     UINT_ARG(serial, 0);
     struct surface_data_t* data = wl_resource_get_user_data(ext_session_lock_surface_v1);
-    if (serial == data->lock_surface_pending_serial) {
-        data->lock_surface_initial_configure_acked = 1;
+    if (serial && serial == data->configure_serial) {
+        data->initial_configure_acked = true;
     }
 }
 
@@ -372,6 +385,7 @@ void init() {
     OVERRIDE_REQUEST(zwlr_layer_surface_v1, set_anchor);
     OVERRIDE_REQUEST(zwlr_layer_surface_v1, set_size);
     OVERRIDE_REQUEST(zwlr_layer_surface_v1, get_popup);
+    OVERRIDE_REQUEST(zwlr_layer_surface_v1, ack_configure);
     OVERRIDE_REQUEST(zwlr_layer_surface_v1, destroy);
     OVERRIDE_REQUEST(ext_session_lock_manager_v1, lock);
     OVERRIDE_REQUEST(ext_session_lock_v1, destroy);
