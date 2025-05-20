@@ -33,4 +33,6 @@ layer_tests = [
     'test-create-xdg-toplevel',
     'test-hide-and-show',
     'test-init-after-window-created',
+    'test-configure-delay',
+    'test-popup-configure-delay',
 ]
