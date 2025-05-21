@@ -20,6 +20,7 @@ layer_tests = [
     'test-get-auto-exclusive-zone',
     'test-exclusive-zone-below-negative-1',
     'test-layer-surface-popup',
+    'test-layer-surface-click-activated-popup',
     'test-xdg-toplevel-popup-with-layer-surface',
     'test-xdg-toplevel-popup-without-layer-surface',
     'test-close-layer-surface',
@@ -33,4 +34,6 @@ layer_tests = [
     'test-create-xdg-toplevel',
     'test-hide-and-show',
     'test-init-after-window-created',
+    'test-configure-delay',
+    'test-popup-configure-delay',
 ]
