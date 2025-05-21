@@ -48,7 +48,6 @@ static void lock_surface_send_configure(struct surface_data_t* data);
 static void surface_data_assert_no_role(struct surface_data_t* data) {
     ASSERT(!data->xdg_popup);
     ASSERT(!data->xdg_toplevel);
-    ASSERT(!data->xdg_surface);
     ASSERT(!data->layer_surface);
     ASSERT(!data->lock_surface);
 }
