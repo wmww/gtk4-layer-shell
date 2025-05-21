@@ -146,8 +146,8 @@ REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
         data->has_committed_buffer = true;
     }
 
-    if (data->role == SURFACE_ROLE_LAYER && data->has_committed_buffer && !data->initial_configure_acked) {
-        FATAL("Layer surface committed buffer before initial configure");
+    if (data->role != SURFACE_ROLE_NONE && data->has_committed_buffer && !data->initial_configure_acked) {
+        FATAL("committed buffer before initial configure");
     }
 
     if (data->pending_buffer) {
@@ -235,13 +235,22 @@ REQUEST_OVERRIDE_IMPL(xdg_surface, set_window_geometry) {
     data->pending_window_geom = true;
 }
 
+REQUEST_OVERRIDE_IMPL(xdg_surface, ack_configure) {
+    struct surface_data_t* data = wl_resource_get_user_data(xdg_surface);
+    UINT_ARG(serial, 0);
+    if (serial && serial == data->configure_serial) {
+        data->initial_configure_acked = true;
+    }
+}
+
 REQUEST_OVERRIDE_IMPL(xdg_surface, get_toplevel) {
+    struct surface_data_t* data = wl_resource_get_user_data(xdg_surface);
+    data->configure_serial = wl_display_next_serial(display);
     struct wl_array states;
     wl_array_init(&states);
     xdg_toplevel_send_configure(new_resource, 0, 0, &states);
     wl_array_release(&states);
-    xdg_surface_send_configure(xdg_surface, wl_display_next_serial(display));
-    struct surface_data_t* data = wl_resource_get_user_data(xdg_surface);
+    xdg_surface_send_configure(xdg_surface, data->configure_serial);
     surface_data_set_role(data, SURFACE_ROLE_XDG_TOPLEVEL);
     wl_resource_set_user_data(new_resource, data);
     data->xdg_toplevel = new_resource;
@@ -256,11 +265,12 @@ REQUEST_OVERRIDE_IMPL(xdg_toplevel, destroy) {
 
 REQUEST_OVERRIDE_IMPL(xdg_surface, get_popup) {
     RESOURCE_ARG(xdg_surface, parent, 1);
+    struct surface_data_t* data = wl_resource_get_user_data(xdg_surface);
     // If the configure size is too small GTK gets upset and unmaps its popup in protest
     // https://gitlab.gnome.org/GNOME/gtk/-/blob/4.16.12/gtk/gtkpopover.c?ref_type=tags#L719
+    data->configure_serial = wl_display_next_serial(display);
     xdg_popup_send_configure(new_resource, 0, 0, 500, 500);
-    xdg_surface_send_configure(xdg_surface, wl_display_next_serial(display));
-    struct surface_data_t* data = wl_resource_get_user_data(xdg_surface);
+    xdg_surface_send_configure(xdg_surface, data->configure_serial);
     surface_data_set_role(data, SURFACE_ROLE_XDG_POPUP);
     wl_resource_set_user_data(new_resource, data);
     data->xdg_popup = new_resource;
@@ -418,6 +428,7 @@ void init() {
     OVERRIDE_REQUEST(xdg_wm_base, get_xdg_surface);
     OVERRIDE_REQUEST(xdg_surface, destroy);
     OVERRIDE_REQUEST(xdg_surface, set_window_geometry);
+    OVERRIDE_REQUEST(xdg_surface, ack_configure);
     OVERRIDE_REQUEST(xdg_surface, get_toplevel);
     OVERRIDE_REQUEST(xdg_toplevel, destroy);
     OVERRIDE_REQUEST(xdg_surface, get_popup);
