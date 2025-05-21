@@ -251,6 +251,13 @@ def main():
     client_bin = sys.argv[1]
     name = path.basename(client_bin)
     build_dir = os.environ.get('GTK4_LAYER_SHELL_BUILD')
+    if not build_dir:
+        build_dir = path.dirname(client_bin)
+        while not path.exists(path.join(build_dir, 'build.ninja')):
+            build_dir = path.dirname(build_dir)
+            assert build_dir != '' and build_dir != '/', (
+                'Could not determine build directory from GTK4_LAYER_SHELL_BUILD or ' + client_bin
+            )
     assert build_dir, 'GTK4_LAYER_SHELL_BUILD environment variable not set'
     server_bin = path.join(build_dir, 'test', 'mock-server', 'mock-server')
     assert path.exists(client_bin), 'Could not find client at ' + client_bin
