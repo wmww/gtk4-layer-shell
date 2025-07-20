@@ -321,7 +321,8 @@ gboolean gtk_layer_auto_exclusive_zone_is_enabled(GtkWindow* window);
  * @mode: The type of keyboard interactivity requested.
  *
  * Sets if/when @window should receive keyboard events from the compositor, see
- * GtkLayerShellKeyboardMode for details.
+ * GtkLayerShellKeyboardMode for details. To control mouse/touch interactivity use input regions,
+ * see [#61](https://github.com/wmww/gtk4-layer-shell/issues/61) for details.
  *
  * Default is %GTK_LAYER_SHELL_KEYBOARD_MODE_NONE
  */
