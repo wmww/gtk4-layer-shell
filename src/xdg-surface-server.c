@@ -87,6 +87,7 @@ static bool xdg_surface_handle_request(
                 self
             );
             self->xdg_popup = (struct xdg_popup*)*ret_proxy;
+            self->popup_parent = (struct xdg_surface*)args[1].o;
             if (self->popup_created) self->popup_created(self);
             return true;
 
@@ -139,6 +140,11 @@ void xdg_surface_server_send_configure(
     int width, int height,
     uint32_t serial
 ) {
+    self->last_configure.x = x;
+    self->last_configure.y = y;
+    self->last_configure.width = width;
+    self->last_configure.height = height;
+
     if (self->xdg_toplevel) {
         struct wl_array states;
         wl_array_init(&states);

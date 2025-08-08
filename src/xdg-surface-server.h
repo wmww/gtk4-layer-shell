@@ -15,8 +15,12 @@ struct xdg_surface_server_t {
 
     struct wl_surface* wl_surface;
     struct xdg_surface* xdg_surface;
+    struct xdg_surface* popup_parent;
     struct xdg_popup* xdg_popup;
     struct xdg_toplevel* xdg_toplevel;
+    struct {
+        int x, y, width, height;
+    } last_configure;
 };
 
 // If the xdg_surface is managed by a surface server, this returns the surface server
