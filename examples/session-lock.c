@@ -2,11 +2,10 @@
 #include <gtk/gtk.h>
 
 static GtkApplication* app = NULL;
-static GtkSessionLockInstance* lock = NULL;
 
 static void unlock(GtkButton *button, void *data) {
     (void)button;
-    (void)data;
+    GtkSessionLockInstance* lock = data;
 
     gtk_session_lock_instance_unlock(lock);
     g_application_quit(G_APPLICATION(app));
@@ -39,7 +38,7 @@ static void activate(GtkApplication* app, void *data) {
     (void)data;
     g_application_hold(G_APPLICATION(app));
 
-    lock = gtk_session_lock_instance_new();
+    GtkSessionLockInstance* lock = gtk_session_lock_instance_new();
     g_signal_connect(lock, "locked", G_CALLBACK(locked), NULL);
     g_signal_connect(lock, "failed", G_CALLBACK(failed), NULL);
     g_signal_connect(lock, "unlocked", G_CALLBACK(unlocked), NULL);
@@ -68,7 +67,7 @@ static void activate(GtkApplication* app, void *data) {
         gtk_box_append(GTK_BOX(box), label);
 
         GtkWidget *button = gtk_button_new_with_label("Unlock");
-        g_signal_connect(button, "clicked", G_CALLBACK(unlock), app);
+        g_signal_connect(button, "clicked", G_CALLBACK(unlock), lock);
         gtk_box_append(GTK_BOX(box), button);
 
         // Not displayed, but allows testing that creating popups doesn't crash GTK
