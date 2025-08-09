@@ -182,5 +182,7 @@ int main(int argc, char** argv) {
     while (g_list_model_get_n_items(gtk_window_get_toplevels()) > 0)
         g_main_context_iteration(NULL, TRUE);
 
+    wl_display_roundtrip(gdk_wayland_display_get_wl_display(gdk_display_get_default()));
+
     return return_code;
 }
