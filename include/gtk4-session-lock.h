@@ -41,6 +41,8 @@ gboolean gtk_session_lock_is_supported();
  *
  * An instance of the object used to control locking the screen.
  * Multiple instances can exist at once, but only one can be locked at a time.
+ *
+ * Since: 1.1
  */
 GTK4_LAYER_SHELL_EXPORT
 G_DECLARE_FINAL_TYPE(GtkSessionLockInstance, gtk_session_lock_instance, GTK_SESSION_LOCK, INSTANCE, GObject)
@@ -57,6 +59,8 @@ G_DECLARE_FINAL_TYPE(GtkSessionLockInstance, gtk_session_lock_instance, GTK_SESS
  * This API does not directly tell you when a monitor is removed (GTK APIs can be used for that), however the window you
  * send to gtk_session_lock_instance_assign_window_to_monitor() will be automatically unmapped and dereferenced when its
  * monitor is removed or the screen is unlocked.
+ *
+ * Since: 1.2
  */
 
 /**
