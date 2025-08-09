@@ -33,6 +33,7 @@ struct _GtkSessionLockInstance {
 struct gtk_lock_surface_t {
     struct lock_surface_t super;
     GtkWindow* gtk_window;
+    GdkMonitor* monitor;
     GtkSessionLockInstance* lock;
 };
 
@@ -205,9 +206,11 @@ gboolean gtk_session_lock_instance_is_locked(GtkSessionLockInstance* self) {
 static void gtk_lock_surface_destroy(struct gtk_lock_surface_t* self) {
     gtk_lock_surface_unmap_window(self);
     lock_surface_uninit(&self->super);
-    g_object_unref(self->lock);
+    g_signal_handlers_disconnect_by_data(self->monitor, self);
+    g_clear_object(&self->monitor);
     all_lock_surfaces = g_list_remove(all_lock_surfaces, self);
     self->lock->lock_surfaces = g_list_remove(self->lock->lock_surfaces, self);
+    g_clear_object(&self->lock);
     g_free(self);
 }
 
@@ -289,6 +292,7 @@ void gtk_session_lock_instance_assign_window_to_monitor(
     struct gtk_lock_surface_t* lock_surface = g_new0(struct gtk_lock_surface_t, 1);
     lock_surface->lock = g_object_ref(self);
     lock_surface->gtk_window = window;
+    lock_surface->monitor = g_object_ref(monitor);
     lock_surface->super = lock_surface_make(output);
     g_object_set_data_full(G_OBJECT(window), lock_surface_key, lock_surface, (GDestroyNotify)gtk_lock_surface_destroy);
     g_signal_connect(window, "map", G_CALLBACK(on_window_mapped), lock_surface);
