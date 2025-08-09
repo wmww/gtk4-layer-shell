@@ -19,6 +19,7 @@ class ScreenLock:
         self.lock_instance.connect('locked', self._on_locked)
         self.lock_instance.connect('unlocked', self._on_unlocked)
         self.lock_instance.connect('failed', self._on_failed)
+        self.lock_instance.connect('monitor', self._on_monitor)
 
     def _on_locked(self, lock_instance):
         print('Locked!')
@@ -31,10 +32,7 @@ class ScreenLock:
         print('Failed to lock :(')
         app.quit()
 
-    def _on_unlock_clicked(self, button):
-        self.lock_instance.unlock()
-
-    def _create_lock_window(self, monitor):
+    def _on_monitor(self, lock_instance, monitor):
         window = Gtk.Window(application=app)
 
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
@@ -50,17 +48,12 @@ class ScreenLock:
         box.append(button)
 
         self.lock_instance.assign_window_to_monitor(window, monitor)
-        window.present()
+
+    def _on_unlock_clicked(self, button):
+        self.lock_instance.unlock()
 
     def lock(self):
-        if not self.lock_instance.lock():
-            # Failure has already been handled in on_failed()
-            return
-
-        display = Gdk.Display.get_default()
-
-        for monitor in display.get_monitors():
-            self._create_lock_window(monitor)
+        self.lock_instance.lock()
 
 app = Gtk.Application(application_id='com.github.wmww.gtk4-layer-shell.py-session-lock')
 lock = ScreenLock()
