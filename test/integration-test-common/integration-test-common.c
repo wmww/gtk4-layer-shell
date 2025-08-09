@@ -55,6 +55,7 @@ void send_command(const char* command, const char* expected_response) {
         ASSERT(bytes_read > 0);
         if (*c == '\n') {
             *c = '\0';
+            fprintf(stderr, "got: %s\n", buffer);
             ASSERT_STR_EQ(buffer, expected_response);
             break;
         } else {
