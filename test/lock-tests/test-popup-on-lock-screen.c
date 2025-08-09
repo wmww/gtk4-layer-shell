@@ -6,11 +6,12 @@ GtkWindow* window;
 static GtkWidget *dropdown;
 static const char *options[] = {"Foo", "Bar", "Baz", NULL};
 
-GtkWindow* build_window() {
+static void on_monitor(GtkSessionLockInstance* lock, GdkMonitor* monitor, void* data) {
+    (void)lock; (void)monitor; (void)data;
     window = GTK_WINDOW(gtk_window_new());
     dropdown = gtk_drop_down_new_from_strings(options);
     gtk_window_set_child(window, dropdown);
-    return window;
+    gtk_session_lock_instance_assign_window_to_monitor(lock, window, monitor);
 }
 
 static void callback_0() {
@@ -18,10 +19,10 @@ static void callback_0() {
     step_time = 1200;
 
     lock = gtk_session_lock_instance_new();
-    connect_lock_signals(lock, &state);
+    connect_lock_signals_except_monitor(lock, &state);
+    g_signal_connect(lock, "monitor", G_CALLBACK(on_monitor), NULL);
 
     ASSERT(gtk_session_lock_instance_lock(lock));
-    create_lock_windows(lock, build_window);
 }
 
 static void callback_1() {

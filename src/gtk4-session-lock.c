@@ -22,6 +22,7 @@ gboolean gtk_session_lock_is_supported() {
 
 struct _GtkSessionLockInstance {
     GObject parent_instance;
+    GListModel* monitors;
     void* wayland_object;
     gboolean is_locked;
     gboolean has_requested_lock;
@@ -32,12 +33,14 @@ struct _GtkSessionLockInstance {
 struct gtk_lock_surface_t {
     struct lock_surface_t super;
     GtkWindow* gtk_window;
+    GdkMonitor* monitor;
     GtkSessionLockInstance* lock;
 };
 
 G_DEFINE_TYPE(GtkSessionLockInstance, gtk_session_lock_instance, G_TYPE_OBJECT)
 
 enum {
+    SESSION_LOCK_SIGNAL_MONITOR,
     SESSION_LOCK_SIGNAL_LOCKED,
     SESSION_LOCK_SIGNAL_FAILED,
     SESSION_LOCK_SIGNAL_UNLOCKED,
@@ -46,7 +49,12 @@ enum {
 
 static guint session_lock_signals[SESSION_LOCK_SIGNAL_LAST] = {0};
 
+static void gtk_lock_surface_unmap_window(struct gtk_lock_surface_t* self);
+
 static void gtk_session_lock_instance_class_init(GtkSessionLockInstanceClass *cclass) {
+    session_lock_signals[SESSION_LOCK_SIGNAL_MONITOR] = g_signal_new(
+        "monitor", G_TYPE_FROM_CLASS(cclass), G_SIGNAL_RUN_FIRST, 0, NULL, NULL, NULL, G_TYPE_NONE, 1, GDK_TYPE_MONITOR);
+
     session_lock_signals[SESSION_LOCK_SIGNAL_LOCKED] = g_signal_new(
         "locked", G_TYPE_FROM_CLASS(cclass), G_SIGNAL_RUN_FIRST, 0, NULL, NULL, NULL, G_TYPE_NONE, 0);
 
@@ -58,6 +66,7 @@ static void gtk_session_lock_instance_class_init(GtkSessionLockInstanceClass *cc
 }
 
 static void gtk_session_lock_instance_init(GtkSessionLockInstance *self) {
+    self->monitors = gdk_display_get_monitors(gdk_display_get_default());
     self->is_locked = FALSE;
     self->has_requested_lock = FALSE;
     self->failed = FALSE;
@@ -69,15 +78,48 @@ GtkSessionLockInstance* gtk_session_lock_instance_new() {
     return g_object_new(gtk_session_lock_instance_get_type(), NULL);
 }
 
-static void clear_lock_surfaces(GtkSessionLockInstance* self) {
-    for (GList* item = self->lock_surfaces; item; item = item->next) {
+static void monitors_changed(
+    GListModel* monitors,
+    guint position,
+    guint removed,
+    guint added,
+    GtkSessionLockInstance* self
+) {
+    (void)removed;
+    for (guint i = 0; i < added; i++) {
+        g_signal_emit(
+            self,
+            session_lock_signals[SESSION_LOCK_SIGNAL_MONITOR],
+            0,
+            g_list_model_get_item(monitors, position + i)
+        );
+    }
+}
+
+static void start_monitor_signals(GtkSessionLockInstance* self) {
+    guint n_monitors = g_list_model_get_n_items(self->monitors);
+    for (guint i = 0; i < n_monitors; ++i) {
+        g_signal_emit(
+            self,
+            session_lock_signals[SESSION_LOCK_SIGNAL_MONITOR],
+            0,
+            g_list_model_get_item(self->monitors, i)
+        );
+    }
+    g_signal_connect(self->monitors, "items-changed", G_CALLBACK(monitors_changed), self);
+}
+
+static void clear_lock_state(GtkSessionLockInstance* self) {
+    GList* item = self->lock_surfaces;
+    while (item) {
+        GList* next = item->next;
         struct gtk_lock_surface_t* surface = item->data;
-        gtk_widget_unrealize(GTK_WIDGET(surface->gtk_window));
-        // This destroys GTK's internal reference to the window, the program could still be holding a reference to the
-        // window if it wants to keep it alive and use it again.
-        gtk_window_destroy(surface->gtk_window);
+        gtk_lock_surface_unmap_window(surface);
+        item = next;
     }
     self->lock_surfaces = NULL;
+    self->wayland_object = NULL;
+    g_signal_handlers_disconnect_by_data(self->monitors, self);
 }
 
 static void session_lock_locked_callback_impl(bool locked, void* data) {
@@ -98,7 +140,9 @@ static void session_lock_locked_callback_impl(bool locked, void* data) {
         ],
         0
     );
-    if (!self->is_locked) clear_lock_surfaces(self);
+    if (!self->is_locked) {
+        clear_lock_state(self);
+    }
 }
 
 GTK4_LAYER_SHELL_EXPORT
@@ -136,7 +180,10 @@ gboolean gtk_session_lock_instance_lock(GtkSessionLockInstance* self) {
 
     self->has_requested_lock = TRUE;
     session_lock_lock(wl_display, session_lock_locked_callback_impl, self);
-    self->wayland_object = self->failed ? NULL : (void*)session_lock_get_active_lock();
+    if (!self->failed) {
+        self->wayland_object = session_lock_get_active_lock();
+        start_monitor_signals(self);
+    }
     return !self->failed;
 }
 
@@ -147,7 +194,7 @@ void gtk_session_lock_instance_unlock(GtkSessionLockInstance* self) {
         self->has_requested_lock = FALSE;
         g_signal_emit(self, session_lock_signals[SESSION_LOCK_SIGNAL_UNLOCKED], 0);
         session_lock_unlock();
-        clear_lock_surfaces(self);
+        clear_lock_state(self);
     }
 }
 
@@ -157,11 +204,25 @@ gboolean gtk_session_lock_instance_is_locked(GtkSessionLockInstance* self) {
 }
 
 static void gtk_lock_surface_destroy(struct gtk_lock_surface_t* self) {
+    gtk_lock_surface_unmap_window(self);
     lock_surface_uninit(&self->super);
-    g_signal_handlers_disconnect_by_data(self->gtk_window, self);
-    g_object_unref(self->lock);
+    g_signal_handlers_disconnect_by_data(self->monitor, self);
+    g_clear_object(&self->monitor);
     all_lock_surfaces = g_list_remove(all_lock_surfaces, self);
+    self->lock->lock_surfaces = g_list_remove(self->lock->lock_surfaces, self);
+    g_clear_object(&self->lock);
     g_free(self);
+}
+
+static void gtk_lock_surface_unmap_window(struct gtk_lock_surface_t* self) {
+    GtkWindow* window = self->gtk_window;
+    if (!window) return;
+    self->gtk_window = NULL;
+    g_signal_handlers_disconnect_by_data(window, self);
+    gtk_widget_unrealize(GTK_WIDGET(window));
+    // This destroys GTK's internal reference to the window, the program could still be holding a reference to the
+    // window if it wants to keep it alive and use it again.
+    gtk_window_destroy(window);
 }
 
 static gint find_lock_surface_with_wl_surface(gconstpointer lock_surface, gconstpointer needle) {
@@ -181,14 +242,18 @@ static struct lock_surface_t* lock_surface_hook_callback_impl(struct wl_surface*
     return entry ? entry->data : NULL;
 }
 
-static void on_window_mapped(GtkWindow *window, gpointer data) {
+static void on_window_mapped(GtkWindow *window, struct gtk_lock_surface_t* self) {
     (void)window;
-    struct gtk_lock_surface_t* self = data;
     if (self->lock->wayland_object == session_lock_get_active_lock()) {
         lock_surface_map(&self->super);
     } else {
         g_warning("Not showing lock surface because the session lock it is linked to is not active");
     }
+}
+
+static void on_monitor_invalidated(GdkMonitor* monitor, struct gtk_lock_surface_t* self) {
+    (void)monitor;
+    gtk_lock_surface_unmap_window(self);
 }
 
 GTK4_LAYER_SHELL_EXPORT
@@ -227,17 +292,20 @@ void gtk_session_lock_instance_assign_window_to_monitor(
     struct gtk_lock_surface_t* lock_surface = g_new0(struct gtk_lock_surface_t, 1);
     lock_surface->lock = g_object_ref(self);
     lock_surface->gtk_window = window;
+    lock_surface->monitor = g_object_ref(monitor);
     lock_surface->super = lock_surface_make(output);
     g_object_set_data_full(G_OBJECT(window), lock_surface_key, lock_surface, (GDestroyNotify)gtk_lock_surface_destroy);
     g_signal_connect(window, "map", G_CALLBACK(on_window_mapped), lock_surface);
+    g_signal_connect_after(monitor, "invalidate",  G_CALLBACK(on_monitor_invalidated), lock_surface);
 
     all_lock_surfaces = g_list_append(all_lock_surfaces, lock_surface);
     self->lock_surfaces = g_list_append(self->lock_surfaces, lock_surface);
 
     gtk_window_set_decorated(window, FALSE);
 
-    if (gtk_widget_get_mapped(GTK_WIDGET(window))) {
-        gtk_widget_unrealize(GTK_WIDGET(window));
-        gtk_widget_map(GTK_WIDGET(window));
+    if (gtk_widget_get_realized(GTK_WIDGET(window))) {
+        g_critical("gtk_session_lock_instance_assign_window_to_monitor() should not be called with an already realized window");
     }
+
+    gtk_window_present(window);
 }

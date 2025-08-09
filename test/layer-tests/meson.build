@@ -31,6 +31,7 @@ layer_tests = [
     'test-get-keyboard-mode',
     'test-get-monitor',
     'test-set-monitor',
+    'test-monitor-removed',
     'test-create-xdg-toplevel',
     'test-hide-and-show',
     'test-init-after-window-created',

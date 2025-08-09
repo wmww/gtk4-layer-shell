@@ -2,14 +2,32 @@
 This directory is home to the gtk4-layer-shell test suite.
 
 ## To run tests
-`ninja -C build test` (where `build` is the path to your build directory).
-
-### To run a single test
+```bash
+ninja -C build test
 ```
-meson test -C build --verbose [testname]
+(where `build` is the path to your build directory).
+
+To run a single test:
+```bash
+ninja -C build && meson test -C build --verbose [testname]
 ```
 
-If you want to run the test client and server separately (for example, to run either in `wayland-debug`):
+To run against the current Wayland compositor:
+```bash
+ninja -C build && ./build/test/<testname> --auto
+```
+This can help with debugging since you get to see the output.
+
+Don't run the session lock tests this way unless you know what you're doing. Some of them may soft-brick your compositor. If this happens you may need to reboot.
+
+You can drop the `--auto` flag to run the test interactively, so you can click through each section.
+
+To run under [wayland-debug](https://github.com/wmww/wayland-debug):
+```bash
+ninja -C build && wayland-debug -f 'zwlr_*, xdg_*, ext_*' -r ./build/test/<testname> --auto
+```
+
+To run under the mock server, but separately:
 ```bash
 # server:
 ninja -C build && GTKLS_TEST_DIR=/tmp ./build/test/mock-server/mock-server

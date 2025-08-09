@@ -6,7 +6,14 @@ GtkSessionLockInstance* lock;
 static void callback_0() {
     EXPECT_MESSAGE(ext_session_lock_manager_v1 .lock);
     EXPECT_MESSAGE(ext_session_lock_v1 .get_lock_surface);
-    EXPECT_MESSAGE(ext_session_lock_v1 .locked);
+    EXPECT_MESSAGE(ext_session_lock_surface_v1 .configure 1920 1080);
+    EXPECT_MESSAGE(ext_session_lock_v1 .get_lock_surface);
+    EXPECT_MESSAGE(ext_session_lock_surface_v1 .configure 640 480);
+    EXPECT_MESSAGE(ext_session_lock_v1 .get_lock_surface);
+    EXPECT_MESSAGE(ext_session_lock_surface_v1 .configure 1080 720);
+
+    send_command("create_output 640 480", "output_created");
+    send_command("create_output 1080 720", "output_created");
 
     lock = gtk_session_lock_instance_new();
     connect_lock_signals(lock, &state);

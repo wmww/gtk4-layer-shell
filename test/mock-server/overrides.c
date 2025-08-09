@@ -1,6 +1,12 @@
 #include "mock-server.h"
 #include "linux/input.h"
 
+struct output_data_t {
+    struct wl_global* global;
+    struct wl_resource* instance;
+    int width, height;
+};
+
 enum surface_role_t {
     SURFACE_ROLE_NONE = 0,
     SURFACE_ROLE_XDG_TOPLEVEL,
@@ -33,14 +39,29 @@ struct surface_data_t {
     struct surface_data_t* most_recent_popup; // Start of the popup linked list
     struct surface_data_t* previous_popup_sibling; // Forms a linked list of popups
     struct surface_data_t* popup_parent;
+    struct output_data_t* output;
 };
 
 static struct wl_resource* seat_global = NULL;
 static struct wl_resource* pointer_global = NULL;
-static struct wl_resource* output_global = NULL;
 static struct wl_resource* current_session_lock = NULL;
 bool configure_delay_enabled = false;
 struct surface_data_t* latest_surface = NULL;
+
+#define OUTPUT_SLOTS 10
+static struct output_data_t outputs[OUTPUT_SLOTS] = {0};
+static struct output_data_t* find_output(struct wl_resource* resource) {
+    for (int i = 0; i < OUTPUT_SLOTS; i++)
+        if (outputs[i].instance == resource)
+            return &outputs[i];
+    return NULL;
+}
+static struct output_data_t* default_output() {
+    for (int i = 0; i < OUTPUT_SLOTS; i++)
+        if (outputs[i].instance)
+            return &outputs[i];
+    FATAL("no default output");
+}
 
 static void surface_data_assert_no_role(struct surface_data_t* data) {
     ASSERT(!data->xdg_popup);
@@ -124,21 +145,21 @@ static void surface_data_send_configure(struct surface_data_t* data) {
                 FATAL("not horizontally stretched and no width given");
             if (height == 0 && !vert)
                 FATAL("not horizontally stretched and no width given");
-            if (horiz)
-                width = DEFAULT_OUTPUT_WIDTH;
-            if (vert)
-                height = DEFAULT_OUTPUT_HEIGHT;
+            struct output_data_t* output = data->output ? data->output : default_output();
+            if (horiz)  width = output->width;
+            if (vert)   height = output->height;
             zwlr_layer_surface_v1_send_configure(data->layer_surface, data->configure_serial, width, height);
             data->layer_send_configure = false;
             break;
 
         case SURFACE_ROLE_SESSION_LOCK:
             if (!data->lock_surface) break;
+            ASSERT(data->output);
             ext_session_lock_surface_v1_send_configure(
                 data->lock_surface,
                 data->configure_serial,
-                DEFAULT_OUTPUT_WIDTH,
-                DEFAULT_OUTPUT_HEIGHT
+                data->output->width,
+                data->output->height
             );
             break;
     }
@@ -248,10 +269,10 @@ void wl_seat_bind(struct wl_client* client, void* data, uint32_t version, uint32
 };
 
 void wl_output_bind(struct wl_client* client, void* data, uint32_t version, uint32_t id) {
-    ASSERT(!output_global);
-    output_global = wl_resource_create(client, &wl_output_interface, version, id);
-    use_default_impl(output_global);
-    wl_output_send_done(output_global);
+    int i = (data - (void*)&outputs[0]) / sizeof(outputs[0]);
+    outputs[i].instance = wl_resource_create(client, &wl_output_interface, version, id);
+    use_default_impl(outputs[i].instance);
+    wl_output_send_done(outputs[i].instance);
 };
 
 REQUEST_OVERRIDE_IMPL(wl_seat, get_pointer) {
@@ -364,11 +385,16 @@ REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, get_popup) {
 
 REQUEST_OVERRIDE_IMPL(zwlr_layer_shell_v1, get_layer_surface) {
     RESOURCE_ARG(wl_surface, surface, 1);
+    RESOURCE_ARG(wl_output, output, 2);
     struct surface_data_t* data = wl_resource_get_user_data(surface);
     surface_data_set_role(data, SURFACE_ROLE_LAYER);
     wl_resource_set_user_data(new_resource, data);
     data->layer_send_configure = true;
     data->layer_surface = new_resource;
+    if (output) {
+        data->output = find_output(output);
+        ASSERT(data->output);
+    }
 }
 
 REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, ack_configure) {
@@ -410,11 +436,12 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, unlock_and_destroy) {
 REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, get_lock_surface) {
     RESOURCE_ARG(wl_surface, surface, 1);
     RESOURCE_ARG(wl_output, output, 2);
-    ASSERT_EQ(output, output_global, "%p");
     struct surface_data_t* data = wl_resource_get_user_data(surface);
     surface_data_set_role(data, SURFACE_ROLE_SESSION_LOCK);
     wl_resource_set_user_data(new_resource, data);
     data->lock_surface = new_resource;
+    data->output = find_output(output);
+    ASSERT(output);
     surface_data_queue_configure(data);
 }
 
@@ -429,6 +456,20 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_surface_v1, ack_configure) {
 REQUEST_OVERRIDE_IMPL(ext_session_lock_surface_v1, destroy) {
     struct surface_data_t* data = wl_resource_get_user_data(ext_session_lock_surface_v1);
     data->lock_surface = NULL;
+}
+
+static void create_output(int width, int height) {
+    for (int i = 0; i < OUTPUT_SLOTS; i++) {
+        if (!outputs[i].global) {
+            outputs[i] = (struct output_data_t) {
+                .global = wl_global_create(display, &wl_output_interface, 2, &outputs[i], wl_output_bind),
+                .width = width,
+                .height = height,
+            };
+            return;
+        }
+    }
+    FATAL("ran out of output slots");
 }
 
 void init() {
@@ -460,8 +501,9 @@ void init() {
     OVERRIDE_REQUEST(ext_session_lock_surface_v1, ack_configure);
     OVERRIDE_REQUEST(ext_session_lock_surface_v1, destroy);
 
+    create_output(DEFAULT_OUTPUT_WIDTH, DEFAULT_OUTPUT_HEIGHT);
+
     wl_global_create(display, &wl_seat_interface, 6, NULL, wl_seat_bind);
-    wl_global_create(display, &wl_output_interface, 2, NULL, wl_output_bind);
     default_global_create(display, &wl_shm_interface, 1);
     default_global_create(display, &wl_data_device_manager_interface, 2);
     default_global_create(display, &wl_compositor_interface, 4);
@@ -522,6 +564,19 @@ const char* handle_command(const char** argv) {
             BTN_LEFT, WL_POINTER_BUTTON_STATE_RELEASED);
         wl_pointer_send_frame(pointer_global);
         return "latest_surface_clicked";
+    } else if (strcmp(argv[0], "create_output") == 0) {
+        int width = parse_number(argv[1]);
+        int height = parse_number(argv[2]);
+        create_output(width, height);
+        return "output_created";
+    } else if (strcmp(argv[0], "destroy_output") == 0) {
+        int slot = parse_number(argv[1]);
+        struct output_data_t* output = &outputs[slot];
+        if (slot < 0 || slot >= OUTPUT_SLOTS || !outputs[slot].instance)
+            FATAL_FMT("destroying invalid output %d", slot);
+        wl_global_remove(output->global);
+        memset(output, 0, sizeof(struct output_data_t));
+        return "output_destroyed";
     } else {
         FATAL_FMT("unkown command: %s", argv[0]);
     }

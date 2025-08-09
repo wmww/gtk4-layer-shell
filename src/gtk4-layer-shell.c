@@ -252,7 +252,7 @@ static void gtk_layer_surface_monitor_invalidated(GdkMonitor* self, struct gtk_l
 static void gtk_layer_surface_clear_monitor(struct gtk_layer_surface_t* layer_surface) {
     if (layer_surface->monitor) {
         g_signal_handlers_disconnect_by_data(layer_surface->monitor, layer_surface);
-        g_object_unref(G_OBJECT(layer_surface->monitor));
+        g_clear_object(&layer_surface->monitor);
     }
 }
 
@@ -267,9 +267,8 @@ void gtk_layer_set_monitor(GtkWindow* window, GdkMonitor* monitor) {
         g_return_if_fail(output);
     }
     gtk_layer_surface_clear_monitor(layer_surface);
-    layer_surface->monitor = monitor;
+    layer_surface->monitor = monitor ? g_object_ref(monitor) : NULL;
     if (monitor) {
-        g_object_ref(G_OBJECT(monitor));
         // Connect after hopefully allows apps to handle this first
         g_signal_connect_after(monitor, "invalidate",  G_CALLBACK(gtk_layer_surface_monitor_invalidated), layer_surface);
     }

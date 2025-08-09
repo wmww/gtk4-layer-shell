@@ -16,7 +16,6 @@ static void callback_0() {
     ASSERT(!gtk_session_lock_instance_is_locked(lock_a));
 
     ASSERT(gtk_session_lock_instance_lock(lock_a));
-    create_default_lock_windows(lock_a);
 }
 
 static void callback_1() {
@@ -37,7 +36,6 @@ static void callback_1() {
     EXPECT_MESSAGE(ext_session_lock_v1 .locked);
 
     ASSERT(gtk_session_lock_instance_lock(lock_a));
-    create_default_lock_windows(lock_a);
 }
 
 static void callback_2() {
@@ -61,7 +59,6 @@ static void callback_2() {
     connect_lock_signals(lock_b, &state_b);
 
     ASSERT(gtk_session_lock_instance_lock(lock_b));
-    create_default_lock_windows(lock_b);
 }
 
 static void callback_3() {
