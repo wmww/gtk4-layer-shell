@@ -6,4 +6,5 @@ lock_tests = [
     'test-immediate-failure',
     'test-async-failure',
     'test-popup-on-lock-screen',
+    'test-works-without-monitor-signal',
 ]

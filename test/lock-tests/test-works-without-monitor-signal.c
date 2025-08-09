@@ -9,24 +9,23 @@ static void callback_0() {
     EXPECT_MESSAGE(ext_session_lock_v1 .locked);
 
     lock = gtk_session_lock_instance_new();
-    connect_lock_signals(lock, &state);
-
+    connect_lock_signals_except_monitor(lock, &state);
     ASSERT(gtk_session_lock_instance_lock(lock));
+    GListModel* monitors = gdk_display_get_monitors(gdk_display_get_default());
+    ASSERT_EQ(g_list_model_get_n_items(monitors), 1, "%d");
+    GdkMonitor* monitor = g_list_model_get_item(monitors, 0);
+    GtkWindow* window = create_default_window();
+    gtk_session_lock_instance_assign_window_to_monitor(lock, window, monitor);
+    gtk_window_present(window);
 }
 
 static void callback_1() {
     ASSERT_EQ(state, LOCK_STATE_LOCKED, "%d");
     EXPECT_MESSAGE(ext_session_lock_v1 .unlock_and_destroy);
-
     gtk_session_lock_instance_unlock(lock);
-}
-
-static void callback_2() {
-    ASSERT_EQ(state, LOCK_STATE_UNLOCKED, "%d");
 }
 
 TEST_CALLBACKS(
     callback_0,
     callback_1,
-    callback_2,
 )

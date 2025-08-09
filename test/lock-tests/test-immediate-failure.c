@@ -19,7 +19,6 @@ static void callback_0() {
 
     ASSERT(gtk_session_lock_instance_lock(lock_b));
     ASSERT(!gtk_session_lock_instance_lock(lock_b));
-    create_default_lock_windows(lock_b);
 }
 
 static void callback_1() {

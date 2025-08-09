@@ -46,19 +46,36 @@ GTK4_LAYER_SHELL_EXPORT
 G_DECLARE_FINAL_TYPE(GtkSessionLockInstance, gtk_session_lock_instance, GTK_SESSION_LOCK, INSTANCE, GObject)
 
 /**
+ * GtkSessionLockInstance::monitor:
+ * @self: the #GtkSessionLockInstance
+ * @monitor: the #GdkMonitor that exists or was added
+ *
+ * The ::monitor signal is fired once for each monitor that exists when a lock is started, and then whenever a new
+ * monitor is detected during the lock. You generally want to call gtk_session_lock_instance_assign_window_to_monitor()
+ * once in the handler for this signal with a newly created window and the given monitor.
+ *
+ * This API does not directly tell you when a monitor is removed (GTK APIs can be used for that), however the window you
+ * send to gtk_session_lock_instance_assign_window_to_monitor() will be automatically unmapped and dereferenced when its
+ * monitor is removed or the screen is unlocked.
+ */
+
+/**
  * GtkSessionLockInstance::locked:
+ * @self: the #GtkSessionLockInstance
  *
  * The ::locked signal is fired when the screen is successfully locked.
  */
 
 /**
  * GtkSessionLockInstance::failed:
+ * @self: the #GtkSessionLockInstance
  *
  * The ::failed signal is fired when the lock could not be acquired.
  */
 
 /**
  * GtkSessionLockInstance::unlocked:
+ * @self: the #GtkSessionLockInstance
  *
  * The ::unlocked signal is fired when the session is unlocked, which may have been caused by a call to
  * gtk_session_lock_instance_unlock() or by the compositor.

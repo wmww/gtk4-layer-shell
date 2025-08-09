@@ -3,32 +3,34 @@
 
 static GtkApplication* app = NULL;
 
-static void unlock(GtkButton *button, void *data) {
+static void on_unlock_button_clicked(GtkButton *button, void *data) {
     (void)button;
     GtkSessionLockInstance* lock = data;
     gtk_session_lock_instance_unlock(lock);
 }
 
-static void locked(GtkSessionLockInstance *lock, void *data) {
+static void on_locked(GtkSessionLockInstance *lock, void *data) {
     (void)lock;
     (void)data;
     g_message("Session locked successfully");
 }
 
-static void failed(GtkSessionLockInstance *lock, void *data) {
+static void on_failed(GtkSessionLockInstance *lock, void *data) {
     (void)lock;
     (void)data;
     g_critical("The session could not be locked");
     g_application_quit(G_APPLICATION(app));
 }
 
-static void unlocked(GtkSessionLockInstance *lock, void *data) {
+static void on_unlocked(GtkSessionLockInstance *lock, void *data) {
     (void)lock;
     (void)data;
     g_message("Session unlocked");
 }
 
-static void create_lock_surface(GtkSessionLockInstance* lock, GdkMonitor *monitor) {
+static void on_monitor(GtkSessionLockInstance* lock, GdkMonitor *monitor, void* data) {
+    (void)data;
+
     GtkWindow *gtk_window = GTK_WINDOW(gtk_application_window_new(app));
     gtk_session_lock_instance_assign_window_to_monitor(lock, gtk_window, monitor);
 
@@ -41,7 +43,7 @@ static void create_lock_surface(GtkSessionLockInstance* lock, GdkMonitor *monito
     gtk_box_append(GTK_BOX(box), label);
 
     GtkWidget *button = gtk_button_new_with_label("Unlock");
-    g_signal_connect(button, "clicked", G_CALLBACK(unlock), lock);
+    g_signal_connect(button, "clicked", G_CALLBACK(on_unlock_button_clicked), lock);
     gtk_box_append(GTK_BOX(box), button);
 
     // Not displayed, but allows testing that creating popups doesn't crash GTK
@@ -51,31 +53,16 @@ static void create_lock_surface(GtkSessionLockInstance* lock, GdkMonitor *monito
     gtk_window_present(gtk_window);
 }
 
-static void create_lock_surface_for_all_monitors(GtkSessionLockInstance* lock) {
-    GdkDisplay *display = gdk_display_get_default();
-    GListModel *monitors = gdk_display_get_monitors(display);
-    guint n_monitors = g_list_model_get_n_items(monitors);
-
-    for (guint i = 0; i < n_monitors; ++i) {
-        GdkMonitor *monitor = g_list_model_get_item(monitors, i);
-        create_lock_surface(lock, monitor);
-    }
-}
-
 static void lock_display(GtkSessionLockInstance* lock) {
-    if (gtk_session_lock_instance_lock(lock)) {
-        create_lock_surface_for_all_monitors(lock);
-    } else {
-        // Error message already shown when handling the ::failed signal
-    }
+    gtk_session_lock_instance_lock(lock);
 }
 
-static void lock_button_callback(GtkWidget* button, void* data) {
+static void on_lock_button_clicked(GtkWidget* button, void* data) {
     (void)button;
     lock_display(data);
 }
 
-static void quit_button_callback(GtkWidget* button, void* data) {
+static void on_quit_button_clicked(GtkWidget* button, void* data) {
     (void)button;
     GtkSessionLockInstance* lock = data;
     if (gtk_session_lock_instance_is_locked(lock)) {
@@ -90,10 +77,10 @@ static void quit_button_callback(GtkWidget* button, void* data) {
 // Creates a normal GTK window with buttons to allow the user to re-lock the display or exit
 static void create_control_window(GtkSessionLockInstance* lock) {
     GtkWidget* lock_button = gtk_button_new_with_label("Lock");
-    g_signal_connect(lock_button, "clicked", G_CALLBACK(lock_button_callback), lock);
+    g_signal_connect(lock_button, "clicked", G_CALLBACK(on_lock_button_clicked), lock);
 
     GtkWidget* quit_button = gtk_button_new_with_label("Quit");
-    g_signal_connect(quit_button, "clicked", G_CALLBACK(quit_button_callback), lock);
+    g_signal_connect(quit_button, "clicked", G_CALLBACK(on_quit_button_clicked), lock);
 
     GtkWidget* box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
     gtk_widget_set_valign(box, GTK_ALIGN_START);
@@ -111,12 +98,12 @@ static void activate(GtkApplication* app, void *data) {
 
     // This creates the lock instance, but does not lock the display yet
     GtkSessionLockInstance* lock = gtk_session_lock_instance_new();
-    g_signal_connect(lock, "locked", G_CALLBACK(locked), NULL);
-    g_signal_connect(lock, "failed", G_CALLBACK(failed), NULL);
-    g_signal_connect(lock, "unlocked", G_CALLBACK(unlocked), NULL);
+    g_signal_connect(lock, "locked", G_CALLBACK(on_locked), lock);
+    g_signal_connect(lock, "failed", G_CALLBACK(on_failed), lock);
+    g_signal_connect(lock, "unlocked", G_CALLBACK(on_unlocked), lock);
+    g_signal_connect(lock, "monitor", G_CALLBACK(on_monitor), lock);
 
-    create_control_window(lock);
-
+    create_control_window(lock); // Won't work if called while display is locked
     lock_display(lock);
 }
 

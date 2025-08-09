@@ -54,9 +54,8 @@ static void callback_1() {
     lock = gtk_session_lock_instance_new();
     connect_lock_signals(lock, &state);
 
-    ASSERT(gtk_session_lock_instance_lock(lock));
-    ASSERT_EQ(state, LOCK_STATE_UNLOCKED, "%d");
-    create_default_lock_windows(lock);
+    // This may return true or false depending on if the monitor signal handler roundtrips
+    gtk_session_lock_instance_lock(lock);
 }
 
 static void callback_2() {

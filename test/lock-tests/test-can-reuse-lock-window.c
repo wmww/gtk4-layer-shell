@@ -4,8 +4,10 @@ enum lock_state_t state = 0;
 GtkSessionLockInstance* lock = NULL;
 GtkWindow* lock_window = NULL;
 
-static GtkWindow* get_lock_window() {
-    return lock_window;
+static void on_monitor(GtkSessionLockInstance* lock, GdkMonitor* monitor, void* data) {
+    (void)lock; (void)monitor; (void)data;
+    gtk_session_lock_instance_assign_window_to_monitor(lock, lock_window, monitor);
+    gtk_window_present(lock_window);
 }
 
 static void callback_0() {
@@ -16,11 +18,11 @@ static void callback_0() {
     lock_window = g_object_ref(create_default_window());
 
     lock = gtk_session_lock_instance_new();
-    connect_lock_signals(lock, &state);
+    connect_lock_signals_except_monitor(lock, &state);
+    g_signal_connect(lock, "monitor", G_CALLBACK(on_monitor), NULL);
     ASSERT(!gtk_session_lock_instance_is_locked(lock));
 
     ASSERT(gtk_session_lock_instance_lock(lock));
-    create_lock_windows(lock, get_lock_window);
 }
 
 static void callback_1() {
@@ -41,7 +43,6 @@ static void callback_2() {
     EXPECT_MESSAGE(ext_session_lock_v1 .locked);
     ASSERT(gtk_session_lock_instance_lock(lock));
     fprintf(stderr, "\nlock window: %p\n\n", lock_window);
-    create_lock_windows(lock, get_lock_window);
     fprintf(stderr, "\nlock windows created\n\n");
 }
 

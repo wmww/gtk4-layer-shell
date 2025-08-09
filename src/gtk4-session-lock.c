@@ -22,6 +22,7 @@ gboolean gtk_session_lock_is_supported() {
 
 struct _GtkSessionLockInstance {
     GObject parent_instance;
+    GListModel* monitors;
     void* wayland_object;
     gboolean is_locked;
     gboolean has_requested_lock;
@@ -38,6 +39,7 @@ struct gtk_lock_surface_t {
 G_DEFINE_TYPE(GtkSessionLockInstance, gtk_session_lock_instance, G_TYPE_OBJECT)
 
 enum {
+    SESSION_LOCK_SIGNAL_MONITOR,
     SESSION_LOCK_SIGNAL_LOCKED,
     SESSION_LOCK_SIGNAL_FAILED,
     SESSION_LOCK_SIGNAL_UNLOCKED,
@@ -47,6 +49,9 @@ enum {
 static guint session_lock_signals[SESSION_LOCK_SIGNAL_LAST] = {0};
 
 static void gtk_session_lock_instance_class_init(GtkSessionLockInstanceClass *cclass) {
+    session_lock_signals[SESSION_LOCK_SIGNAL_MONITOR] = g_signal_new(
+        "monitor", G_TYPE_FROM_CLASS(cclass), G_SIGNAL_RUN_FIRST, 0, NULL, NULL, NULL, G_TYPE_NONE, 1, GDK_TYPE_MONITOR);
+
     session_lock_signals[SESSION_LOCK_SIGNAL_LOCKED] = g_signal_new(
         "locked", G_TYPE_FROM_CLASS(cclass), G_SIGNAL_RUN_FIRST, 0, NULL, NULL, NULL, G_TYPE_NONE, 0);
 
@@ -58,6 +63,7 @@ static void gtk_session_lock_instance_class_init(GtkSessionLockInstanceClass *cc
 }
 
 static void gtk_session_lock_instance_init(GtkSessionLockInstance *self) {
+    self->monitors = gdk_display_get_monitors(gdk_display_get_default());
     self->is_locked = FALSE;
     self->has_requested_lock = FALSE;
     self->failed = FALSE;
@@ -69,7 +75,39 @@ GtkSessionLockInstance* gtk_session_lock_instance_new() {
     return g_object_new(gtk_session_lock_instance_get_type(), NULL);
 }
 
-static void clear_lock_surfaces(GtkSessionLockInstance* self) {
+static void monitors_changed(
+    GListModel* monitors,
+    guint position,
+    guint removed,
+    guint added,
+    gpointer data
+) {
+    (void)removed;
+    GtkSessionLockInstance* self = data;
+    for (guint i = 0; i < added; i++) {
+        g_signal_emit(
+            self,
+            session_lock_signals[SESSION_LOCK_SIGNAL_MONITOR],
+            0,
+            g_list_model_get_item(monitors, position + i)
+        );
+    }
+}
+
+static void start_monitor_signals(GtkSessionLockInstance* self) {
+    guint n_monitors = g_list_model_get_n_items(self->monitors);
+    for (guint i = 0; i < n_monitors; ++i) {
+        g_signal_emit(
+            self,
+            session_lock_signals[SESSION_LOCK_SIGNAL_MONITOR],
+            0,
+            g_list_model_get_item(self->monitors, i)
+        );
+    }
+    g_signal_connect(self->monitors, "items-changed", G_CALLBACK(monitors_changed), self);
+}
+
+static void clear_lock_state(GtkSessionLockInstance* self) {
     for (GList* item = self->lock_surfaces; item; item = item->next) {
         struct gtk_lock_surface_t* surface = item->data;
         gtk_widget_unrealize(GTK_WIDGET(surface->gtk_window));
@@ -78,6 +116,8 @@ static void clear_lock_surfaces(GtkSessionLockInstance* self) {
         gtk_window_destroy(surface->gtk_window);
     }
     self->lock_surfaces = NULL;
+    self->wayland_object = NULL;
+    g_signal_handlers_disconnect_by_data(self->monitors, self);
 }
 
 static void session_lock_locked_callback_impl(bool locked, void* data) {
@@ -98,7 +138,9 @@ static void session_lock_locked_callback_impl(bool locked, void* data) {
         ],
         0
     );
-    if (!self->is_locked) clear_lock_surfaces(self);
+    if (!self->is_locked) {
+        clear_lock_state(self);
+    }
 }
 
 GTK4_LAYER_SHELL_EXPORT
@@ -136,7 +178,10 @@ gboolean gtk_session_lock_instance_lock(GtkSessionLockInstance* self) {
 
     self->has_requested_lock = TRUE;
     session_lock_lock(wl_display, session_lock_locked_callback_impl, self);
-    self->wayland_object = self->failed ? NULL : (void*)session_lock_get_active_lock();
+    if (!self->failed) {
+        self->wayland_object = session_lock_get_active_lock();
+        start_monitor_signals(self);
+    }
     return !self->failed;
 }
 
@@ -147,7 +192,7 @@ void gtk_session_lock_instance_unlock(GtkSessionLockInstance* self) {
         self->has_requested_lock = FALSE;
         g_signal_emit(self, session_lock_signals[SESSION_LOCK_SIGNAL_UNLOCKED], 0);
         session_lock_unlock();
-        clear_lock_surfaces(self);
+        clear_lock_state(self);
     }
 }
 
