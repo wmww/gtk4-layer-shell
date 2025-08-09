@@ -10,6 +10,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
+
+#define MAX_LOCK_SURFACES 100
+static struct wl_surface* lock_surface_wl_surfaces[MAX_LOCK_SURFACES] = {0};
+static int lock_surface_wl_surfaces_count = 0;
 
 static void lock_surface_handle_configure(
     void* data,
@@ -106,11 +111,7 @@ static bool xdg_wm_base_get_xdg_surface_hook(
     union wl_argument* args,
     struct wl_proxy** ret_proxy
 ) {
-    (void)data;
-    (void)opcode;
-    (void)create_interface;
-    (void)create_version;
-    (void)flags;
+    (void)data; (void)opcode; (void)create_interface; (void)create_version; (void)flags;
 
     lock_surface_hook_callback_t callback = data;
     struct wl_surface* wl_surface = (struct wl_surface*)args[1].o;
@@ -118,6 +119,9 @@ static bool xdg_wm_base_get_xdg_surface_hook(
 
     if (self) {
         *ret_proxy = xdg_surface_server_get_xdg_surface(&self->super, (struct xdg_wm_base*)proxy, wl_surface);
+        assert(lock_surface_wl_surfaces_count < MAX_LOCK_SURFACES);
+        lock_surface_wl_surfaces[lock_surface_wl_surfaces_count] = wl_surface;
+        lock_surface_wl_surfaces_count++;
         return true;
     } else if (session_lock_get_active_lock()) {
         // A new XDG surface is being created while the screen is locked, but it's not a lock surface. Few possibilities
@@ -135,6 +139,60 @@ static bool xdg_wm_base_get_xdg_surface_hook(
     }
 }
 
+static bool wl_surface_attach_hook(
+    void* data,
+    struct wl_proxy* proxy,
+    uint32_t opcode,
+    const struct wl_interface* create_interface,
+    uint32_t create_version,
+    uint32_t flags,
+    union wl_argument* args,
+    struct wl_proxy** ret_proxy
+) {
+    (void)data; (void)opcode; (void)create_interface; (void)create_version; (void)flags; (void)ret_proxy;
+
+    struct wl_buffer* buffer = (struct wl_buffer*)args[0].o;
+    if (!buffer) {
+        struct wl_surface* wl_surface = (struct wl_surface*)proxy;
+        for (int i = 0; i < lock_surface_wl_surfaces_count; i++) {
+            if (lock_surface_wl_surfaces[i] == wl_surface) {
+                // This is a lock surface, so its not allowed to have a null buffer. return true to "handle" this
+                // request, so the null buffer is not sent to the compositor.
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+static bool wl_surface_destroy_hook(
+    void* data,
+    struct wl_proxy* proxy,
+    uint32_t opcode,
+    const struct wl_interface* create_interface,
+    uint32_t create_version,
+    uint32_t flags,
+    union wl_argument* args,
+    struct wl_proxy** ret_proxy
+) {
+    (void)data; (void)opcode; (void)create_interface; (void)create_version; (void)flags; (void)args; (void)ret_proxy;
+
+    struct wl_surface* wl_surface = (struct wl_surface*)proxy;
+    for (int i = 0; i < lock_surface_wl_surfaces_count; i++) {
+        if (lock_surface_wl_surfaces[i] == wl_surface) {
+            lock_surface_wl_surfaces[i] = NULL;
+            memmove(
+                &lock_surface_wl_surfaces[i],
+                &lock_surface_wl_surfaces[i + 1],
+                sizeof(lock_surface_wl_surfaces[0]) * (lock_surface_wl_surfaces_count - i - 1)
+            );
+            lock_surface_wl_surfaces_count--;
+            i--;
+        }
+    }
+    return false;
+}
+
 void lock_surface_install_hook(lock_surface_hook_callback_t callback) {
     libwayland_shim_install_request_hook(
         &xdg_wm_base_interface,
@@ -142,4 +200,21 @@ void lock_surface_install_hook(lock_surface_hook_callback_t callback) {
         xdg_wm_base_get_xdg_surface_hook,
         callback
     );
+
+    static bool hooks_installed = false;
+    if (!hooks_installed) {
+        hooks_installed = true;
+        libwayland_shim_install_request_hook(
+            &wl_surface_interface,
+            WL_SURFACE_ATTACH,
+            wl_surface_attach_hook,
+            NULL
+        );
+        libwayland_shim_install_request_hook(
+            &wl_surface_interface,
+            WL_SURFACE_DESTROY,
+            wl_surface_destroy_hook,
+            NULL
+        );
+    }
 }

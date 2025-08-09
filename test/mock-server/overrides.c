@@ -426,6 +426,11 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_surface_v1, ack_configure) {
     }
 }
 
+REQUEST_OVERRIDE_IMPL(ext_session_lock_surface_v1, destroy) {
+    struct surface_data_t* data = wl_resource_get_user_data(ext_session_lock_surface_v1);
+    data->lock_surface = NULL;
+}
+
 void init() {
     OVERRIDE_REQUEST(wl_surface, commit);
     OVERRIDE_REQUEST(wl_surface, frame);
@@ -453,6 +458,7 @@ void init() {
     OVERRIDE_REQUEST(ext_session_lock_v1, unlock_and_destroy);
     OVERRIDE_REQUEST(ext_session_lock_v1, get_lock_surface);
     OVERRIDE_REQUEST(ext_session_lock_surface_v1, ack_configure);
+    OVERRIDE_REQUEST(ext_session_lock_surface_v1, destroy);
 
     wl_global_create(display, &wl_seat_interface, 6, NULL, wl_seat_bind);
     wl_global_create(display, &wl_output_interface, 2, NULL, wl_output_bind);
