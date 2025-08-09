@@ -4,7 +4,20 @@ This directory is home to the gtk4-layer-shell test suite.
 ## To run tests
 `ninja -C build test` (where `build` is the path to your build directory).
 
-### To add a new integration test
+### To run a single test
+```
+meson test -C build --verbose [testname]
+```
+
+If you want to run the test client and server separately (for example, to run either in `wayland-debug`):
+```bash
+# server:
+ninja -C build && GTKLS_TEST_DIR=/tmp ./build/test/mock-server/mock-server
+# client:
+ninja -C build && GTKLS_TEST_DIR=/tmp ./build/test/[testname] --auto
+```
+
+## To add a new integration test
 1. Copy an existing integration test file
 2. Implement your test as a series of one or more callbacks
 3. Add its name to the list in `test/integration-tests/meson.build`
