@@ -5,6 +5,7 @@ lock_tests = [
     'test-can-reuse-lock-window',
     'test-multiple-monitors',
     'test-monitors-changed-while-locked',
+    'test-monitors-changed-after-unlocked',
     'test-immediate-failure',
     'test-async-failure',
     'test-popup-on-lock-screen',
