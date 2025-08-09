@@ -72,6 +72,7 @@ GtkSessionLockInstance* gtk_session_lock_instance_new() {
 static void clear_lock_surfaces(GtkSessionLockInstance* self) {
     for (GList* item = self->lock_surfaces; item; item = item->next) {
         struct gtk_lock_surface_t* surface = item->data;
+        gtk_widget_unrealize(GTK_WIDGET(surface->gtk_window));
         // This destroys GTK's internal reference to the window, the program could still be holding a reference to the
         // window if it wants to keep it alive and use it again.
         gtk_window_destroy(surface->gtk_window);

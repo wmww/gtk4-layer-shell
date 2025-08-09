@@ -1,7 +1,6 @@
 #include "integration-test-common.h"
 
 #include "ext-session-lock-v1-client.h"
-#include "dlfcn.h"
 
 enum lock_state_t state = 0;
 struct ext_session_lock_manager_v1* global;

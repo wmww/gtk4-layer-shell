@@ -24,6 +24,8 @@ static void callback_1() {
     ASSERT_EQ(state_a, LOCK_STATE_LOCKED, "%d");
 
     EXPECT_MESSAGE(ext_session_lock_v1 .unlock_and_destroy);
+    EXPECT_MESSAGE(ext_session_lock_surface_v1 .destroy);
+    EXPECT_MESSAGE(wl_surface .destroy);
 
     gtk_session_lock_instance_unlock(lock_a);
     ASSERT(!gtk_session_lock_instance_is_locked(lock_a));
@@ -43,6 +45,8 @@ static void callback_2() {
     ASSERT_EQ(state_a, LOCK_STATE_LOCKED, "%d");
 
     EXPECT_MESSAGE(ext_session_lock_v1 .unlock_and_destroy);
+    EXPECT_MESSAGE(ext_session_lock_surface_v1 .destroy);
+    EXPECT_MESSAGE(wl_surface .destroy);
 
     gtk_session_lock_instance_unlock(lock_a);
     ASSERT(!gtk_session_lock_instance_is_locked(lock_a));
