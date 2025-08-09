@@ -48,6 +48,8 @@ enum {
 
 static guint session_lock_signals[SESSION_LOCK_SIGNAL_LAST] = {0};
 
+static void gtk_lock_surface_unmap_window(struct gtk_lock_surface_t* self);
+
 static void gtk_session_lock_instance_class_init(GtkSessionLockInstanceClass *cclass) {
     session_lock_signals[SESSION_LOCK_SIGNAL_MONITOR] = g_signal_new(
         "monitor", G_TYPE_FROM_CLASS(cclass), G_SIGNAL_RUN_FIRST, 0, NULL, NULL, NULL, G_TYPE_NONE, 1, GDK_TYPE_MONITOR);
@@ -80,10 +82,9 @@ static void monitors_changed(
     guint position,
     guint removed,
     guint added,
-    gpointer data
+    GtkSessionLockInstance* self
 ) {
     (void)removed;
-    GtkSessionLockInstance* self = data;
     for (guint i = 0; i < added; i++) {
         g_signal_emit(
             self,
@@ -108,12 +109,12 @@ static void start_monitor_signals(GtkSessionLockInstance* self) {
 }
 
 static void clear_lock_state(GtkSessionLockInstance* self) {
-    for (GList* item = self->lock_surfaces; item; item = item->next) {
+    GList* item = self->lock_surfaces;
+    while (item) {
+        GList* next = item->next;
         struct gtk_lock_surface_t* surface = item->data;
-        gtk_widget_unrealize(GTK_WIDGET(surface->gtk_window));
-        // This destroys GTK's internal reference to the window, the program could still be holding a reference to the
-        // window if it wants to keep it alive and use it again.
-        gtk_window_destroy(surface->gtk_window);
+        gtk_lock_surface_unmap_window(surface);
+        item = next;
     }
     self->lock_surfaces = NULL;
     self->wayland_object = NULL;
@@ -202,11 +203,23 @@ gboolean gtk_session_lock_instance_is_locked(GtkSessionLockInstance* self) {
 }
 
 static void gtk_lock_surface_destroy(struct gtk_lock_surface_t* self) {
+    gtk_lock_surface_unmap_window(self);
     lock_surface_uninit(&self->super);
-    g_signal_handlers_disconnect_by_data(self->gtk_window, self);
     g_object_unref(self->lock);
     all_lock_surfaces = g_list_remove(all_lock_surfaces, self);
+    self->lock->lock_surfaces = g_list_remove(self->lock->lock_surfaces, self);
     g_free(self);
+}
+
+static void gtk_lock_surface_unmap_window(struct gtk_lock_surface_t* self) {
+    GtkWindow* window = self->gtk_window;
+    if (!window) return;
+    self->gtk_window = NULL;
+    g_signal_handlers_disconnect_by_data(window, self);
+    gtk_widget_unrealize(GTK_WIDGET(window));
+    // This destroys GTK's internal reference to the window, the program could still be holding a reference to the
+    // window if it wants to keep it alive and use it again.
+    gtk_window_destroy(window);
 }
 
 static gint find_lock_surface_with_wl_surface(gconstpointer lock_surface, gconstpointer needle) {
@@ -226,14 +239,18 @@ static struct lock_surface_t* lock_surface_hook_callback_impl(struct wl_surface*
     return entry ? entry->data : NULL;
 }
 
-static void on_window_mapped(GtkWindow *window, gpointer data) {
+static void on_window_mapped(GtkWindow *window, struct gtk_lock_surface_t* self) {
     (void)window;
-    struct gtk_lock_surface_t* self = data;
     if (self->lock->wayland_object == session_lock_get_active_lock()) {
         lock_surface_map(&self->super);
     } else {
         g_warning("Not showing lock surface because the session lock it is linked to is not active");
     }
+}
+
+static void on_monitor_invalidated(GdkMonitor* monitor, struct gtk_lock_surface_t* self) {
+    (void)monitor;
+    gtk_lock_surface_unmap_window(self);
 }
 
 GTK4_LAYER_SHELL_EXPORT
@@ -275,6 +292,7 @@ void gtk_session_lock_instance_assign_window_to_monitor(
     lock_surface->super = lock_surface_make(output);
     g_object_set_data_full(G_OBJECT(window), lock_surface_key, lock_surface, (GDestroyNotify)gtk_lock_surface_destroy);
     g_signal_connect(window, "map", G_CALLBACK(on_window_mapped), lock_surface);
+    g_signal_connect_after(monitor, "invalidate",  G_CALLBACK(on_monitor_invalidated), lock_surface);
 
     all_lock_surfaces = g_list_append(all_lock_surfaces, lock_surface);
     self->lock_surfaces = g_list_append(self->lock_surfaces, lock_surface);

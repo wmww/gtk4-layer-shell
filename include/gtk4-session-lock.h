@@ -126,7 +126,7 @@ gboolean gtk_session_lock_instance_is_locked(GtkSessionLockInstance* self);
  * This must be called with a different unrealized window once for each monitor immediately after calling
  * gtk_session_lock_lock(). Hiding a window that is active on a monitor or not letting a window be resized by the
  * library is not allowed (may result in a Wayland protocol error). The window will be unmapped and gtk_window_destroy()
- * called on it when the current lock ends, but you can continue to use it if you hold a strong reference.
+ * called on it when the current lock ends.
  */
 void gtk_session_lock_instance_assign_window_to_monitor(
     GtkSessionLockInstance* self,
