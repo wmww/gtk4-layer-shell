@@ -50,7 +50,6 @@ static void on_monitor(GtkSessionLockInstance* lock, GdkMonitor *monitor, void* 
     gtk_widget_set_tooltip_text(button, "Foo Bar Baz");
 
     gtk_window_set_child(GTK_WINDOW(gtk_window), box);
-    gtk_window_present(gtk_window);
 }
 
 static void lock_display(GtkSessionLockInstance* lock) {

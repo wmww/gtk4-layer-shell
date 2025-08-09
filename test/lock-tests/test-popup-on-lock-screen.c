@@ -12,7 +12,6 @@ static void on_monitor(GtkSessionLockInstance* lock, GdkMonitor* monitor, void* 
     dropdown = gtk_drop_down_new_from_strings(options);
     gtk_window_set_child(window, dropdown);
     gtk_session_lock_instance_assign_window_to_monitor(lock, window, monitor);
-    gtk_window_present(window);
 }
 
 static void callback_0() {

@@ -16,6 +16,8 @@ static void callback_0() {
     GdkMonitor* monitor = g_list_model_get_item(monitors, 0);
     GtkWindow* window = create_default_window();
     gtk_session_lock_instance_assign_window_to_monitor(lock, window, monitor);
+
+    // This isn't needed, but it was recommend in an earlier version of the library so we test that it works
     gtk_window_present(window);
 }
 

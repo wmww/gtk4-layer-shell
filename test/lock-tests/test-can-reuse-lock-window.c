@@ -7,7 +7,6 @@ GtkWindow* lock_window = NULL;
 static void on_monitor(GtkSessionLockInstance* lock, GdkMonitor* monitor, void* data) {
     (void)lock; (void)monitor; (void)data;
     gtk_session_lock_instance_assign_window_to_monitor(lock, lock_window, monitor);
-    gtk_window_present(lock_window);
 }
 
 static void callback_0() {

@@ -121,7 +121,6 @@ static void on_monitor(GtkSessionLockInstance* lock, GdkMonitor* monitor, void* 
     (void)data;
     GtkWindow* window = create_default_window();
     gtk_session_lock_instance_assign_window_to_monitor(lock, window, monitor);
-    gtk_window_present(window);
 }
 
 void connect_lock_signals_except_monitor(GtkSessionLockInstance* lock, enum lock_state_t* state) {

@@ -281,8 +281,9 @@ void gtk_session_lock_instance_assign_window_to_monitor(
 
     gtk_window_set_decorated(window, FALSE);
 
-    if (gtk_widget_get_mapped(GTK_WIDGET(window))) {
-        gtk_widget_unrealize(GTK_WIDGET(window));
-        gtk_widget_map(GTK_WIDGET(window));
+    if (gtk_widget_get_realized(GTK_WIDGET(window))) {
+        g_critical("gtk_session_lock_instance_assign_window_to_monitor() should not be called with an already realized window");
     }
+
+    gtk_window_present(window);
 }
