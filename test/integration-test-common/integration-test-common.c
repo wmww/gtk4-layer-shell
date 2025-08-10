@@ -2,7 +2,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-int step_time = 300;
+// Time for each callback to run. 60ms is three frames and change
+static int step_time = 60;
 
 static int return_code = 0;
 static int callback_index = 0;

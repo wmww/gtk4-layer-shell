@@ -9,9 +9,6 @@
 #include <gdk/wayland/gdkwayland.h>
 #include <stdio.h>
 
-// Time in milliseconds for each callback to run
-extern int step_time;
-
 // Tell the test script that a request containing the given space-separated components is expected
 #define EXPECT_MESSAGE(message) fprintf(stderr, "EXPECT: %s\n", #message)
 // Tell the test script this request is not expected
