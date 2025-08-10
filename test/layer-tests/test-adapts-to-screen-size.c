@@ -21,6 +21,9 @@ static void callback_0() {
 }
 
 static void callback_1() {
+    ASSERT_EQ(gtk_widget_get_width(GTK_WIDGET(window)), 1920, "%d");
+    ASSERT_EQ(gtk_widget_get_height(GTK_WIDGET(window)), 1080, "%d");
+
     EXPECT_MESSAGE(.create_buffer 600 1080); // size must match DEFAULT_OUTPUT_HEIGHT in common.h
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .set_size 600 0);
 
@@ -28,6 +31,9 @@ static void callback_1() {
 }
 
 static void callback_2() {
+    ASSERT_EQ(gtk_widget_get_width(GTK_WIDGET(window)), 600, "%d");
+    ASSERT_EQ(gtk_widget_get_height(GTK_WIDGET(window)), 1080, "%d");
+
     EXPECT_MESSAGE(.create_buffer 600 700);
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .set_size 600 700);
 
@@ -35,6 +41,9 @@ static void callback_2() {
 }
 
 static void callback_3() {
+    ASSERT_EQ(gtk_widget_get_width(GTK_WIDGET(window)), 600, "%d");
+    ASSERT_EQ(gtk_widget_get_height(GTK_WIDGET(window)), 700, "%d");
+
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .set_size 0 700);
     EXPECT_MESSAGE(.create_buffer 1920 700);
 
@@ -42,6 +51,9 @@ static void callback_3() {
 }
 
 static void callback_4() {
+    ASSERT_EQ(gtk_widget_get_width(GTK_WIDGET(window)), 1920, "%d");
+    ASSERT_EQ(gtk_widget_get_height(GTK_WIDGET(window)), 700, "%d");
+
     EXPECT_MESSAGE(.create_buffer 1920 300);
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .set_size 0 300);
 
