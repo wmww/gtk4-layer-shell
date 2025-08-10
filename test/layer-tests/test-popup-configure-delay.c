@@ -1,8 +1,7 @@
 #include "integration-test-common.h"
 
-static GtkWindow *layer_window;
-static GtkWidget *layer_dropdown;
-static const char *options[] = {"Foo", "Bar", "Baz", NULL};
+static GtkWindow* layer_window;
+static GtkWidget* popuper;
 
 static void callback_0() {
     send_command("enable_configure_delay", "configure_delay_enabled");
@@ -11,12 +10,9 @@ static void callback_0() {
 static void callback_1() {
     EXPECT_MESSAGE(zwlr_layer_shell_v1 .get_layer_surface);
 
-    // The popup is weirdly slow to open, so slow the tests down
-    step_time = 600;
-
     layer_window = GTK_WINDOW(gtk_window_new());
-    layer_dropdown = gtk_drop_down_new_from_strings(options);
-    gtk_window_set_child(layer_window, layer_dropdown);
+    popuper = popup_widget_new();
+    gtk_window_set_child(layer_window, popuper);
     gtk_layer_init_for_window(layer_window);
     gtk_window_present(layer_window);
 }
@@ -27,9 +23,7 @@ static void callback_2() {
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .get_popup);
     EXPECT_MESSAGE(xdg_popup .grab);
 
-    UNEXPECT_MESSAGE(xdg_popup .destroy);
-
-    g_signal_emit_by_name(layer_dropdown, "activate", NULL);
+    popup_widget_toggle_open(popuper);
 }
 
 static void callback_3() {

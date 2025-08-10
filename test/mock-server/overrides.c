@@ -294,6 +294,9 @@ REQUEST_OVERRIDE_IMPL(xdg_surface, destroy) {
     ASSERT(!data->xdg_toplevel);
     ASSERT(!data->xdg_popup);
     data->xdg_surface = NULL;
+    data->popup_parent = NULL;
+    data->previous_popup_sibling = NULL;
+    data->most_recent_popup = NULL;
 }
 
 REQUEST_OVERRIDE_IMPL(xdg_surface, set_window_geometry) {
@@ -335,6 +338,7 @@ REQUEST_OVERRIDE_IMPL(xdg_surface, get_popup) {
     struct surface_data_t* data = wl_resource_get_user_data(xdg_surface);
     surface_data_set_role(data, SURFACE_ROLE_XDG_POPUP);
     wl_resource_set_user_data(new_resource, data);
+    ASSERT(!data->xdg_popup);
     data->xdg_popup = new_resource;
     if (parent) {
         struct surface_data_t* parent_data = wl_resource_get_user_data(parent);
@@ -534,7 +538,7 @@ static double parse_number(const char* str) {
 }
 
 const char* handle_command(const char** argv) {
-    fprintf(stderr, "got command:");
+    fprintf(stderr, "Got command:");
     for (int i = 0; argv[i]; i++) {
         fprintf(stderr, " %s", argv[i]);
     }
