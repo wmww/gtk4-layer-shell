@@ -269,10 +269,12 @@ void wl_seat_bind(struct wl_client* client, void* data, uint32_t version, uint32
 };
 
 void wl_output_bind(struct wl_client* client, void* data, uint32_t version, uint32_t id) {
-    int i = (data - (void*)&outputs[0]) / sizeof(outputs[0]);
-    outputs[i].instance = wl_resource_create(client, &wl_output_interface, version, id);
-    use_default_impl(outputs[i].instance);
-    wl_output_send_done(outputs[i].instance);
+    struct output_data_t* output = data;
+    ASSERT(!output->instance);
+    output->instance = wl_resource_create(client, &wl_output_interface, version, id);
+    use_default_impl(output->instance);
+    wl_output_send_mode(output->instance, WL_OUTPUT_MODE_CURRENT, output->width, output->height, 60000);
+    wl_output_send_done(output->instance);
 };
 
 REQUEST_OVERRIDE_IMPL(wl_seat, get_pointer) {
