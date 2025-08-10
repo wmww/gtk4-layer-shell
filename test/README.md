@@ -7,32 +7,39 @@ ninja -C build test
 ```
 (where `build` is the path to your build directory).
 
-To run a single test:
+__To run a single test:__
 ```bash
 ninja -C build && meson test -C build --verbose [testname]
 ```
 
-To run against the current Wayland compositor:
+__To run against the current Wayland compositor:__
 ```bash
 ninja -C build && ./build/test/<testname> --auto
 ```
 This can help with debugging since you get to see the output.
 
-Don't run the session lock tests this way unless you know what you're doing. Some of them may soft-brick your compositor. If this happens you may need to reboot.
+__Don't run the session lock tests this way__ unless you know what you're doing. Some of them may soft-brick your compositor. If this happens you may need to reboot.
 
 You can drop the `--auto` flag to run the test interactively, so you can click through each section.
 
-To run under [wayland-debug](https://github.com/wmww/wayland-debug):
+__To run against the current compositor under [wayland-debug](https://github.com/wmww/wayland-debug):__
 ```bash
 ninja -C build && wayland-debug -f 'zwlr_*, xdg_*, ext_*' -r ./build/test/<testname> --auto
 ```
 
-To run under the mock server, but separately:
+__To run under the mock server, but separately:__
+This can be useful to run the tests under wayland-debug or GDB
 ```bash
 # server:
 ninja -C build && GTKLS_TEST_DIR=/tmp ./build/test/mock-server/mock-server
 # client:
 ninja -C build && GTKLS_TEST_DIR=/tmp ./build/test/[testname] --auto
+```
+
+__To run the test script without meson:__
+This is mostly useful for debugging the test script
+```bash
+ninja -C build && GTK4_LAYER_SHELL_BUILD=$PWD/build test/run-integration-test.py build/test/<testname>
 ```
 
 ## To add a new integration test
