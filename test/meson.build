@@ -10,6 +10,8 @@ run_test_script = files(meson.current_source_dir() + '/run-integration-test.py')
 
 env = environment()
 env.set('GTK4_LAYER_SHELL_BUILD', meson.build_root())
+# Prevent GTK from talking to dbus/xdg desktop portal, which can be a bottleneck when runnning tests in parallel
+env.set('DBUS_SESSION_BUS_ADDRESS', 'FUCK_DBUS')
 
 foreach test_list : [['layer', layer_tests], ['lock', lock_tests]]
     test_prefix = test_list[0]

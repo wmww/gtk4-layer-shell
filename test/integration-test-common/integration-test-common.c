@@ -2,12 +2,14 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-int step_time = 300;
+// Time for each callback to run. 60ms is three frames and change
+static int step_time = 60;
 
 static int return_code = 0;
 static int callback_index = 0;
 static gboolean auto_continue = FALSE;
 static gboolean complete = FALSE;
+struct wl_display* wl_display = NULL;
 
 char command_fifo_path[255] = {0};
 char response_fifo_path[255] = {0};
@@ -70,16 +72,27 @@ static gboolean next_step(gpointer _data) {
     (void)_data;
 
     CHECK_EXPECTATIONS();
+
     if (test_callbacks[callback_index]) {
+        fprintf(stderr, "\nBEGINNING OF SECTION %d\n", callback_index);
         test_callbacks[callback_index]();
         callback_index++;
-        if (auto_continue)
+        if (auto_continue) {
+            fprintf(stderr, "ROUNDTRIPPING\n");
+            wl_display_roundtrip(wl_display);
             g_timeout_add(step_time, next_step, NULL);
+        }
+        fprintf(stderr, "END OF SECTION\n\n");
     } else {
+        fprintf(stderr, "\nBEGINNING OF CLEANUP\n");
         while (g_list_model_get_n_items(gtk_window_get_toplevels()) > 0)
             gtk_window_destroy(g_list_model_get_item(gtk_window_get_toplevels(), 0));
         complete = TRUE;
+        fprintf(stderr, "ROUNDTRIPPING\n");
+        wl_display_roundtrip(wl_display);
+        fprintf(stderr, "END OF TEST\n\n");
     }
+
     return FALSE;
 }
 
@@ -93,6 +106,27 @@ GtkWindow* create_default_window() {
         "</span>");
     gtk_window_set_child(window, label);
     return window;
+}
+
+GtkWidget* popup_widget_new() {
+    static const char *options[] = {"Foo", "Bar", "Baz", NULL};
+    GtkWidget* dropdown = gtk_drop_down_new_from_strings(options);
+    // grid is used for spacing and alignment
+    GtkWidget *grid = gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid), dropdown, 0, 0, 1, 1);
+    GtkButton* button = GTK_BUTTON(gtk_widget_get_first_child(dropdown));
+    ASSERT(button);
+    g_object_set_data(G_OBJECT(grid), "popup-widget-button", button);
+    return grid;
+}
+
+void popup_widget_toggle_open(GtkWidget* popup) {
+    // You could send the "activate" signal to the dropdown, however this invokes the activate signal on the button
+    // which has a 250ms delay for incomprehensible reasons
+    // See https://gitlab.gnome.org/GNOME/gtk/-/blob/main/gtk/gtkbutton.c#L829
+    GtkWidget* button = g_object_get_data(G_OBJECT(popup), "popup-widget-button");
+    ASSERT(button);
+    g_signal_emit_by_name(button, "clicked");
 }
 
 struct lock_signal_data_t {};
@@ -159,6 +193,8 @@ int main(int argc, char** argv) {
 
     init_paths();
     gtk_init();
+    wl_display = gdk_wayland_display_get_wl_display(gdk_display_get_default());
+    ASSERT(wl_display);
 
     if (argc == 1) {
         // Run with a debug mode window that lets the user advance manually
@@ -173,7 +209,6 @@ int main(int argc, char** argv) {
 
     next_step(NULL);
     while (!complete) g_main_context_iteration(NULL, TRUE);
-    wl_display_roundtrip(gdk_wayland_display_get_wl_display(gdk_display_get_default()));
 
     return return_code;
 }

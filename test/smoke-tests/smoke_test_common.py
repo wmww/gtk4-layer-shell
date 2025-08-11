@@ -3,7 +3,7 @@ import os
 import sys
 from typing import List, Dict
 
-timeout = 3
+timeout = 0.5
 
 def build_dir() -> str:
     p = os.environ.get('GTK4_LAYER_SHELL_BUILD')
