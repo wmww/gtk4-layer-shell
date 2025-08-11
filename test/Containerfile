@@ -4,6 +4,7 @@ RUN \
     apt update && \
     apt upgrade -y && \
     apt install -y --no-install-recommends \
+        ca-certificates \
         git \
         meson \
         libwayland-dev \
@@ -11,6 +12,7 @@ RUN \
         libgtk-4-dev \
         gobject-introspection \
         libgirepository1.0-dev \
+        python3-gi \
         valac \
         gtk-doc-tools \
         ninja-build && \
