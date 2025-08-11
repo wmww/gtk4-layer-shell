@@ -79,3 +79,13 @@ When the script encounters `CHECK EXPECTATIONS COMPLETED` (emitted by the `CHECK
 
 ### Mock server
 Rather than running the integration tests in an external Wayland compositor, we implement our own mock Wayland compositor (located in `mock-server`). This doesn't show anything on-screen or get real user input, it simply gives the required responses to protocol messages. It's only dependency is libwayland. It implements most of the protocol with a single default dispatcher. This reads the message signature and takes whatever action appears to be required. The behavior of some messages is overridden in `overrides.c`.
+
+## Container images
+These images are used to run the tests in CI
+- Generated a classic token [here](https://github.com/settings/tokens) with `write:packages`, `read:packages` and `delete:packages`
+- `podman login ghcr.io -u wmww` and entered it on the prompt
+- `podman build -f test/Containerfile -t ghcr.io/wmww/gtk4-layer-shell-ci:latest .`
+- `podman push ghcr.io/wmww/gtk4-layer-shell-ci:latest`
+- Create container and shell into it: `podman run -it --replace --name gtk4-layer-shell-ci-0 ghcr.io/wmww/gtk4-layer-shell-ci:latest bash`
+- Open another shell: `podman exec -it gtk4-layer-shell-ci-0 bash`
+- Get size of image `echo "$(("$(podman image inspect ghcr.io/wmww/gtk4-layer-shell-ci:latest --format '{{ .Size }}')" / 1024 / 1024)) MB"`
