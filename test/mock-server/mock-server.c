@@ -118,8 +118,12 @@ char type_code_at_index(const struct wl_message* message, int index) {
 }
 
 static void client_disconnect(struct wl_listener *listener, void *data) {
-    fprintf(stderr, "Client disconnected, shutting down\n");
-    wl_display_terminate(display);
+    fprintf(stderr, "Client disconnected\n");
+    struct wl_client* client = (struct wl_client*)data;
+    if (remove_client(client)) {
+        fprintf(stderr, "Shutting down\n");
+        wl_display_terminate(display);
+    }
 }
 
 static struct wl_listener client_disconnect_listener = {
@@ -127,9 +131,10 @@ static struct wl_listener client_disconnect_listener = {
 };
 
 static void client_connect(struct wl_listener *listener, void *data) {
-    struct wl_client* client = (struct wl_client*)data;
     fprintf(stderr, "Client connected\n");
+    struct wl_client* client = (struct wl_client*)data;
     wl_client_add_destroy_listener(client, &client_disconnect_listener);
+    register_client(client);
 }
 
 static struct wl_listener client_connect_listener = {
