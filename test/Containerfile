@@ -1,0 +1,20 @@
+FROM ubuntu:latest
+
+RUN \
+    apt update && \
+    apt upgrade -y && \
+    apt install -y --no-install-recommends \
+        git \
+        meson \
+        libwayland-dev \
+        wayland-protocols \
+        libgtk-4-dev \
+        gobject-introspection \
+        libgirepository1.0-dev \
+        valac \
+        gtk-doc-tools \
+        ninja-build && \
+    apt clean && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+WORKDIR /workspace
