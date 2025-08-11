@@ -11,6 +11,8 @@ struct output_data_t {
 #define CLIENT_SLOTS 10
 struct client_data_t {
     struct wl_client* client;
+    int slot;
+    struct wl_listener disconnect_listener;
     struct wl_resource* seat;
     struct wl_resource* pointer;
     struct wl_resource* outputs[OUTPUT_SLOTS];
@@ -548,28 +550,33 @@ void init() {
     default_global_create(display, &xdg_wm_dialog_v1_interface, 1);
 }
 
+static void client_disconnect(struct wl_listener *listener, void *data) {
+    struct wl_client* client = (struct wl_client*)data;
+    struct client_data_t* client_data = client_from_wl_client(client);
+    *client_data = (struct client_data_t){0};
+    fprintf(stderr, "Client %d disconnected\n", client_data->slot);
+    bool clients_still_connected = false;
+    for (int i = 0; i < CLIENT_SLOTS; i++) if (clients[i].client) clients_still_connected = true;
+    if (!clients_still_connected) {
+        fprintf(stderr, "Shutting down\n");
+        wl_display_terminate(display);
+    }
+}
+
 void register_client(struct wl_client* client) {
     for (int i = 0; i < CLIENT_SLOTS; i++) {
         if (!clients[i].client) {
             clients[i] = (struct client_data_t) {
                 .client = client,
+                .slot = i,
+                .disconnect_listener.notify = client_disconnect,
             };
+            fprintf(stderr, "Client %d connected\n", i);
+            wl_client_add_destroy_listener(client, &clients[i].disconnect_listener);
             return;
         }
     }
     FATAL("ran out of client slots");
-}
-
-bool remove_client(struct wl_client* client) {
-    bool ret = true;
-    for (int i = 0; i < CLIENT_SLOTS; i++) {
-        if (clients[i].client == client) {
-            clients[i] = (struct client_data_t){0};
-        } else if (clients[i].client) {
-            ret = false;
-        }
-    }
-    return ret;
 }
 
 static double parse_number(const char* str) {

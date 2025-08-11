@@ -36,5 +36,4 @@ char type_code_at_index(const struct wl_message* message, int index);
 
 void init();
 void register_client(struct wl_client* client);
-bool remove_client(struct wl_client* client); // Returns true when all clients are gone
 const char* handle_command(const char** argv);
