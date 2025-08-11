@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/wmww/gtk4-layer-shell-ci:latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Meson
       run: meson setup -Dexamples=true -Ddocs=true -Dtests=true build
       env:
