@@ -19,4 +19,4 @@ jobs:
     - name: Build
       run: ninja -C build
     - name: Test
-      run: ASAN_OPTIONS="detect_leaks=0" LD_PRELOAD=/usr/lib/libasan.so meson test -C build --verbose
+      run: ASAN_OPTIONS="detect_leaks=0" LD_PRELOAD="$(find / -name libasan.so | head -n1)" meson test -C build --verbose
