@@ -221,7 +221,7 @@ void gtk_layer_set_namespace(GtkWindow* window, char const* name_space) {
 GTK4_LAYER_SHELL_EXPORT
 const char* gtk_layer_get_namespace(GtkWindow* window) {
     struct gtk_layer_surface_t* layer_surface = gtk_window_get_layer_surface_or_warn(window);
-    return layer_surface_get_namespace(&layer_surface->super); // NULL-safe
+    return layer_surface_get_namespace(layer_surface ? &layer_surface->super : NULL); // function is NULL-safe
 }
 
 GTK4_LAYER_SHELL_EXPORT
