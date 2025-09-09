@@ -146,8 +146,9 @@ static void gtk_layer_surface_remap(struct layer_surface_t* super) {
         return;
     }
     struct gtk_layer_surface_t* self = (struct gtk_layer_surface_t*)super;
+    gboolean was_mapped = gtk_widget_get_mapped(GTK_WIDGET(self->gtk_window));
     gtk_widget_unrealize(GTK_WIDGET(self->gtk_window));
-    gtk_widget_map(GTK_WIDGET(self->gtk_window));
+    if (was_mapped) gtk_widget_map(GTK_WIDGET(self->gtk_window));
 }
 
 GTK4_LAYER_SHELL_EXPORT
