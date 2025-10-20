@@ -26,6 +26,7 @@ enum surface_role_t {
     SURFACE_ROLE_SESSION_LOCK,
 };
 
+#define SURFACE_SLOTS 20
 struct surface_data_t {
     struct client_data_t* client;
     enum surface_role_t role;
@@ -56,8 +57,10 @@ struct surface_data_t {
 
 static struct output_data_t outputs[OUTPUT_SLOTS] = {0};
 static struct client_data_t clients[CLIENT_SLOTS] = {0};
+static struct surface_data_t surfaces[SURFACE_SLOTS] = {0};
 static struct wl_resource* current_session_lock = NULL;
 bool configure_delay_enabled = false;
+int next_surface_slot = 0;
 struct surface_data_t* latest_surface = NULL;
 
 static struct output_data_t* find_output(struct wl_resource* resource) {
@@ -273,13 +276,13 @@ REQUEST_OVERRIDE_IMPL(wl_surface, destroy) {
     struct surface_data_t* data = wl_resource_get_user_data(wl_surface);
     surface_data_assert_no_role(data);
     data->surface = NULL;
-    // Don't free surfaces to guarantee traversing popups is always safe
-    // We're employing the missile memory management pattern here https://x.com/pomeranian99/status/858856994438094848
 }
 
 REQUEST_OVERRIDE_IMPL(wl_compositor, create_surface) {
     struct client_data_t* client_data = client_from_wl_resource(wl_compositor);
-    struct surface_data_t* data = calloc(1, sizeof(struct surface_data_t));
+    ASSERT(next_surface_slot < SURFACE_SLOTS);
+    struct surface_data_t* data = &surfaces[next_surface_slot];
+    next_surface_slot++;
     wl_resource_set_user_data(new_resource, data);
     data->client = client_data;
     data->surface = new_resource;
