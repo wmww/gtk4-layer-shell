@@ -56,6 +56,7 @@ struct surface_data_t {
     struct output_data_t* effective_output; // The output this surface is on, or NULL if none
 };
 
+int next_output_slot = 0;
 static struct output_data_t outputs[OUTPUT_SLOTS] = {0};
 static struct client_data_t clients[CLIENT_SLOTS] = {0};
 static struct surface_data_t surfaces[SURFACE_SLOTS] = {0};
@@ -66,17 +67,17 @@ struct surface_data_t* latest_surface = NULL;
 
 static struct output_data_t* find_output(struct wl_resource* resource) {
     for (int client_i = 0; client_i < CLIENT_SLOTS; client_i++)
-        for (int output_i = 0; output_i < OUTPUT_SLOTS; output_i++)
+        for (int output_i = 0; output_i < next_output_slot; output_i++)
             if (clients[client_i].outputs[output_i] == resource)
                 return &outputs[output_i];
     return NULL;
 }
 
 static struct output_data_t* default_output() {
-    for (int i = 0; i < OUTPUT_SLOTS; i++)
+    for (int i = 0; i < next_output_slot; i++)
         if (outputs[i].global)
             return &outputs[i];
-    FATAL("no default output");
+    return NULL;
 }
 
 static struct client_data_t* client_from_wl_client(struct wl_client* client) {
@@ -498,18 +499,14 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_surface_v1, destroy) {
 }
 
 static void create_output(int width, int height) {
-    for (int i = 0; i < OUTPUT_SLOTS; i++) {
-        if (!outputs[i].global) {
-            outputs[i] = (struct output_data_t) {
-                .global = wl_global_create(display, &wl_output_interface, 2, &outputs[i], wl_output_bind),
-                .slot = i,
-                .width = width,
-                .height = height,
-            };
-            return;
-        }
-    }
-    FATAL("ran out of output slots");
+    ASSERT(next_output_slot < OUTPUT_SLOTS);
+    outputs[next_output_slot] = (struct output_data_t) {
+        .global = wl_global_create(display, &wl_output_interface, 2, &outputs[next_output_slot], wl_output_bind),
+        .slot = next_output_slot,
+        .width = width,
+        .height = height,
+    };
+    next_output_slot++;
 }
 
 void init() {
