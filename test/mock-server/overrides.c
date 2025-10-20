@@ -26,6 +26,7 @@ enum surface_role_t {
     SURFACE_ROLE_SESSION_LOCK,
 };
 
+#define SURFACE_SLOTS 20
 struct surface_data_t {
     struct client_data_t* client;
     enum surface_role_t role;
@@ -51,28 +52,32 @@ struct surface_data_t {
     struct surface_data_t* most_recent_popup; // Start of the popup linked list
     struct surface_data_t* previous_popup_sibling; // Forms a linked list of popups
     struct surface_data_t* popup_parent;
-    struct output_data_t* output;
+    struct output_data_t* explicit_output; // The output requested by the client, or NULL if none
+    struct output_data_t* effective_output; // The output this surface is on, or NULL if none
 };
 
+int next_output_slot = 0;
 static struct output_data_t outputs[OUTPUT_SLOTS] = {0};
 static struct client_data_t clients[CLIENT_SLOTS] = {0};
+static struct surface_data_t surfaces[SURFACE_SLOTS] = {0};
 static struct wl_resource* current_session_lock = NULL;
 bool configure_delay_enabled = false;
+int next_surface_slot = 0;
 struct surface_data_t* latest_surface = NULL;
 
 static struct output_data_t* find_output(struct wl_resource* resource) {
     for (int client_i = 0; client_i < CLIENT_SLOTS; client_i++)
-        for (int output_i = 0; output_i < OUTPUT_SLOTS; output_i++)
+        for (int output_i = 0; output_i < next_output_slot; output_i++)
             if (clients[client_i].outputs[output_i] == resource)
                 return &outputs[output_i];
     return NULL;
 }
 
 static struct output_data_t* default_output() {
-    for (int i = 0; i < OUTPUT_SLOTS; i++)
+    for (int i = 0; i < next_output_slot; i++)
         if (outputs[i].global)
             return &outputs[i];
-    FATAL("no default output");
+    return NULL;
 }
 
 static struct client_data_t* client_from_wl_client(struct wl_client* client) {
@@ -168,21 +173,20 @@ static void surface_data_send_configure(struct surface_data_t* data) {
                 FATAL("not horizontally stretched and no width given");
             if (height == 0 && !vert)
                 FATAL("not horizontally stretched and no width given");
-            struct output_data_t* output = data->output ? data->output : default_output();
-            if (horiz)  width = output->width;
-            if (vert)   height = output->height;
+            if (horiz && data->effective_output)  width  = data->effective_output->width;
+            if (vert  && data->effective_output)  height = data->effective_output->height;
             zwlr_layer_surface_v1_send_configure(data->layer_surface, data->configure_serial, width, height);
             data->layer_send_configure = false;
             break;
 
         case SURFACE_ROLE_SESSION_LOCK:
             if (!data->lock_surface) break;
-            ASSERT(data->output);
+            ASSERT(data->explicit_output);
             ext_session_lock_surface_v1_send_configure(
                 data->lock_surface,
                 data->configure_serial,
-                data->output->width,
-                data->output->height
+                data->explicit_output->width,
+                data->explicit_output->height
             );
             break;
     }
@@ -273,13 +277,13 @@ REQUEST_OVERRIDE_IMPL(wl_surface, destroy) {
     struct surface_data_t* data = wl_resource_get_user_data(wl_surface);
     surface_data_assert_no_role(data);
     data->surface = NULL;
-    // Don't free surfaces to guarantee traversing popups is always safe
-    // We're employing the missile memory management pattern here https://x.com/pomeranian99/status/858856994438094848
 }
 
 REQUEST_OVERRIDE_IMPL(wl_compositor, create_surface) {
     struct client_data_t* client_data = client_from_wl_resource(wl_compositor);
-    struct surface_data_t* data = calloc(1, sizeof(struct surface_data_t));
+    ASSERT(next_surface_slot < SURFACE_SLOTS);
+    struct surface_data_t* data = &surfaces[next_surface_slot];
+    next_surface_slot++;
     wl_resource_set_user_data(new_resource, data);
     data->client = client_data;
     data->surface = new_resource;
@@ -427,9 +431,10 @@ REQUEST_OVERRIDE_IMPL(zwlr_layer_shell_v1, get_layer_surface) {
     data->layer_send_configure = true;
     data->layer_surface = new_resource;
     if (output) {
-        data->output = find_output(output);
-        ASSERT(data->output);
+        data->explicit_output = find_output(output);
+        ASSERT(data->explicit_output);
     }
+    data->effective_output = data->explicit_output ? data->explicit_output : default_output();
 }
 
 REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, ack_configure) {
@@ -475,8 +480,8 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, get_lock_surface) {
     surface_data_set_role(data, SURFACE_ROLE_SESSION_LOCK);
     wl_resource_set_user_data(new_resource, data);
     data->lock_surface = new_resource;
-    data->output = find_output(output);
     ASSERT(output);
+    data->effective_output = data->explicit_output = find_output(output);
     surface_data_queue_configure(data);
 }
 
@@ -494,18 +499,14 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_surface_v1, destroy) {
 }
 
 static void create_output(int width, int height) {
-    for (int i = 0; i < OUTPUT_SLOTS; i++) {
-        if (!outputs[i].global) {
-            outputs[i] = (struct output_data_t) {
-                .global = wl_global_create(display, &wl_output_interface, 2, &outputs[i], wl_output_bind),
-                .slot = i,
-                .width = width,
-                .height = height,
-            };
-            return;
-        }
-    }
-    FATAL("ran out of output slots");
+    ASSERT(next_output_slot < OUTPUT_SLOTS);
+    outputs[next_output_slot] = (struct output_data_t) {
+        .global = wl_global_create(display, &wl_output_interface, 2, &outputs[next_output_slot], wl_output_bind),
+        .slot = next_output_slot,
+        .width = width,
+        .height = height,
+    };
+    next_output_slot++;
 }
 
 void init() {
@@ -629,6 +630,11 @@ const char* handle_command(const char** argv) {
     } else if (strcmp(argv[0], "destroy_output") == 0) {
         int slot = parse_number(argv[1]);
         struct output_data_t* output = &outputs[slot];
+        for (int i = 0; i < next_surface_slot; i++) {
+            if (surfaces[i].layer_surface && surfaces[i].effective_output == output) {
+                zwlr_layer_surface_v1_send_closed(surfaces[i].layer_surface);
+            }
+        }
         if (slot < 0 || slot >= OUTPUT_SLOTS || !outputs[slot].global)
             FATAL_FMT("destroying invalid output %d", slot);
         wl_global_remove(output->global);
