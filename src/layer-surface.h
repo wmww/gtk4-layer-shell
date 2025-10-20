@@ -14,6 +14,7 @@ struct geom_size_t {
 };
 
 #define GEOM_SIZE_UNSET (struct geom_size_t){-1, -1}
+#define DEFAULT_RESPECT_CLOSE_REQUEST false
 
 struct layer_surface_t {
     struct xdg_surface_server_t super;
@@ -35,6 +36,7 @@ struct layer_surface_t {
     bool auto_exclusive_zone; // If to automatically change the exclusive zone to match the window size
     enum zwlr_layer_surface_v1_keyboard_interactivity keyboard_mode; // Type of keyboard interactivity enabled for this surface
     enum zwlr_layer_shell_v1_layer layer; // The current layer, needs surface recreation on old layer shell versions
+    bool respect_close; // Controls if zwlr_layer_surface_v1.closed events should be forwarded to the XDG surface
 
     // Need the surface to be recreated to change
     struct wl_output* output; // Can be null
@@ -85,6 +87,7 @@ void layer_surface_set_keyboard_mode(
     enum zwlr_layer_surface_v1_keyboard_interactivity mode
 );
 void layer_surface_invalidate_preferred_size(struct layer_surface_t* self); // Called when preferred size may have changed
+void layer_surface_set_respect_close(struct layer_surface_t* self, bool respect_close);
 
 // Each time the current process attempts to create a new xdg_surface out of a wl_surface this callback will be called.
 // If the given callback returns a non-null pointer, this layer surface is used to override the XDG surface. Else the
