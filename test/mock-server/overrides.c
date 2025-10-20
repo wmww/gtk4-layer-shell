@@ -52,7 +52,8 @@ struct surface_data_t {
     struct surface_data_t* most_recent_popup; // Start of the popup linked list
     struct surface_data_t* previous_popup_sibling; // Forms a linked list of popups
     struct surface_data_t* popup_parent;
-    struct output_data_t* output;
+    struct output_data_t* explicit_output; // The output requested by the client, or NULL if none
+    struct output_data_t* effective_output; // The output this surface is on, or NULL if none
 };
 
 static struct output_data_t outputs[OUTPUT_SLOTS] = {0};
@@ -171,21 +172,20 @@ static void surface_data_send_configure(struct surface_data_t* data) {
                 FATAL("not horizontally stretched and no width given");
             if (height == 0 && !vert)
                 FATAL("not horizontally stretched and no width given");
-            struct output_data_t* output = data->output ? data->output : default_output();
-            if (horiz)  width = output->width;
-            if (vert)   height = output->height;
+            if (horiz && data->effective_output)  width  = data->effective_output->width;
+            if (vert  && data->effective_output)  height = data->effective_output->height;
             zwlr_layer_surface_v1_send_configure(data->layer_surface, data->configure_serial, width, height);
             data->layer_send_configure = false;
             break;
 
         case SURFACE_ROLE_SESSION_LOCK:
             if (!data->lock_surface) break;
-            ASSERT(data->output);
+            ASSERT(data->explicit_output);
             ext_session_lock_surface_v1_send_configure(
                 data->lock_surface,
                 data->configure_serial,
-                data->output->width,
-                data->output->height
+                data->explicit_output->width,
+                data->explicit_output->height
             );
             break;
     }
@@ -430,9 +430,10 @@ REQUEST_OVERRIDE_IMPL(zwlr_layer_shell_v1, get_layer_surface) {
     data->layer_send_configure = true;
     data->layer_surface = new_resource;
     if (output) {
-        data->output = find_output(output);
-        ASSERT(data->output);
+        data->explicit_output = find_output(output);
+        ASSERT(data->explicit_output);
     }
+    data->effective_output = data->explicit_output ? data->explicit_output : default_output();
 }
 
 REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, ack_configure) {
@@ -478,8 +479,8 @@ REQUEST_OVERRIDE_IMPL(ext_session_lock_v1, get_lock_surface) {
     surface_data_set_role(data, SURFACE_ROLE_SESSION_LOCK);
     wl_resource_set_user_data(new_resource, data);
     data->lock_surface = new_resource;
-    data->output = find_output(output);
     ASSERT(output);
+    data->effective_output = data->explicit_output = find_output(output);
     surface_data_queue_configure(data);
 }
 
@@ -632,6 +633,11 @@ const char* handle_command(const char** argv) {
     } else if (strcmp(argv[0], "destroy_output") == 0) {
         int slot = parse_number(argv[1]);
         struct output_data_t* output = &outputs[slot];
+        for (int i = 0; i < next_surface_slot; i++) {
+            if (surfaces[i].layer_surface && surfaces[i].effective_output == output) {
+                zwlr_layer_surface_v1_send_closed(surfaces[i].layer_surface);
+            }
+        }
         if (slot < 0 || slot >= OUTPUT_SLOTS || !outputs[slot].global)
             FATAL_FMT("destroying invalid output %d", slot);
         wl_global_remove(output->global);
