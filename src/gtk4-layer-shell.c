@@ -383,3 +383,17 @@ GtkLayerShellKeyboardMode gtk_layer_get_keyboard_mode(GtkWindow* window) {
     // Our keyboard interactivity enum matches the layer shell one
     return (GtkLayerShellKeyboardMode)layer_surface->super.keyboard_mode;
 }
+
+GTK4_LAYER_SHELL_EXPORT
+void gtk_layer_set_respect_close(GtkWindow *window, gboolean respect_close) {
+    struct gtk_layer_surface_t* layer_surface = gtk_window_get_layer_surface_or_warn(window);
+    if (!layer_surface) return;
+    return layer_surface_set_respect_close(&layer_surface->super, respect_close);
+}
+
+GTK4_LAYER_SHELL_EXPORT
+gboolean gtk_layer_get_respect_close(GtkWindow *window) {
+    struct gtk_layer_surface_t* layer_surface = gtk_window_get_layer_surface_or_warn(window);
+    if (!layer_surface) return DEFAULT_RESPECT_CLOSE_REQUEST;
+    return layer_surface->super.respect_close;
+}
