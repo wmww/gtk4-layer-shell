@@ -307,5 +307,10 @@ void gtk_session_lock_instance_assign_window_to_monitor(
         g_critical("gtk_session_lock_instance_assign_window_to_monitor() should not be called with an already realized window");
     }
 
+    // gtk_window_present() may roundtrip, which may cause us to notice our lock has failed, which may cause us to unmap
+    // the window while we're presenting it. This cases a use-after-free unless we hold a reference to it until after
+    // gtk_window_present() completes. See https://github.com/wmww/gtk4-layer-shell/issues/106 for details.
+    g_object_ref(window);
     gtk_window_present(window);
+    g_object_unref(window);
 }
