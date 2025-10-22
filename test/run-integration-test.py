@@ -203,17 +203,17 @@ def verify_result(lines: List[str]):
         raise TestError('test did not correctly set and check an expectation')
 
 def main() -> None:
+    env = os.environ.copy()
     client_bin = sys.argv[1]
     name = path.basename(client_bin)
-    build_dir = os.environ.get('GTK4_LAYER_SHELL_BUILD')
+    build_dir = env['GTKLS_BUILD_DIR']
     if not build_dir:
         build_dir = path.dirname(client_bin)
         while not path.exists(path.join(build_dir, 'build.ninja')):
             build_dir = path.dirname(build_dir)
             assert build_dir != '' and build_dir != '/', (
-                'Could not determine build directory from GTK4_LAYER_SHELL_BUILD or ' + client_bin
+                'Could not determine build directory from GTKLS_BUILD_DIR or ' + client_bin
             )
-    assert build_dir, 'GTK4_LAYER_SHELL_BUILD environment variable not set'
     server_bin = path.join(build_dir, 'test', 'mock-server', 'mock-server')
     assert path.exists(client_bin), 'Could not find client at ' + client_bin
     assert os.access(client_bin, os.X_OK), client_bin + ' is not executable'
@@ -222,7 +222,6 @@ def main() -> None:
     test_dir = get_test_dir()
 
     wayland_display = path.join(test_dir, 'gtkls-test-display')
-    env = os.environ.copy()
     env['GTKLS_TEST_DIR'] = test_dir
     env['XDG_RUNTIME_DIR'] = test_dir
     env['WAYLAND_DISPLAY'] = wayland_display

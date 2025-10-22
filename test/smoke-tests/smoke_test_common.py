@@ -6,9 +6,9 @@ from typing import List, Dict
 timeout = 0.5
 
 def build_dir() -> str:
-    p = os.environ.get('GTK4_LAYER_SHELL_BUILD')
-    assert p, 'GTK4_LAYER_SHELL_BUILD environment variable not set'
-    assert os.path.isdir(p), p + ' (from GTK4_LAYER_SHELL_BUILD) does not exist'
+    p = os.environ.get('GTKLS_BUILD_DIR')
+    assert p, 'GTKLS_BUILD_DIR environment variable not set'
+    assert os.path.isdir(p), p + ' (from GTKLS_BUILD_DIR) does not exist'
     return p
 
 def expect(*args) -> None:
