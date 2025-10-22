@@ -191,6 +191,9 @@ static void create_debug_control_window() {
 int main(int argc, char** argv) {
     EXPECT_MESSAGE(wl_display .get_registry);
 
+    // Vulkan (the default) causes errors under Valgrind and generally introduces complexity
+    setenv("GSK_RENDERER", "cairo", FALSE);
+
     init_paths();
     gtk_init();
     wl_display = gdk_wayland_display_get_wl_display(gdk_display_get_default());
