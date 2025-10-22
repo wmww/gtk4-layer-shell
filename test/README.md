@@ -44,7 +44,7 @@ ninja -C build && GTKLS_TEST_DIR=/tmp ./build/test/[testname] --auto
 __To run the test script without meson:__
 This is mostly useful for debugging the test script
 ```bash
-ninja -C build && GTKLS_BUILD_DIR=$PWD/build test/run-integration-test.py build/test/<testname>
+ninja -C build && test/run-integration-test.py build/test/<testname>
 ```
 
 ## To add a new integration test
