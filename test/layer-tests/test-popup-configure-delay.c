@@ -32,7 +32,6 @@ static void callback_3() {
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .destroy);
 
     gtk_window_close(layer_window);
-    gtk_window_close(layer_window);
 }
 
 TEST_CALLBACKS(
