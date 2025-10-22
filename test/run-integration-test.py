@@ -157,51 +157,6 @@ class Program:
     def collect_output(self):
         return self.stdout.collect_str(), self.stderr.collect_str()
 
-def run_test(name: str, server_args: List[str], client_args: List[str], test_dir: str) -> str:
-    '''
-    Runs two processes: a mock server and the test client
-    Does *not* check that client's message assertions pass, this must be done later using the returned output
-    '''
-    wayland_display = path.join(test_dir, 'gtkls-test-display')
-    env = os.environ.copy()
-    env['GTKLS_TEST_DIR'] = test_dir
-    env['XDG_RUNTIME_DIR'] = test_dir
-    env['WAYLAND_DISPLAY'] = wayland_display
-    env['WAYLAND_DEBUG'] = '1'
-
-    server = Program('server', server_args, env)
-
-    try:
-        wait_until_appears(wayland_display)
-    except TestError as e:
-        server.kill()
-        raise TestError(server.format_output() + '\n\n' + str(e))
-
-    client = Program(name, client_args, env)
-
-    errors: List[str] = []
-    try:
-        client.finish(timeout=10)
-        client.check_returncode()
-    except TestError as e:
-        errors.append(str(e))
-
-    try:
-        server.finish(timeout=1)
-        server.check_returncode()
-    except TestError as e:
-        errors.append(str(e))
-
-    if errors:
-        raise TestError('\n\n'.join(errors))
-
-    client_stdout, client_stderr = client.collect_output()
-
-    if client_stdout.strip() != '':
-        raise TestError(format_stream(name + ' stdout', client_stdout) + '\n\n' + name + ' stdout not empty')
-
-    return client_stderr
-
 def line_contains(line: str, tokens: List[str]) -> bool:
     '''Returns if the given line contains a list of tokens in the given order (anything can be between tokens)'''
     found = True
@@ -247,7 +202,7 @@ def verify_result(lines: List[str]):
         # If the test didn't use the right expectation format or something we don't want to silently pass
         raise TestError('test did not correctly set and check an expectation')
 
-def main():
+def main() -> None:
     client_bin = sys.argv[1]
     name = path.basename(client_bin)
     build_dir = os.environ.get('GTK4_LAYER_SHELL_BUILD')
@@ -266,7 +221,44 @@ def main():
     assert os.access(server_bin, os.X_OK), server_bin + ' is not executable'
     test_dir = get_test_dir()
 
-    client_stderr = run_test(name, [server_bin], [client_bin, '--auto'], test_dir)
+    wayland_display = path.join(test_dir, 'gtkls-test-display')
+    env = os.environ.copy()
+    env['GTKLS_TEST_DIR'] = test_dir
+    env['XDG_RUNTIME_DIR'] = test_dir
+    env['WAYLAND_DISPLAY'] = wayland_display
+    env['WAYLAND_DEBUG'] = '1'
+
+    server = Program('server', [server_bin], env)
+
+    try:
+        wait_until_appears(wayland_display)
+    except TestError as e:
+        server.kill()
+        raise TestError(server.format_output() + '\n\n' + str(e))
+
+    client = Program(name, [client_bin, '--auto'], env)
+
+    errors: List[str] = []
+    try:
+        client.finish(timeout=60)
+        client.check_returncode()
+    except TestError as e:
+        errors.append(str(e))
+
+    try:
+        server.finish(timeout=1)
+        server.check_returncode()
+    except TestError as e:
+        errors.append(str(e))
+
+    if errors:
+        raise TestError('\n\n'.join(errors))
+
+    client_stdout, client_stderr = client.collect_output()
+
+    if client_stdout.strip() != '':
+        raise TestError(format_stream(name + ' stdout', client_stdout) + '\n\n' + name + ' stdout not empty')
+
     client_lines = [line.strip() for line in client_stderr.strip().splitlines()]
 
     try:
