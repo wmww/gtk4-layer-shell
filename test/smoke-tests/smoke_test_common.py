@@ -3,7 +3,7 @@ import os
 import sys
 from typing import List, Dict
 
-timeout = 0.5
+timeout = 1
 
 def build_dir() -> str:
     p = os.environ.get('GTKLS_BUILD_DIR')

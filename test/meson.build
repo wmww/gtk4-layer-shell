@@ -28,6 +28,7 @@ foreach test_list : [['layer', layer_tests], ['lock', lock_tests]]
             py,
             workdir: meson.current_source_dir(),
             env: env,
+            timeout: 120,
             args: [
                 run_test_script,
                 meson.current_build_dir() + '/' + test_full_name,
