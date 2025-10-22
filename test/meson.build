@@ -8,10 +8,11 @@ subdir('unit-tests')
 py = find_program('python3')
 run_test_script = files(meson.current_source_dir() + '/run-integration-test.py')
 
-env = environment()
-env.set('GTK4_LAYER_SHELL_BUILD', meson.build_root())
-# Prevent GTK from talking to dbus/xdg desktop portal, which can be a bottleneck when runnning tests in parallel
-env.set('DBUS_SESSION_BUS_ADDRESS', 'FUCK_DBUS')
+env = [
+    'GTKLS_BUILD_DIR=' + meson.build_root(),
+    # Prevent GTK from talking to dbus/xdg desktop portal, which can be a bottleneck when runnning tests in parallel
+    'DBUS_SESSION_BUS_ADDRESS=FUCK_DBUS',
+]
 
 foreach test_list : [['layer', layer_tests], ['lock', lock_tests]]
     test_prefix = test_list[0]
@@ -27,6 +28,7 @@ foreach test_list : [['layer', layer_tests], ['lock', lock_tests]]
             py,
             workdir: meson.current_source_dir(),
             env: env,
+            timeout: 120,
             args: [
                 run_test_script,
                 meson.current_build_dir() + '/' + test_full_name,
@@ -41,7 +43,7 @@ if get_option('smoke-tests')
             'smoke-' + smoke_test,
             py,
             workdir: meson.current_source_dir(),
-            env: env,
+            env: env + ['GTKLS_VALGRIND=0'],
             args: [
                 run_test_script,
                 meson.current_source_dir() + '/smoke-tests/' + smoke_test + '.py',

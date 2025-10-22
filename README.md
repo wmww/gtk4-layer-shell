@@ -86,8 +86,9 @@ pacman -S --needed meson ninja gtk4 wayland wayland-protocols gobject-introspect
 * `-Dvapi` (default: `true`): If to build VAPI data and Vala example. The VAPI file allows this library to be used in Vala. Requires `-Dintrospection=true`
 
 ### Running the Tests
-* To run all tests its `ninja -C build test`
-* To run a specific test and print the complete output `ninja -C build && meson test -C build --verbose <testname>`
+* To run all tests: `ninja -C build test`
+* To run specific test and print complete output: `ninja -C build && meson test -C build --verbose <testname>`
+* To run tests under Valgrind (takes longer but catches memory issues) run with `GTKLS_VALGRIND=1`
 * See [test/README.md](test/README.md) for more info and tips
 
 ## Licensing

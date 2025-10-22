@@ -12,6 +12,11 @@ __To run a single test:__
 ninja -C build && meson test -C build --verbose [testname]
 ```
 
+__To run all tests under valgrind:__
+```bash
+GTKLS_VALGRIND=1 ninja -C build test
+```
+
 __To run against the current Wayland compositor:__
 ```bash
 ninja -C build && ./build/test/<testname> --auto
@@ -39,7 +44,7 @@ ninja -C build && GTKLS_TEST_DIR=/tmp ./build/test/[testname] --auto
 __To run the test script without meson:__
 This is mostly useful for debugging the test script
 ```bash
-ninja -C build && GTK4_LAYER_SHELL_BUILD=$PWD/build test/run-integration-test.py build/test/<testname>
+ninja -C build && GTKLS_BUILD_DIR=$PWD/build test/run-integration-test.py build/test/<testname>
 ```
 
 ## To add a new integration test

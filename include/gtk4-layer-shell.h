@@ -343,7 +343,7 @@ GtkLayerShellKeyboardMode gtk_layer_get_keyboard_mode(GtkWindow* window);
  *
  * Compositors may send the `zwlr_layer_surface_v1.closed` event in some cases (such as
  * when an output is destroyed). Prior to v1.3 this always triggered a GTK `close-request`
- * signal, which would close the window if not intercepted by application code. In v1.3+
+ * signal, which would destroy the window if not intercepted by application code. In v1.3+
  * this behavior is disabled by default, and can be turned back on by calling this
  * function with %TRUE. To handle the `.closed` event without destroying your window
  * turn respect_close on and connect a `close-request` listener that returns %TRUE.

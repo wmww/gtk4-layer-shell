@@ -2,8 +2,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-// Time for each callback to run. 60ms is three frames and change
-static int step_time = 60;
+// Time for each callback to run
+static int step_time = 120;
 
 static int return_code = 0;
 static int callback_index = 0;
@@ -190,6 +190,9 @@ static void create_debug_control_window() {
 
 int main(int argc, char** argv) {
     EXPECT_MESSAGE(wl_display .get_registry);
+
+    // Vulkan (the default) causes errors under Valgrind and generally introduces complexity
+    setenv("GSK_RENDERER", "cairo", FALSE);
 
     init_paths();
     gtk_init();
