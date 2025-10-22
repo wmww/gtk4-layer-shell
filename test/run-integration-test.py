@@ -11,6 +11,8 @@ import subprocess
 import threading
 from typing import List, Dict, Optional, Any
 
+valgrind_error_return_code = 123
+
 # All callables (generally lambdas) appended to this list will be called at the end of the program
 cleanup_funcs = []
 
@@ -203,10 +205,10 @@ def verify_result(lines: List[str]):
         raise TestError('test did not correctly set and check an expectation')
 
 def main() -> None:
-    env = os.environ.copy()
     client_bin = sys.argv[1]
     name = path.basename(client_bin)
-    build_dir = env['GTKLS_BUILD_DIR']
+    valgrind_enabled = os.environ.get('GTKLS_VALGRIND') == '1'
+    build_dir = os.environ.get('GTKLS_BUILD_DIR')
     if not build_dir:
         build_dir = path.dirname(client_bin)
         while not path.exists(path.join(build_dir, 'build.ninja')):
@@ -222,6 +224,7 @@ def main() -> None:
     test_dir = get_test_dir()
 
     wayland_display = path.join(test_dir, 'gtkls-test-display')
+    env = os.environ.copy()
     env['GTKLS_TEST_DIR'] = test_dir
     env['XDG_RUNTIME_DIR'] = test_dir
     env['WAYLAND_DISPLAY'] = wayland_display
@@ -235,7 +238,15 @@ def main() -> None:
         server.kill()
         raise TestError(server.format_output() + '\n\n' + str(e))
 
-    client = Program(name, [client_bin, '--auto'], env)
+    client_args = [client_bin, '--auto']
+    if valgrind_enabled:
+        client_args = [
+            'valgrind',
+            '--exit-on-first-error=yes',
+            '--error-exitcode=' + str(valgrind_error_return_code),
+            '--quiet'
+        ] + client_args;
+    client = Program(name, client_args, env)
 
     errors: List[str] = []
     try:

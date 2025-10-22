@@ -43,7 +43,7 @@ if get_option('smoke-tests')
             'smoke-' + smoke_test,
             py,
             workdir: meson.current_source_dir(),
-            env: env,
+            env: env + ['GTKLS_VALGRIND=0'],
             args: [
                 run_test_script,
                 meson.current_source_dir() + '/smoke-tests/' + smoke_test + '.py',

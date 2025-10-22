@@ -12,6 +12,11 @@ __To run a single test:__
 ninja -C build && meson test -C build --verbose [testname]
 ```
 
+__To run all tests under valgrind:__
+```bash
+GTKLS_VALGRIND=1 ninja -C build test
+```
+
 __To run against the current Wayland compositor:__
 ```bash
 ninja -C build && ./build/test/<testname> --auto
