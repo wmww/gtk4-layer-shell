@@ -72,6 +72,18 @@ def format_process_report(name: str, returncode: int, stdout: str, stderr: str) 
     else:
         result += 'stdout empty, '
     result += 'exit code: ' + str(returncode)
+    if returncode == 0:
+        result += ' (Success)'
+    elif abs(returncode) == 9:
+        result += ' (Killed/timeout)'
+    elif abs(returncode) == 11:
+        result += ' (Segfault)'
+    elif abs(returncode) == 6:
+        result += ' (Abort/failed assertion)'
+    elif returncode == valgrind_error_return_code:
+        result += ' (Valgrind error)'
+    else:
+        result += ' (Error)'
     return result
 
 class Pipe:
@@ -154,7 +166,7 @@ class Program:
         if self.subprocess.returncode != 0:
             raise TestError(
                 self.format_output() + '\n\n' +
-                self.name + ' failed (return code ' + str(self.subprocess.returncode) + ')')
+                self.name + ' failed (exit code ' + str(self.subprocess.returncode) + ')')
 
     def collect_output(self):
         return self.stdout.collect_str(), self.stderr.collect_str()
