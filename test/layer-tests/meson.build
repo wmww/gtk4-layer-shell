@@ -39,4 +39,5 @@ layer_tests = [
     'test-init-after-window-created',
     'test-configure-delay',
     'test-popup-configure-delay',
+    'test-immediate-close',
 ]
