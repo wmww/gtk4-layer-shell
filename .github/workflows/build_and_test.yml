@@ -9,17 +9,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container: ghcr.io/wmww/gtk4-layer-shell-ci:latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Apt update
-      run: sudo apt update
-    - name: Install depends
-      run: sudo apt install meson libwayland-dev wayland-protocols libgtk-4-dev gobject-introspection libgirepository1.0-dev valac gtk-doc-tools
+    - uses: actions/checkout@v4
     - name: Meson
-      run: meson setup -Dexamples=true -Ddocs=true -Dtests=true build
+      run: meson setup -Dexamples=true -Ddocs=true -Dtests=true -Db_sanitize=address,undefined build
       env:
         CFLAGS: -Werror
     - name: Build
       run: ninja -C build
     - name: Test
-      run: meson test -C build --verbose
+      run: ASAN_OPTIONS="detect_leaks=0" LD_PRELOAD="$(gcc -print-file-name=libasan.so)" meson test -C build --verbose

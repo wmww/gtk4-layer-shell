@@ -2,9 +2,52 @@
 This directory is home to the gtk4-layer-shell test suite.
 
 ## To run tests
-`ninja -C build test` (where `build` is the path to your build directory).
+```bash
+ninja -C build test
+```
+(where `build` is the path to your build directory).
 
-### To add a new integration test
+__To run a single test:__
+```bash
+ninja -C build && meson test -C build --verbose [testname]
+```
+
+__To run all tests under valgrind:__
+```bash
+GTKLS_VALGRIND=1 ninja -C build test
+```
+
+__To run against the current Wayland compositor:__
+```bash
+ninja -C build && ./build/test/<testname> --auto
+```
+This can help with debugging since you get to see the output.
+
+__Don't run the session lock tests this way__ unless you know what you're doing. Some of them may soft-brick your compositor. If this happens you may need to reboot.
+
+You can drop the `--auto` flag to run the test interactively, so you can click through each section.
+
+__To run against the current compositor under [wayland-debug](https://github.com/wmww/wayland-debug):__
+```bash
+ninja -C build && wayland-debug -f 'zwlr_*, xdg_*, ext_*' -r ./build/test/<testname> --auto
+```
+
+__To run under the mock server, but separately:__
+This can be useful to run the tests under wayland-debug or GDB
+```bash
+# server:
+ninja -C build && GTKLS_TEST_DIR=/tmp ./build/test/mock-server/mock-server
+# client:
+ninja -C build && GTKLS_TEST_DIR=/tmp ./build/test/[testname] --auto
+```
+
+__To run the test script without meson:__
+This is mostly useful for debugging the test script
+```bash
+ninja -C build && test/run-integration-test.py build/test/<testname>
+```
+
+## To add a new integration test
 1. Copy an existing integration test file
 2. Implement your test as a series of one or more callbacks
 3. Add its name to the list in `test/integration-tests/meson.build`
@@ -41,3 +84,13 @@ When the script encounters `CHECK EXPECTATIONS COMPLETED` (emitted by the `CHECK
 
 ### Mock server
 Rather than running the integration tests in an external Wayland compositor, we implement our own mock Wayland compositor (located in `mock-server`). This doesn't show anything on-screen or get real user input, it simply gives the required responses to protocol messages. It's only dependency is libwayland. It implements most of the protocol with a single default dispatcher. This reads the message signature and takes whatever action appears to be required. The behavior of some messages is overridden in `overrides.c`.
+
+## Container images
+These images are used to run the tests in CI
+- Generated a classic token [here](https://github.com/settings/tokens) with `write:packages`, `read:packages` and `delete:packages`
+- `podman login ghcr.io -u wmww` and entered it on the prompt
+- `podman build -f test/Containerfile -t ghcr.io/wmww/gtk4-layer-shell-ci:latest .`
+- `podman push ghcr.io/wmww/gtk4-layer-shell-ci:latest`
+- Create container and shell into it: `podman run -it --replace --name gtk4-layer-shell-ci-0 ghcr.io/wmww/gtk4-layer-shell-ci:latest bash`
+- Open another shell: `podman exec -it gtk4-layer-shell-ci-0 bash`
+- Get size of image `echo "$(("$(podman image inspect ghcr.io/wmww/gtk4-layer-shell-ci:latest --format '{{ .Size }}')" / 1024 / 1024)) MB"`

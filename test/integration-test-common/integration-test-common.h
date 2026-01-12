@@ -9,9 +9,6 @@
 #include <gdk/wayland/gdkwayland.h>
 #include <stdio.h>
 
-// Time in milliseconds for each callback to run
-extern int step_time;
-
 // Tell the test script that a request containing the given space-separated components is expected
 #define EXPECT_MESSAGE(message) fprintf(stderr, "EXPECT: %s\n", #message)
 // Tell the test script this request is not expected
@@ -32,13 +29,15 @@ void send_command(const char* command, const char* expected_response);
 
 GtkWindow* create_default_window();
 
+GtkWidget* popup_widget_new();
+void popup_widget_toggle_open(GtkWidget* widget);
+
 enum lock_state_t {
     LOCK_STATE_UNLOCKED = 0,
     LOCK_STATE_LOCKED,
     LOCK_STATE_FAILED,
 };
+void connect_lock_signals_except_monitor(GtkSessionLockInstance* lock, enum lock_state_t* state);
 void connect_lock_signals(GtkSessionLockInstance* lock, enum lock_state_t* state);
-void create_lock_windows(GtkSessionLockInstance* lock, GtkWindow* (*builder)());
-void create_default_lock_windows(GtkSessionLockInstance* lock);
 
 #endif // TEST_CLIENT_COMMON_H

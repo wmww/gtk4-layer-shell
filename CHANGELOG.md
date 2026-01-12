@@ -3,6 +3,23 @@
 - Implementation of [set_exclusive_edge](https://wayland.app/protocols/wlr-layer-shell-unstable-v1#zwlr_layer_surface_v1:request:set_exclusive_edge)
 
 ## [Unreleased]
+## [1.3.0] - 29 Oct 2025
+- API: add `gtk_layer_set_respect_close()`/`gtk_layer_get_respect_close()`
+- Fix: ignore `.closed` event by default (see [GTK3 LS #209](https://github.com/wmww/gtk-layer-shell/issues/209))
+- Fix: use-after-free when screen lock fails ([106](https://github.com/wmww/gtk4-layer-shell/issues/106))
+- Fix: don't remap unmapped windows on monitor change ([104](https://github.com/wmww/gtk4-layer-shell/issues/104))
+- Tests: support optionally running under Valgrind
+
+## [1.2.0] - 12 Aug 2025
+- Session lock: add `::monitor` signal to make correctly responding to monitor/output changes easier when implementing a lock screen
+- Session lock: user code no longer needs to call `gtk_window_present()` for lock screen windows
+- Examples: Refactored [session lock examples](examples/session-lock.c) for clearity and the API update
+- Fix: unmap and deref GTK windows when they are no longer in use
+- Tests: refactors and documentation for ease-of-use
+- Tests: optimization (10X speedup)
+- Tests: test outputs being connected and disconnected is correctly handled
+- Tests: use asan/ubsan in CI to detect memory issues
+
 ## [1.1.1] - 29 Mar 2025
 - Bump required meson version to 0.54.0
 - Control which symbols are exported, do not expose private/unstable functions which have never been in public headers

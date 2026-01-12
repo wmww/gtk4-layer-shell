@@ -2,48 +2,69 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-int step_time = 300;
+// Time for each callback to run
+static int step_time = 120;
 
 static int return_code = 0;
 static int callback_index = 0;
 static gboolean auto_continue = FALSE;
+static gboolean complete = FALSE;
+struct wl_display* wl_display = NULL;
+
+char command_fifo_path[255] = {0};
+char response_fifo_path[255] = {0};
+static void init_paths() {
+    const char* test_dir = getenv("GTKLS_TEST_DIR");
+    if (test_dir) {
+        char wayland_display[255] = {0};
+        sprintf(wayland_display, "%s/gtkls-test-display", test_dir);
+        setenv("WAYLAND_DISPLAY", wayland_display, true);
+        setenv("XDG_RUNTIME_DIR", test_dir, true);
+    } else {
+        test_dir = getenv("XDG_RUNTIME_DIR");
+    }
+    if (!test_dir || strlen(test_dir) == 0) {
+        FATAL_FMT("GTKLS_TEST_DIR or XDG_RUNTIME_DIR must be set");
+    }
+    ASSERT(strlen(test_dir) < 200);
+    sprintf(command_fifo_path, "%s/gtkls-test-command", test_dir);
+    sprintf(response_fifo_path, "%s/gtkls-test-response", test_dir);
+}
 
 void send_command(const char* command, const char* expected_response) {
     fprintf(stderr, "sending command: %s\n", command);
 
-    const char* rx_path = getenv("SERVER_TO_CLIENT_FIFO");
+    ASSERT(strlen(response_fifo_path));
+    int response_fd;
+    mkfifo(response_fifo_path, 0666);
 
-    ASSERT(rx_path);
-    int rx_fd;
-    mkfifo(rx_path, 0666);
-
-    const char* tx_path = getenv("CLIENT_TO_SERVER_FIFO");
-    ASSERT(tx_path);
-    int tx_fd;
-    ASSERT((tx_fd = open(tx_path, O_WRONLY)) >= 0);
-    ASSERT(write(tx_fd, command, strlen(command)) > 0);
-    ASSERT(write(tx_fd, "\n", 1) > 0);
-    close(tx_fd);
+    ASSERT(strlen(command_fifo_path));
+    int command_fd;
+    ASSERT((command_fd = open(command_fifo_path, O_WRONLY)) >= 0);
+    ASSERT(write(command_fd, command, strlen(command)) > 0);
+    ASSERT(write(command_fd, "\n", 1) > 0);
+    close(command_fd);
 
     fprintf(stderr, "awaiting response: %s\n", expected_response);
-    ASSERT((rx_fd = open(rx_path, O_RDONLY)) >= 0);
+    ASSERT((response_fd = open(response_fifo_path, O_RDONLY)) >= 0);
 #define BUFFER_SIZE 1024
     char buffer[BUFFER_SIZE];
     int length = 0;
     while (TRUE) {
         ASSERT(length < BUFFER_SIZE);
         char* c = buffer + length;
-        ssize_t bytes_read = read(rx_fd, c, 1);
+        ssize_t bytes_read = read(response_fd, c, 1);
         ASSERT(bytes_read > 0);
         if (*c == '\n') {
             *c = '\0';
+            fprintf(stderr, "got: %s\n", buffer);
             ASSERT_STR_EQ(buffer, expected_response);
             break;
         } else {
             length++;
         }
     }
-    close(rx_fd);
+    close(response_fd);
 #undef BUFFER_SIZE
 }
 
@@ -51,15 +72,27 @@ static gboolean next_step(gpointer _data) {
     (void)_data;
 
     CHECK_EXPECTATIONS();
+
     if (test_callbacks[callback_index]) {
+        fprintf(stderr, "\nBEGINNING OF SECTION %d\n", callback_index);
         test_callbacks[callback_index]();
         callback_index++;
-        if (auto_continue)
+        if (auto_continue) {
+            fprintf(stderr, "ROUNDTRIPPING\n");
+            wl_display_roundtrip(wl_display);
             g_timeout_add(step_time, next_step, NULL);
+        }
+        fprintf(stderr, "END OF SECTION\n\n");
     } else {
+        fprintf(stderr, "\nBEGINNING OF CLEANUP\n");
         while (g_list_model_get_n_items(gtk_window_get_toplevels()) > 0)
             gtk_window_destroy(g_list_model_get_item(gtk_window_get_toplevels(), 0));
+        complete = TRUE;
+        fprintf(stderr, "ROUNDTRIPPING\n");
+        wl_display_roundtrip(wl_display);
+        fprintf(stderr, "END OF TEST\n\n");
     }
+
     return FALSE;
 }
 
@@ -75,53 +108,65 @@ GtkWindow* create_default_window() {
     return window;
 }
 
-struct lock_signal_data_t {
+GtkWidget* popup_widget_new() {
+    static const char *options[] = {"Foo", "Bar", "Baz", NULL};
+    GtkWidget* dropdown = gtk_drop_down_new_from_strings(options);
+    // grid is used for spacing and alignment
+    GtkWidget *grid = gtk_grid_new();
+    gtk_grid_attach(GTK_GRID(grid), dropdown, 0, 0, 1, 1);
+    GtkButton* button = GTK_BUTTON(gtk_widget_get_first_child(dropdown));
+    ASSERT(button);
+    g_object_set_data(G_OBJECT(grid), "popup-widget-button", button);
+    return grid;
+}
 
-};
+void popup_widget_toggle_open(GtkWidget* popup) {
+    // You could send the "activate" signal to the dropdown, however this invokes the activate signal on the button
+    // which has a 250ms delay for incomprehensible reasons
+    // See https://gitlab.gnome.org/GNOME/gtk/-/blob/main/gtk/gtkbutton.c#L829
+    GtkWidget* button = g_object_get_data(G_OBJECT(popup), "popup-widget-button");
+    ASSERT(button);
+    g_signal_emit_by_name(button, "clicked");
+}
 
-static void on_locked(GtkSessionLockInstance *lock, void *data) {
+struct lock_signal_data_t {};
+
+static void on_locked(GtkSessionLockInstance* lock, void* data) {
     (void)lock;
     enum lock_state_t* state = data;
     ASSERT_EQ(*state, LOCK_STATE_UNLOCKED, "%d");
     *state = LOCK_STATE_LOCKED;
 }
 
-static void on_failed(GtkSessionLockInstance *lock, void *data) {
+static void on_failed(GtkSessionLockInstance* lock, void* data) {
     (void)lock;
     enum lock_state_t* state = data;
     ASSERT_EQ(*state, LOCK_STATE_UNLOCKED, "%d");
     *state = LOCK_STATE_FAILED;
 }
 
-static void on_unlocked(GtkSessionLockInstance *lock, void *data) {
+static void on_unlocked(GtkSessionLockInstance* lock, void* data) {
     (void)lock;
     enum lock_state_t* state = data;
     ASSERT_EQ(*state, LOCK_STATE_LOCKED, "%d");
     *state = LOCK_STATE_UNLOCKED;
 }
 
-void connect_lock_signals(GtkSessionLockInstance* lock, enum lock_state_t* state) {
+static void on_monitor(GtkSessionLockInstance* lock, GdkMonitor* monitor, void* data) {
+    (void)data;
+    GtkWindow* window = create_default_window();
+    gtk_session_lock_instance_assign_window_to_monitor(lock, window, monitor);
+}
+
+void connect_lock_signals_except_monitor(GtkSessionLockInstance* lock, enum lock_state_t* state) {
     g_signal_connect(lock, "locked", G_CALLBACK(on_locked), state);
     g_signal_connect(lock, "failed", G_CALLBACK(on_failed), state);
     g_signal_connect(lock, "unlocked", G_CALLBACK(on_unlocked), state);
 }
 
-void create_lock_windows(GtkSessionLockInstance* lock, GtkWindow* (*builder)()) {
-    GdkDisplay *display = gdk_display_get_default();
-    GListModel *monitors = gdk_display_get_monitors(display);
-    guint n_monitors = g_list_model_get_n_items(monitors);
-
-    for (guint i = 0; i < n_monitors; ++i) {
-        GdkMonitor *monitor = g_list_model_get_item(monitors, i);
-
-        GtkWindow* window = builder();
-        gtk_session_lock_instance_assign_window_to_monitor(lock, window, monitor);
-        gtk_window_present(window);
-    }
-}
-
-void create_default_lock_windows(GtkSessionLockInstance* lock) {
-    create_lock_windows(lock, create_default_window);
+void connect_lock_signals(GtkSessionLockInstance* lock, enum lock_state_t* state) {
+    connect_lock_signals_except_monitor(lock, state);
+    g_signal_connect(lock, "monitor", G_CALLBACK(on_monitor), NULL);
 }
 
 static void continue_button_callback(GtkWidget* _widget, gpointer _data) {
@@ -146,7 +191,13 @@ static void create_debug_control_window() {
 int main(int argc, char** argv) {
     EXPECT_MESSAGE(wl_display .get_registry);
 
+    // Vulkan (the default) causes errors under Valgrind and generally introduces complexity
+    setenv("GSK_RENDERER", "cairo", FALSE);
+
+    init_paths();
     gtk_init();
+    wl_display = gdk_wayland_display_get_wl_display(gdk_display_get_default());
+    ASSERT(wl_display);
 
     if (argc == 1) {
         // Run with a debug mode window that lets the user advance manually
@@ -160,9 +211,7 @@ int main(int argc, char** argv) {
     }
 
     next_step(NULL);
-
-    while (g_list_model_get_n_items(gtk_window_get_toplevels()) > 0)
-        g_main_context_iteration(NULL, TRUE);
+    while (!complete) g_main_context_iteration(NULL, TRUE);
 
     return return_code;
 }

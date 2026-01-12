@@ -146,8 +146,9 @@ static void gtk_layer_surface_remap(struct layer_surface_t* super) {
         return;
     }
     struct gtk_layer_surface_t* self = (struct gtk_layer_surface_t*)super;
+    gboolean was_mapped = gtk_widget_get_mapped(GTK_WIDGET(self->gtk_window));
     gtk_widget_unrealize(GTK_WIDGET(self->gtk_window));
-    gtk_widget_map(GTK_WIDGET(self->gtk_window));
+    if (was_mapped) gtk_widget_map(GTK_WIDGET(self->gtk_window));
 }
 
 GTK4_LAYER_SHELL_EXPORT
@@ -221,7 +222,7 @@ void gtk_layer_set_namespace(GtkWindow* window, char const* name_space) {
 GTK4_LAYER_SHELL_EXPORT
 const char* gtk_layer_get_namespace(GtkWindow* window) {
     struct gtk_layer_surface_t* layer_surface = gtk_window_get_layer_surface_or_warn(window);
-    return layer_surface_get_namespace(&layer_surface->super); // NULL-safe
+    return layer_surface_get_namespace(layer_surface ? &layer_surface->super : NULL); // function is NULL-safe
 }
 
 GTK4_LAYER_SHELL_EXPORT
@@ -252,7 +253,7 @@ static void gtk_layer_surface_monitor_invalidated(GdkMonitor* self, struct gtk_l
 static void gtk_layer_surface_clear_monitor(struct gtk_layer_surface_t* layer_surface) {
     if (layer_surface->monitor) {
         g_signal_handlers_disconnect_by_data(layer_surface->monitor, layer_surface);
-        g_object_unref(G_OBJECT(layer_surface->monitor));
+        g_clear_object(&layer_surface->monitor);
     }
 }
 
@@ -267,9 +268,8 @@ void gtk_layer_set_monitor(GtkWindow* window, GdkMonitor* monitor) {
         g_return_if_fail(output);
     }
     gtk_layer_surface_clear_monitor(layer_surface);
-    layer_surface->monitor = monitor;
+    layer_surface->monitor = monitor ? g_object_ref(monitor) : NULL;
     if (monitor) {
-        g_object_ref(G_OBJECT(monitor));
         // Connect after hopefully allows apps to handle this first
         g_signal_connect_after(monitor, "invalidate",  G_CALLBACK(gtk_layer_surface_monitor_invalidated), layer_surface);
     }
@@ -425,4 +425,17 @@ void gtk_layer_set_size(GtkWindow* window, uint32_t width, uint32_t height) {
     struct gtk_layer_surface_t* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return;
     layer_surface_set_size(&layer_surface->super, width, height);
+}
+
+void gtk_layer_set_respect_close(GtkWindow *window, gboolean respect_close) {
+    struct gtk_layer_surface_t* layer_surface = gtk_window_get_layer_surface_or_warn(window);
+    if (!layer_surface) return;
+    return layer_surface_set_respect_close(&layer_surface->super, respect_close);
+}
+
+GTK4_LAYER_SHELL_EXPORT
+gboolean gtk_layer_get_respect_close(GtkWindow *window) {
+    struct gtk_layer_surface_t* layer_surface = gtk_window_get_layer_surface_or_warn(window);
+    if (!layer_surface) return DEFAULT_RESPECT_CLOSE_REQUEST;
+    return layer_surface->super.respect_close;
 }

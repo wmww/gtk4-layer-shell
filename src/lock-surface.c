@@ -10,6 +10,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
+
+#define SURFACE_DATA_MAX_COUNT 100
+static struct {
+    struct wl_surface* wl_surface;
+    bool has_buffer;
+} surface_data[SURFACE_DATA_MAX_COUNT] = {0};
+static int surface_data_count = 0;
 
 static void lock_surface_handle_configure(
     void* data,
@@ -106,11 +114,7 @@ static bool xdg_wm_base_get_xdg_surface_hook(
     union wl_argument* args,
     struct wl_proxy** ret_proxy
 ) {
-    (void)data;
-    (void)opcode;
-    (void)create_interface;
-    (void)create_version;
-    (void)flags;
+    (void)data; (void)opcode; (void)create_interface; (void)create_version; (void)flags;
 
     lock_surface_hook_callback_t callback = data;
     struct wl_surface* wl_surface = (struct wl_surface*)args[1].o;
@@ -118,6 +122,10 @@ static bool xdg_wm_base_get_xdg_surface_hook(
 
     if (self) {
         *ret_proxy = xdg_surface_server_get_xdg_surface(&self->super, (struct xdg_wm_base*)proxy, wl_surface);
+        assert(surface_data_count < SURFACE_DATA_MAX_COUNT);
+        surface_data[surface_data_count].wl_surface = wl_surface;
+        surface_data[surface_data_count].has_buffer = false;
+        surface_data_count++;
         return true;
     } else if (session_lock_get_active_lock()) {
         // A new XDG surface is being created while the screen is locked, but it's not a lock surface. Few possibilities
@@ -135,6 +143,86 @@ static bool xdg_wm_base_get_xdg_surface_hook(
     }
 }
 
+static bool wl_surface_attach_hook(
+    void* data,
+    struct wl_proxy* proxy,
+    uint32_t opcode,
+    const struct wl_interface* create_interface,
+    uint32_t create_version,
+    uint32_t flags,
+    union wl_argument* args,
+    struct wl_proxy** ret_proxy
+) {
+    (void)data; (void)opcode; (void)create_interface; (void)create_version; (void)flags; (void)ret_proxy;
+
+    struct wl_buffer* buffer = (struct wl_buffer*)args[0].o;
+    struct wl_surface* wl_surface = (struct wl_surface*)proxy;
+    for (int i = 0; i < surface_data_count; i++) {
+        if (surface_data[i].wl_surface == wl_surface) {
+            if (buffer) {
+                surface_data[i].has_buffer = true;
+            } else {
+                // This is a lock surface, so its not allowed to have a null buffer. return true to "handle" this
+                // request, so the null buffer is not sent to the compositor.
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+static bool wl_surface_commit_hook(
+    void* data,
+    struct wl_proxy* proxy,
+    uint32_t opcode,
+    const struct wl_interface* create_interface,
+    uint32_t create_version,
+    uint32_t flags,
+    union wl_argument* args,
+    struct wl_proxy** ret_proxy
+) {
+    (void)data; (void)opcode; (void)create_interface; (void)create_version; (void)flags; (void)args; (void)ret_proxy;
+
+    struct wl_surface* wl_surface = (struct wl_surface*)proxy;
+    for (int i = 0; i < surface_data_count; i++) {
+        if (surface_data[i].wl_surface == wl_surface) {
+            if (!surface_data[i].has_buffer) {
+                // We're not allowed to commit a lock surface without a buffer. return true to "handle" this request and
+                // prevent it from being sent to the compositor
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+static bool wl_surface_destroy_hook(
+    void* data,
+    struct wl_proxy* proxy,
+    uint32_t opcode,
+    const struct wl_interface* create_interface,
+    uint32_t create_version,
+    uint32_t flags,
+    union wl_argument* args,
+    struct wl_proxy** ret_proxy
+) {
+    (void)data; (void)opcode; (void)create_interface; (void)create_version; (void)flags; (void)args; (void)ret_proxy;
+
+    struct wl_surface* wl_surface = (struct wl_surface*)proxy;
+    for (int i = 0; i < surface_data_count; i++) {
+        if (surface_data[i].wl_surface == wl_surface) {
+            memmove(
+                &surface_data[i],
+                &surface_data[i + 1],
+                sizeof(surface_data[0]) * (surface_data_count - i - 1)
+            );
+            surface_data_count--;
+            i--;
+        }
+    }
+    return false;
+}
+
 void lock_surface_install_hook(lock_surface_hook_callback_t callback) {
     libwayland_shim_install_request_hook(
         &xdg_wm_base_interface,
@@ -142,4 +230,27 @@ void lock_surface_install_hook(lock_surface_hook_callback_t callback) {
         xdg_wm_base_get_xdg_surface_hook,
         callback
     );
+
+    static bool hooks_installed = false;
+    if (!hooks_installed) {
+        hooks_installed = true;
+        libwayland_shim_install_request_hook(
+            &wl_surface_interface,
+            WL_SURFACE_ATTACH,
+            wl_surface_attach_hook,
+            NULL
+        );
+        libwayland_shim_install_request_hook(
+            &wl_surface_interface,
+            WL_SURFACE_COMMIT,
+            wl_surface_commit_hook,
+            NULL
+        );
+        libwayland_shim_install_request_hook(
+            &wl_surface_interface,
+            WL_SURFACE_DESTROY,
+            wl_surface_destroy_hook,
+            NULL
+        );
+    }
 }
