@@ -32,7 +32,7 @@ static GtkWidget* margin_spin_button_new(
     const char* tooltip,
     const int default_margins[GTK_LAYER_SHELL_EDGE_ENTRY_NUMBER]
 ) {
-    GtkAdjustment* adjustment = gtk_adjustment_new(default_margins[edge], 0.0, 4000.0, 20.0, 50.0, 0.0);
+    GtkAdjustment* adjustment = gtk_adjustment_new(default_margins[edge], -100.0, 4000.0, 20.0, 50.0, 0.0);
     GtkWidget* button = gtk_spin_button_new(adjustment, 0.5, 0);
     gtk_widget_set_tooltip_text(button, tooltip);
     MarginSpinButtonData* data = g_new0(MarginSpinButtonData, 1);
