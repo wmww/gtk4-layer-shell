@@ -9,6 +9,22 @@
 #include <string.h>
 #include <stdlib.h>
 
+static inline struct geom_edges_t normalize_edges_as_booleans(struct geom_edges_t edges) {
+    return (struct geom_edges_t) {
+        .left   = !!edges.left,
+        .right  = !!edges.right,
+        .top    = !!edges.top,
+        .bottom = !!edges.bottom,
+    };
+}
+
+static inline bool edges_eq(struct geom_edges_t a, struct geom_edges_t b) {
+    return a.left   == b.left &&
+           a.right  == b.right &&
+           a.top    == b.top &&
+           a.bottom == b.bottom;
+}
+
 static void layer_surface_send_set_size(struct layer_surface_t* self) {
     if (!self->layer_surface) return;
 
@@ -317,17 +333,8 @@ void layer_surface_set_layer(struct layer_surface_t* self, enum zwlr_layer_shell
 }
 
 void layer_surface_set_anchor(struct layer_surface_t* self, struct geom_edges_t anchors) {
-    // Normalize booleans or else strange things can happen
-    anchors.left   = anchors.left   ? 1 : 0;
-    anchors.right  = anchors.right  ? 1 : 0;
-    anchors.top    = anchors.top    ? 1 : 0;
-    anchors.bottom = anchors.bottom ? 1 : 0;
-
-    if (self->anchored.left   != anchors.left ||
-        self->anchored.right  != anchors.right ||
-        self->anchored.top    != anchors.top   ||
-        self->anchored.bottom != anchors.bottom
-    ) {
+    anchors = normalize_edges_as_booleans(anchors);
+    if (!edges_eq(self->anchored, anchors)) {
         self->anchored = anchors;
         if (self->layer_surface) {
             layer_surface_send_set_anchor(self);
@@ -340,11 +347,7 @@ void layer_surface_set_anchor(struct layer_surface_t* self, struct geom_edges_t 
 }
 
 void layer_surface_set_margin(struct layer_surface_t* self, struct geom_edges_t margins) {
-    if (self->margin_size.left   != margins.left ||
-        self->margin_size.right  != margins.right ||
-        self->margin_size.top    != margins.top   ||
-        self->margin_size.bottom != margins.bottom
-    ) {
+    if (!edges_eq(self->margin_size, margins)) {
         self->margin_size = margins;
         layer_surface_send_set_margin(self);
         layer_surface_update_auto_exclusive_zone(self);
