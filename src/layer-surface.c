@@ -172,6 +172,109 @@ static void layer_surface_send_set_keyboard_interactivity(struct layer_surface_t
     }
 }
 
+static void layer_surface_update_exclusive_zone(struct layer_surface_t* self) {
+    int new_exclusive_zone = 0;
+    enum zwlr_layer_surface_v1_anchor new_exclusive_edge = 0;
+
+    if (self->layer_surface_version >= ZWLR_LAYER_SURFACE_V1_SET_EXCLUSIVE_EDGE_SINCE_VERSION) {
+        uint32_t enabled_anchored_edges =
+            (self->anchored.left    && self->exclusive_edges.left   ? ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT     : 0) |
+            (self->anchored.right   && self->exclusive_edges.right  ? ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT    : 0) |
+            (self->anchored.top     && self->exclusive_edges.top    ? ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP      : 0) |
+            (self->anchored.bottom  && self->exclusive_edges.bottom ? ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM   : 0);
+
+        switch (enabled_anchored_edges) {
+            case ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT:
+            case ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT:
+            case ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP:
+            case ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM:
+                new_exclusive_edge = enabled_anchored_edges;
+                break;
+
+            default: {
+                bool horiz = (self->anchored.left == self->anchored.right);
+                bool vert  = (self->anchored.top  == self->anchored.bottom);
+                if (horiz && !vert) {
+                    new_exclusive_edge = self->anchored.top ?
+                        ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP :
+                        ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM;
+                } else if (vert && !horiz) {
+                    new_exclusive_edge = self->anchored.left ?
+                        ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT :
+                        ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT;
+                } else {
+                    new_exclusive_edge = 0;
+                }
+            }
+        }
+    }
+
+    if (self->auto_exclusive_zone) {
+        enum {
+            ANCHORED_HORIZ,
+            ANCHORED_VERT,
+            ANCHORED_NONE,
+        } anchored;
+
+        switch (new_exclusive_edge) {
+            case ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT:
+            case ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT:
+                anchored = ANCHORED_HORIZ;
+                break;
+
+            case ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP:
+            case ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM:
+                anchored = ANCHORED_VERT;
+                break;
+
+            default: {
+                bool horiz = (self->anchored.left == self->anchored.right);
+                bool vert  = (self->anchored.top  == self->anchored.bottom);
+                if      (!vert  && horiz) anchored = ANCHORED_VERT;
+                else if (!horiz && vert ) anchored = ANCHORED_HORIZ;
+                else                      anchored = ANCHORED_NONE;
+            }
+        }
+
+        if (anchored == ANCHORED_VERT) {
+            new_exclusive_zone = self->last_xdg_window_geom_size.height;
+            if (!self->anchored.top) {
+                new_exclusive_zone += self->margin_size.top;
+            }
+            if (!self->anchored.bottom) {
+                new_exclusive_zone += self->margin_size.bottom;
+            }
+        } else if (anchored == ANCHORED_HORIZ) {
+            new_exclusive_zone = self->last_xdg_window_geom_size.width;
+            if (!self->anchored.left) {
+                new_exclusive_zone += self->margin_size.left;
+            }
+            if (!self->anchored.right) {
+                new_exclusive_zone += self->margin_size.right;
+            }
+        } else {
+            new_exclusive_zone = -1;
+        }
+    } else {
+        new_exclusive_zone = self->explicit_exclusive_zone;
+    }
+
+    if (new_exclusive_zone <= 0) new_exclusive_edge = 0;
+
+    if (self->layer_surface && self->cached_exclusive_zone != new_exclusive_zone) {
+        self->cached_exclusive_zone = new_exclusive_zone;
+        zwlr_layer_surface_v1_set_exclusive_zone(self->layer_surface, new_exclusive_zone);
+    }
+
+    if (self->layer_surface &&
+        self->layer_surface_version >= ZWLR_LAYER_SURFACE_V1_SET_EXCLUSIVE_EDGE_SINCE_VERSION &&
+        self->cached_exclusive_edge != new_exclusive_edge
+    ) {
+        self->cached_exclusive_edge = new_exclusive_edge;
+        zwlr_layer_surface_v1_set_exclusive_edge(self->layer_surface, new_exclusive_edge);
+    }
+}
+
 static void layer_surface_create_surface_object(struct layer_surface_t* self, struct wl_surface* wl_surface) {
     struct wl_display* display = libwayland_shim_proxy_get_display((struct wl_proxy*)wl_surface);
     struct zwlr_layer_shell_v1* layer_shell_global = get_layer_shell_global_from_display(display);
@@ -191,45 +294,13 @@ static void layer_surface_create_surface_object(struct layer_surface_t* self, st
         name_space);
     assert(self->layer_surface);
     zwlr_layer_surface_v1_add_listener(self->layer_surface, &layer_surface_listener, self);
+    self->layer_surface_version = zwlr_layer_surface_v1_get_version(self->layer_surface);
 
     layer_surface_send_set_keyboard_interactivity(self);
-    zwlr_layer_surface_v1_set_exclusive_zone(self->layer_surface, self->exclusive_zone);
+    layer_surface_update_exclusive_zone(self);
     layer_surface_send_set_anchor(self);
     layer_surface_send_set_margin(self);
     layer_surface_send_set_size(self);
-}
-
-static void layer_surface_update_auto_exclusive_zone(struct layer_surface_t* self) {
-    if (!self->auto_exclusive_zone) return;
-
-    bool horiz = (self->anchored.left == self->anchored.right);
-    bool vert  = (self->anchored.top  == self->anchored.bottom);
-    int new_exclusive_zone = -1;
-
-    if (horiz && !vert) {
-        new_exclusive_zone = self->last_xdg_window_geom_size.height;
-        if (!self->anchored.top) {
-            new_exclusive_zone += self->margin_size.top;
-        }
-        if (!self->anchored.bottom) {
-            new_exclusive_zone += self->margin_size.bottom;
-        }
-    } else if (vert && !horiz) {
-        new_exclusive_zone = self->last_xdg_window_geom_size.width;
-        if (!self->anchored.left) {
-            new_exclusive_zone += self->margin_size.left;
-        }
-        if (!self->anchored.right) {
-            new_exclusive_zone += self->margin_size.right;
-        }
-    }
-
-    if (new_exclusive_zone >= 0 && self->exclusive_zone != new_exclusive_zone) {
-        self->exclusive_zone = new_exclusive_zone;
-        if (self->layer_surface) {
-            zwlr_layer_surface_v1_set_exclusive_zone(self->layer_surface, self->exclusive_zone);
-        }
-    }
 }
 
 static void layer_surface_window_geometry_set(struct xdg_surface_server_t* super, int width, int height) {
@@ -237,7 +308,7 @@ static void layer_surface_window_geometry_set(struct xdg_surface_server_t* super
 
     self->last_xdg_window_geom_size = (struct geom_size_t){width, height};
     layer_surface_send_set_size(self);
-    layer_surface_update_auto_exclusive_zone(self);
+    layer_surface_update_exclusive_zone(self);
 }
 
 void layer_surface_configure_acked(struct xdg_surface_server_t* super, uint32_t serial) {
@@ -255,6 +326,7 @@ static void layer_surface_role_destroyed(struct xdg_surface_server_t* super) {
     if (self->layer_surface) {
         zwlr_layer_surface_v1_destroy(self->layer_surface);
         self->layer_surface = NULL;
+        self->layer_surface_version = 0;
     }
 
     self->cached_xdg_configure_size = GEOM_SIZE_UNSET;
@@ -274,6 +346,7 @@ struct layer_surface_t layer_surface_make() {
             .toplevel_destroyed = layer_surface_role_destroyed,
             .popup_destroyed = layer_surface_role_destroyed,
         },
+        .exclusive_edges = {true, true, true, true},
         .cached_xdg_configure_size = GEOM_SIZE_UNSET,
         .last_xdg_window_geom_size = GEOM_SIZE_UNSET,
         .cached_layer_size_set = GEOM_SIZE_UNSET,
@@ -321,8 +394,7 @@ void layer_surface_set_layer(struct layer_surface_t* self, enum zwlr_layer_shell
     if (self->layer != layer) {
         self->layer = layer;
         if (self->layer_surface) {
-            uint32_t version = zwlr_layer_surface_v1_get_version(self->layer_surface);
-            if (version >= ZWLR_LAYER_SURFACE_V1_SET_LAYER_SINCE_VERSION) {
+            if (self->layer_surface_version >= ZWLR_LAYER_SURFACE_V1_SET_LAYER_SINCE_VERSION) {
                 zwlr_layer_surface_v1_set_layer(self->layer_surface, layer);
                 layer_surface_needs_commit(self);
             } else if (self->remap) {
@@ -340,7 +412,7 @@ void layer_surface_set_anchor(struct layer_surface_t* self, struct geom_edges_t 
             layer_surface_send_set_anchor(self);
             layer_surface_send_set_size(self);
             layer_surface_configure_xdg_surface(self, 0, false);
-            layer_surface_update_auto_exclusive_zone(self);
+            layer_surface_update_exclusive_zone(self);
             layer_surface_needs_commit(self);
         }
     }
@@ -350,20 +422,20 @@ void layer_surface_set_margin(struct layer_surface_t* self, struct geom_edges_t 
     if (!edges_eq(self->margin_size, margins)) {
         self->margin_size = margins;
         layer_surface_send_set_margin(self);
-        layer_surface_update_auto_exclusive_zone(self);
+        layer_surface_update_exclusive_zone(self);
         layer_surface_needs_commit(self);
     }
 }
 
 void layer_surface_set_exclusive_zone(struct layer_surface_t* self, int exclusive_zone) {
-    self->auto_exclusive_zone = false;
     if (exclusive_zone < -1) {
         exclusive_zone = -1;
     }
-    if (self->exclusive_zone != exclusive_zone) {
-        self->exclusive_zone = exclusive_zone;
+    if (self->auto_exclusive_zone || self->explicit_exclusive_zone != exclusive_zone) {
+        self->auto_exclusive_zone = false;
+        self->explicit_exclusive_zone = exclusive_zone;
         if (self->layer_surface) {
-            zwlr_layer_surface_v1_set_exclusive_zone(self->layer_surface, self->exclusive_zone);
+            layer_surface_update_exclusive_zone(self);
             layer_surface_needs_commit(self);
         }
     }
@@ -372,7 +444,19 @@ void layer_surface_set_exclusive_zone(struct layer_surface_t* self, int exclusiv
 void layer_surface_auto_exclusive_zone_enable(struct layer_surface_t* self) {
     if (!self->auto_exclusive_zone) {
         self->auto_exclusive_zone = true;
-        layer_surface_update_auto_exclusive_zone(self);
+        layer_surface_update_exclusive_zone(self);
+        layer_surface_needs_commit(self);
+    }
+}
+
+void layer_surface_set_exclusive_edges(struct layer_surface_t* self, struct geom_edges_t edges) {
+    edges = normalize_edges_as_booleans(edges);
+    if (!edges_eq(self->exclusive_edges, edges)) {
+        self->exclusive_edges = edges;
+        if (self->layer_surface) {
+            layer_surface_update_exclusive_zone(self);
+            layer_surface_needs_commit(self);
+        }
     }
 }
 

@@ -46,6 +46,7 @@ struct surface_data_t {
     int layer_set_w; // The width to configure the layer surface with
     int layer_set_h; // The height to configure the layer surface with
     uint32_t layer_anchor; // The layer surface's anchor
+    uint32_t layer_exclusive_edge; // The exclusive edge if explicitly set, 0 otherwise
     struct {
         int top, left, bottom, right;
     } layer_margin; // The layer surface's margin
@@ -280,6 +281,10 @@ REQUEST_OVERRIDE_IMPL(wl_surface, commit) {
     if (data->role == SURFACE_ROLE_LAYER && data->layer_send_configure) {
         surface_data_queue_configure(data);
     }
+
+    if (data->role == SURFACE_ROLE_LAYER && data->layer_exclusive_edge != 0) {
+        ASSERT(data->layer_anchor & data->layer_exclusive_edge);
+    }
 }
 
 REQUEST_OVERRIDE_IMPL(wl_surface, destroy) {
@@ -436,6 +441,20 @@ REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, set_margin) {
     data->layer_margin.left = left;
 }
 
+REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, set_exclusive_edge) {
+    UINT_ARG(edge, 0);
+    struct surface_data_t* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
+    switch (edge) {
+        case 0:
+        case ZWLR_LAYER_SURFACE_V1_ANCHOR_LEFT:
+        case ZWLR_LAYER_SURFACE_V1_ANCHOR_RIGHT:
+        case ZWLR_LAYER_SURFACE_V1_ANCHOR_TOP:
+        case ZWLR_LAYER_SURFACE_V1_ANCHOR_BOTTOM: break;
+        default: FATAL_FMT("invalid exclusive edge %u", edge);
+    }
+    data->layer_exclusive_edge = edge;
+}
+
 REQUEST_OVERRIDE_IMPL(zwlr_layer_surface_v1, get_popup) {
     RESOURCE_ARG(xdg_popup, popup, 0);
     struct surface_data_t* data = wl_resource_get_user_data(zwlr_layer_surface_v1);
@@ -551,6 +570,7 @@ void init() {
     OVERRIDE_REQUEST(zwlr_layer_surface_v1, set_anchor);
     OVERRIDE_REQUEST(zwlr_layer_surface_v1, set_size);
     OVERRIDE_REQUEST(zwlr_layer_surface_v1, set_margin);
+    OVERRIDE_REQUEST(zwlr_layer_surface_v1, set_exclusive_edge);
     OVERRIDE_REQUEST(zwlr_layer_surface_v1, get_popup);
     OVERRIDE_REQUEST(zwlr_layer_surface_v1, ack_configure);
     OVERRIDE_REQUEST(zwlr_layer_surface_v1, destroy);
@@ -569,7 +589,7 @@ void init() {
     default_global_create(display, &wl_compositor_interface, 4);
     default_global_create(display, &wl_subcompositor_interface, 1);
     default_global_create(display, &xdg_wm_base_interface, 2);
-    default_global_create(display, &zwlr_layer_shell_v1_interface, 4);
+    default_global_create(display, &zwlr_layer_shell_v1_interface, 5);
     default_global_create(display, &ext_session_lock_manager_v1_interface, 1);
     default_global_create(display, &xdg_wm_dialog_v1_interface, 1);
 }

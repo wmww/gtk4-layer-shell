@@ -290,7 +290,7 @@ void gtk_layer_set_exclusive_zone(GtkWindow* window, int exclusive_zone);
  * gtk_layer_get_exclusive_zone:
  * @window: A layer surface.
  *
- * Returns: the window's exclusive zone(which may have been set manually or automatically)
+ * Returns: the window's exclusive zone (which may have been set manually or automatically)
  */
 int gtk_layer_get_exclusive_zone(GtkWindow* window);
 
@@ -314,6 +314,36 @@ void gtk_layer_auto_exclusive_zone_enable(GtkWindow* window);
  * Returns: if the surface's exclusive zone is set to change based on the window's size
  */
 gboolean gtk_layer_auto_exclusive_zone_is_enabled(GtkWindow* window);
+
+/**
+ * gtk_layer_set_exclusive_edge_enabled:
+ * @window: A layer surface.
+ * @edge: A #GtkLayerShellEdge this layer surface may be anchored to.
+ * @enable: Whether or not to to have an exclusive zone on @edge.
+ *
+ * Used to settle ambiguities when anchored to multiple edges. The Wayland protocol only allows
+ * being exclusive on a single edge at a time, and it must be an edge the surface is anchored to.
+ * If anchroed to one or three edges, the main edge is selected automatically if enabled. Only has
+ * an effect on Wayland compositors supporting protocol version >=5
+ * (https://wayland.app/protocols/wlr-layer-shell-unstable-v1#compositor-support)
+ *
+ * Default is %TRUE for each #GtkLayerShellEdge
+ *
+ * Since: 1.4
+ */
+void gtk_layer_set_exclusive_edge_enabled(GtkWindow* window, GtkLayerShellEdge edge, gboolean enable);
+
+/**
+ * gtk_layer_get_exclusive_edge_enabled:
+ * @window: A layer surface.
+ * @edge: the edge to which the surface may or may not be anchorable
+ *
+ * Returns: if exclusive zone is enabled for the given edge, may or may not actually have an
+ * exclusive zone, depending on anchors.
+ *
+ * Since: 1.4
+ */
+gboolean gtk_layer_get_exclusive_edge_enabled(GtkWindow* window, GtkLayerShellEdge edge);
 
 /**
  * gtk_layer_set_keyboard_mode:

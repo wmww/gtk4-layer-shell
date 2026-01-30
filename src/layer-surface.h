@@ -32,8 +32,11 @@ struct layer_surface_t {
     // Can be set at any time
     struct geom_edges_t anchored; // Logically booleans, the edges of the output this layer surface is currently anchored to
     struct geom_edges_t margin_size; // The gap between each edge of the output and this layer surface (only applicable for anchored edges)
-    int exclusive_zone; // The current exclusive zone(set either explicitly or automatically)
+    int explicit_exclusive_zone; // The last exclusive zone that was set explicitly (ignored if auto_exclusive_zone is enabled)
     bool auto_exclusive_zone; // If to automatically change the exclusive zone to match the window size
+    struct geom_edges_t exclusive_edges; // Logically booleans, the edges of the output this layer surface may have an exclusive zone on
+    int cached_exclusive_zone; // The last exclusive zone send to the compositor
+    enum zwlr_layer_surface_v1_anchor cached_exclusive_edge; // The last exclusive edge sent to the compositor
     enum zwlr_layer_surface_v1_keyboard_interactivity keyboard_mode; // Type of keyboard interactivity enabled for this surface
     enum zwlr_layer_shell_v1_layer layer; // The current layer, needs surface recreation on old layer shell versions
     bool respect_close; // Controls if zwlr_layer_surface_v1.closed events should be forwarded to the XDG surface
@@ -44,6 +47,7 @@ struct layer_surface_t {
 
     // Not set by user requests
     struct zwlr_layer_surface_v1* layer_surface; // The actual layer surface Wayland object (can be NULL)
+    uint32_t layer_surface_version; // Version of the layer surface object
     // The last size we configured the client program with. -1 means unset, 0 means we've asked the program to decide
     // its own size. In theory we should be able to set only width or only height to 0. In practice GTK at least uses
     // its preferred size for both if either are set to 0, so we either use (0, 0) or (>0, >0).
@@ -82,6 +86,7 @@ void layer_surface_set_anchor(struct layer_surface_t* self, struct geom_edges_t 
 void layer_surface_set_margin(struct layer_surface_t* self, struct geom_edges_t margins);
 void layer_surface_set_exclusive_zone(struct layer_surface_t* self, int exclusive_zone);
 void layer_surface_auto_exclusive_zone_enable(struct layer_surface_t* self);
+void layer_surface_set_exclusive_edges(struct layer_surface_t* self, struct geom_edges_t edges); // values are treated as booleans
 void layer_surface_set_keyboard_mode(
     struct layer_surface_t* self,
     enum zwlr_layer_surface_v1_keyboard_interactivity mode
