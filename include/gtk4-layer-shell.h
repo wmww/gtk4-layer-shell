@@ -323,7 +323,7 @@ gboolean gtk_layer_auto_exclusive_zone_is_enabled(GtkWindow* window);
  *
  * Used to settle ambiguities when anchored to multiple edges. The Wayland protocol only allows
  * being exclusive on a single edge at a time, and it must be an edge the surface is anchored to.
- * If anchroed to one or three edges, the main edge is selected automatically if enabled. Only has
+ * If anchored to one or three edges, the main edge is selected automatically if enabled. Only has
  * an effect on Wayland compositors supporting protocol version >=5
  * (https://wayland.app/protocols/wlr-layer-shell-unstable-v1#compositor-support)
  *

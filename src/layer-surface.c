@@ -326,14 +326,16 @@ static void layer_surface_role_destroyed(struct xdg_surface_server_t* super) {
     if (self->layer_surface) {
         zwlr_layer_surface_v1_destroy(self->layer_surface);
         self->layer_surface = NULL;
-        self->layer_surface_version = 0;
     }
 
     self->cached_xdg_configure_size = GEOM_SIZE_UNSET;
     self->last_xdg_window_geom_size = GEOM_SIZE_UNSET;
     self->cached_layer_size_set = GEOM_SIZE_UNSET;
     self->last_layer_configured_size = GEOM_SIZE_UNSET;
+    self->cached_exclusive_zone = 0;
+    self->cached_exclusive_edge = 0;
 
+    self->layer_surface_version = 0;
     self->pending_configure_serial = 0;
     self->has_initial_layer_shell_configure = false;
 }
