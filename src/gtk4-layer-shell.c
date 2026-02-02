@@ -350,7 +350,9 @@ GTK4_LAYER_SHELL_EXPORT
 int gtk_layer_get_exclusive_zone(GtkWindow* window) {
     struct gtk_layer_surface_t* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return 0;
-    return layer_surface->super.exclusive_zone;
+    return layer_surface->super.auto_exclusive_zone ?
+        layer_surface->super.cached_exclusive_zone :
+        layer_surface->super.explicit_exclusive_zone;
 }
 
 GTK4_LAYER_SHELL_EXPORT
@@ -365,6 +367,34 @@ gboolean gtk_layer_auto_exclusive_zone_is_enabled(GtkWindow* window) {
     struct gtk_layer_surface_t* layer_surface = gtk_window_get_layer_surface_or_warn(window);
     if (!layer_surface) return FALSE;
     return layer_surface->super.auto_exclusive_zone;
+}
+
+GTK4_LAYER_SHELL_EXPORT
+void gtk_layer_set_exclusive_edge_enabled(GtkWindow* window, GtkLayerShellEdge edge, gboolean enable) {
+    struct gtk_layer_surface_t* layer_surface = gtk_window_get_layer_surface_or_warn(window);
+    if (!layer_surface) return;
+    struct geom_edges_t edges = layer_surface->super.exclusive_edges;
+    switch (edge) {
+        case GTK_LAYER_SHELL_EDGE_LEFT:   edges.left    = enable; break;
+        case GTK_LAYER_SHELL_EDGE_RIGHT:  edges.right   = enable; break;
+        case GTK_LAYER_SHELL_EDGE_TOP:    edges.top     = enable; break;
+        case GTK_LAYER_SHELL_EDGE_BOTTOM: edges.bottom  = enable; break;
+        default: g_warning("Invalid GtkLayerShellEdge %d", edge);
+    }
+    layer_surface_set_exclusive_edges(&layer_surface->super, edges);
+}
+
+GTK4_LAYER_SHELL_EXPORT
+gboolean gtk_layer_get_exclusive_edge_enabled(GtkWindow* window, GtkLayerShellEdge edge) {
+    struct gtk_layer_surface_t* layer_surface = gtk_window_get_layer_surface_or_warn(window);
+    if (!layer_surface) return FALSE;
+    switch (edge) {
+        case GTK_LAYER_SHELL_EDGE_LEFT:   return layer_surface->super.exclusive_edges.left;
+        case GTK_LAYER_SHELL_EDGE_RIGHT:  return layer_surface->super.exclusive_edges.right;
+        case GTK_LAYER_SHELL_EDGE_TOP:    return layer_surface->super.exclusive_edges.top;
+        case GTK_LAYER_SHELL_EDGE_BOTTOM: return layer_surface->super.exclusive_edges.bottom;
+        default: g_warning("Invalid GtkLayerShellEdge %d", edge); return FALSE;
+    }
 }
 
 GTK4_LAYER_SHELL_EXPORT
