@@ -10,6 +10,7 @@ static void callback_0() {
     EXPECT_MESSAGE(ext_session_lock_manager_v1 .lock);
     EXPECT_MESSAGE(ext_session_lock_v1 .get_lock_surface);
     EXPECT_MESSAGE(ext_session_lock_v1 .locked);
+    EXPECT_MESSAGE(WARNING Tried to lock multiple times without unlocking);
 
     lock_a = gtk_session_lock_instance_new();
     connect_lock_signals(lock_a, &state_a);
