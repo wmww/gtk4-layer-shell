@@ -117,11 +117,10 @@ static void layer_surface_handle_configure(
 static void layer_surface_handle_closed(void* data, struct zwlr_layer_surface_v1* _surface) {
     (void)_surface;
     struct layer_surface_t* self = data;
-    if (!self->has_initial_layer_shell_configure) {
-        fprintf(stderr, "compositor closed layer surface before sending initial .configure");
+    if (self->respect_close && self->super.xdg_toplevel) {
         LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(xdg_toplevel_listener, close, self->super.xdg_toplevel);
-    } else if (self->respect_close && self->super.xdg_toplevel) {
-        LIBWAYLAND_SHIM_DISPATCH_CLIENT_EVENT(xdg_toplevel_listener, close, self->super.xdg_toplevel);
+    } else if (!self->has_initial_layer_shell_configure) {
+        fprintf(stderr, "compositor closed layer surface before sending initial .configure\n");
     }
 }
 

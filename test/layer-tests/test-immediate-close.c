@@ -15,7 +15,7 @@ static void callback_0()
 }
 
 static void callback_1() {
-    ASSERT_EQ(gtk_widget_get_mapped(GTK_WIDGET(window)), FALSE, "%d");
+    ASSERT_EQ(gtk_widget_get_mapped(GTK_WIDGET(window)), TRUE, "%d");
 }
 
 TEST_CALLBACKS(
