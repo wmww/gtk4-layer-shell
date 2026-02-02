@@ -43,4 +43,5 @@ layer_tests = [
     'test-configure-delay',
     'test-popup-configure-delay',
     'test-immediate-close',
+    'test-monitor-destroyed-before-configure',
 ]
