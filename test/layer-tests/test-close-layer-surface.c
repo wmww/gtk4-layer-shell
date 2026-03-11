@@ -9,6 +9,8 @@ static void callback_0() {
 }
 
 static void callback_1() {
+    EXPECT_MESSAGE(wl_surface .attach nil);
+    EXPECT_MESSAGE(wl_surface .commit);
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .destroy);
     EXPECT_MESSAGE(wl_surface .destroy);
     gtk_window_close(window);

@@ -9,6 +9,92 @@
 #include <string.h>
 #include <stdlib.h>
 
+// GTK tears down the xdg role before it commits the final null buffer, so keep
+// the pending layer role keyed by the wl_surface until that unmap commit or wl_surface.destroy finishes teardown.
+#define PENDING_ROLE_MAX_COUNT 32
+
+struct pending_role_t {
+    struct wl_surface* surface;
+    struct zwlr_layer_surface_v1* role;
+    bool detached;
+};
+
+static struct pending_role_t pending_roles[PENDING_ROLE_MAX_COUNT] = {0};
+static int pending_role_count = 0;
+
+static int find_pending_role(struct wl_surface* surface) {
+    for (int i = 0; i < pending_role_count; i++) {
+        if (pending_roles[i].surface == surface) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static bool is_pending_role_detached(struct wl_surface* surface) {
+    int index = find_pending_role(surface);
+    return index >= 0 && pending_roles[index].detached;
+}
+
+static bool set_pending_role_detached(struct wl_surface* surface, bool detached) {
+    int index = find_pending_role(surface);
+    if (index < 0) {
+        return false;
+    }
+
+    pending_roles[index].detached = detached;
+    return true;
+}
+
+static void stage_pending_role(
+    struct wl_surface* surface,
+    struct zwlr_layer_surface_v1* role
+) {
+    int index = find_pending_role(surface);
+    if (index < 0) {
+        assert(pending_role_count < PENDING_ROLE_MAX_COUNT);
+        index = pending_role_count++;
+        pending_roles[index] = (struct pending_role_t){
+            .surface = surface,
+        };
+    } else if (pending_roles[index].role) {
+        zwlr_layer_surface_v1_destroy(pending_roles[index].role);
+    }
+
+    pending_roles[index].role = role;
+    pending_roles[index].detached = false;
+}
+
+
+static bool destroy_pending_role(struct wl_surface* surface) {
+    int index = find_pending_role(surface);
+    if (index < 0) {
+        return false;
+    }
+
+    if (pending_roles[index].role) {
+        zwlr_layer_surface_v1_destroy(pending_roles[index].role);
+    }
+
+    pending_role_count--;
+    pending_roles[index] = pending_roles[pending_role_count];
+    pending_roles[pending_role_count] = (struct pending_role_t){0};
+    return true;
+}
+
+static void reset_layer_surface_cached_state(struct layer_surface_t* self) {
+    self->cached_xdg_configure_size = GEOM_SIZE_UNSET;
+    self->last_xdg_window_geom_size = GEOM_SIZE_UNSET;
+    self->cached_layer_size_set = GEOM_SIZE_UNSET;
+    self->last_layer_configured_size = GEOM_SIZE_UNSET;
+    self->cached_exclusive_zone = 0;
+    self->cached_exclusive_edge = 0;
+
+    self->layer_surface_version = 0;
+    self->pending_configure_serial = 0;
+    self->has_initial_layer_shell_configure = false;
+}
+
 static inline struct geom_edges_t normalize_edges_as_booleans(struct geom_edges_t edges) {
     return (struct geom_edges_t) {
         .left   = !!edges.left,
@@ -275,6 +361,8 @@ static void layer_surface_update_exclusive_zone(struct layer_surface_t* self) {
 }
 
 static void layer_surface_create_surface_object(struct layer_surface_t* self, struct wl_surface* wl_surface) {
+    destroy_pending_role(wl_surface);
+
     struct wl_display* display = libwayland_shim_proxy_get_display((struct wl_proxy*)wl_surface);
     struct zwlr_layer_shell_v1* layer_shell_global = get_layer_shell_global_from_display(display);
     if (!layer_shell_global) {
@@ -323,20 +411,15 @@ static void layer_surface_role_destroyed(struct xdg_surface_server_t* super) {
     struct layer_surface_t* self = (void*)super;
 
     if (self->layer_surface) {
-        zwlr_layer_surface_v1_destroy(self->layer_surface);
+        if (self->super.wl_surface) {
+            stage_pending_role(self->super.wl_surface, self->layer_surface);
+        } else {
+            zwlr_layer_surface_v1_destroy(self->layer_surface);
+        }
         self->layer_surface = NULL;
     }
 
-    self->cached_xdg_configure_size = GEOM_SIZE_UNSET;
-    self->last_xdg_window_geom_size = GEOM_SIZE_UNSET;
-    self->cached_layer_size_set = GEOM_SIZE_UNSET;
-    self->last_layer_configured_size = GEOM_SIZE_UNSET;
-    self->cached_exclusive_zone = 0;
-    self->cached_exclusive_edge = 0;
-
-    self->layer_surface_version = 0;
-    self->pending_configure_serial = 0;
-    self->has_initial_layer_shell_configure = false;
+    reset_layer_surface_cached_state(self);
 }
 
 struct layer_surface_t layer_surface_make() {
@@ -547,6 +630,82 @@ static bool xdg_surface_get_popup_hook(
     return false;
 }
 
+static bool wl_surface_attach_hook(
+    void* data,
+    struct wl_proxy* proxy,
+    uint32_t opcode,
+    const struct wl_interface* create_interface,
+    uint32_t create_version,
+    uint32_t flags,
+    union wl_argument* args,
+    struct wl_proxy** ret_proxy
+) {
+    (void)data;
+    (void)opcode;
+    (void)create_interface;
+    (void)create_version;
+    (void)flags;
+    (void)ret_proxy;
+
+    struct wl_buffer* buffer = (struct wl_buffer*)args[0].o;
+    set_pending_role_detached((struct wl_surface*)proxy, buffer == NULL);
+
+    return false;
+}
+
+static bool wl_surface_commit_hook(
+    void* data,
+    struct wl_proxy* proxy,
+    uint32_t opcode,
+    const struct wl_interface* create_interface,
+    uint32_t create_version,
+    uint32_t flags,
+    union wl_argument* args,
+    struct wl_proxy** ret_proxy
+) {
+    (void)data;
+    (void)opcode;
+    (void)create_interface;
+    (void)create_version;
+    (void)flags;
+    (void)args;
+    (void)ret_proxy;
+
+    if (is_pending_role_detached((struct wl_surface*)proxy)) {
+        libwayland_shim_forward_request(proxy, opcode, create_interface, create_version, flags, args);
+        destroy_pending_role((struct wl_surface*)proxy);
+        return true;
+    }
+
+    return false;
+}
+
+static bool wl_surface_destroy_hook(
+    void* data,
+    struct wl_proxy* proxy,
+    uint32_t opcode,
+    const struct wl_interface* create_interface,
+    uint32_t create_version,
+    uint32_t flags,
+    union wl_argument* args,
+    struct wl_proxy** ret_proxy
+) {
+    (void)data;
+    (void)opcode;
+    (void)create_interface;
+    (void)create_version;
+    (void)flags;
+    (void)args;
+    (void)ret_proxy;
+
+    if (destroy_pending_role((struct wl_surface*)proxy)) {
+        libwayland_shim_forward_request(proxy, opcode, create_interface, create_version, flags, args);
+        return true;
+    }
+
+    return false;
+}
+
 void layer_surface_install_hook(layer_surface_hook_callback_t callback) {
     libwayland_shim_install_request_hook(
         &xdg_wm_base_interface,
@@ -555,13 +714,31 @@ void layer_surface_install_hook(layer_surface_hook_callback_t callback) {
         callback
     );
 
-    static bool popup_hook_initialized = false;
-    if (!popup_hook_initialized) {
-        popup_hook_initialized = true;
+    static bool hooks_installed = false;
+    if (!hooks_installed) {
+        hooks_installed = true;
         libwayland_shim_install_request_hook(
             &xdg_surface_interface,
             XDG_SURFACE_GET_POPUP,
             xdg_surface_get_popup_hook,
+            NULL
+        );
+        libwayland_shim_install_request_hook(
+            &wl_surface_interface,
+            WL_SURFACE_ATTACH,
+            wl_surface_attach_hook,
+            NULL
+        );
+        libwayland_shim_install_request_hook(
+            &wl_surface_interface,
+            WL_SURFACE_COMMIT,
+            wl_surface_commit_hook,
+            NULL
+        );
+        libwayland_shim_install_request_hook(
+            &wl_surface_interface,
+            WL_SURFACE_DESTROY,
+            wl_surface_destroy_hook,
             NULL
         );
     }

@@ -33,6 +33,17 @@ void libwayland_shim_install_request_hook(
     void* data
 );
 
+// Forward a request to the real libwayland implementation without re-running shim hooks. The arguments must not
+// contain client-facing shim proxies.
+struct wl_proxy* libwayland_shim_forward_request(
+    struct wl_proxy* proxy,
+    uint32_t opcode,
+    struct wl_interface const* create_interface,
+    uint32_t create_version,
+    uint32_t flags,
+    union wl_argument* args
+);
+
 // Create a "fake" wl_proxy the client program (our process) can interact with, but libwayland doesn't know about
 // factory: the proxy this proxy was created from (for example an xdg_surface if the created proxy is an xdg_toplevel)
 // interface: the type of this proxy, these structs are declared in wayland client headers

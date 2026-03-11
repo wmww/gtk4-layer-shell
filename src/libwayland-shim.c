@@ -35,9 +35,18 @@ static struct wl_proxy* (*real_wl_proxy_marshal_array_flags)(
 
 static void (*real_wl_proxy_destroy)(struct wl_proxy* proxy) = NULL;
 
+// The ID for ALL proxies that are created by us and not managed by the real libwayland
+const uint32_t client_facing_proxy_id = 6942069;
+
 #define MAX_REQUEST_HOOKS 100
 static int request_hook_count = 0;
 static struct request_hook request_hooks[MAX_REQUEST_HOOKS];
+
+static bool args_contains_client_facing_proxy(
+    struct wl_proxy* proxy,
+    uint32_t opcode,
+    union wl_argument* args
+);
 
 bool libwayland_shim_has_initialized() {
     return has_initialized;
@@ -76,8 +85,19 @@ void libwayland_shim_install_request_hook(
     request_hook_count++;
 }
 
-// The ID for ALL proxies that are created by us and not managed by the real libwayland
-const uint32_t client_facing_proxy_id = 6942069;
+struct wl_proxy* libwayland_shim_forward_request(
+    struct wl_proxy* proxy,
+    uint32_t opcode,
+    struct wl_interface const* create_interface,
+    uint32_t create_version,
+    uint32_t flags,
+    union wl_argument* args
+) {
+    libwayland_shim_init();
+    assert(proxy->object.id != client_facing_proxy_id);
+    assert(!args_contains_client_facing_proxy(proxy, opcode, args));
+    return real_wl_proxy_marshal_array_flags(proxy, opcode, create_interface, create_version, flags, args);
+}
 
 struct wl_proxy* libwayland_shim_create_client_proxy(
     struct wl_proxy* factory,

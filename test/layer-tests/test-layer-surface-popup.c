@@ -27,6 +27,8 @@ static void callback_1() {
 static void callback_2() {
     EXPECT_MESSAGE(xdg_popup .destroy);
     EXPECT_MESSAGE(xdg_surface .destroy);
+    EXPECT_MESSAGE(wl_surface .attach nil);
+    EXPECT_MESSAGE(wl_surface .commit);
     EXPECT_MESSAGE(zwlr_layer_surface_v1 .destroy);
 
     gtk_window_close(layer_window);

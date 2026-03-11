@@ -249,6 +249,14 @@ def main() -> None:
     env['WAYLAND_DISPLAY'] = wayland_display
     env['WAYLAND_DEBUG'] = '1'
 
+    # Prefer the just-built library tree over any user-installed copy.
+    build_lib_dir = path.join(build_dir, 'src')
+    existing_ld_library_path = env.get('LD_LIBRARY_PATH')
+    if existing_ld_library_path:
+        env['LD_LIBRARY_PATH'] = build_lib_dir + ':' + existing_ld_library_path
+    else:
+        env['LD_LIBRARY_PATH'] = build_lib_dir
+
     server = Program('server', [server_bin], env)
 
     try:
