@@ -11,7 +11,7 @@
 
 // GTK tears down the xdg role before it commits the final null buffer, so keep
 // the pending layer role keyed by the wl_surface until that unmap commit or wl_surface.destroy finishes teardown.
-#define PENDING_ROLE_MAX_COUNT 32
+#define PENDING_ROLE_MAX_COUNT 100
 
 struct pending_role_t {
     struct wl_surface* surface;
@@ -52,7 +52,16 @@ static void stage_pending_role(
 ) {
     int index = find_pending_role(surface);
     if (index < 0) {
-        assert(pending_role_count < PENDING_ROLE_MAX_COUNT);
+        if (pending_role_count >= PENDING_ROLE_MAX_COUNT) {
+            fprintf(
+                stderr,
+                "layer-surface: maximum number of pending roles (%d) reached, destroying role immediately\n",
+                PENDING_ROLE_MAX_COUNT
+            );
+            zwlr_layer_surface_v1_destroy(role);
+            return;
+        }
+
         index = pending_role_count++;
         pending_roles[index] = (struct pending_role_t){
             .surface = surface,
@@ -664,11 +673,6 @@ static bool wl_surface_commit_hook(
     struct wl_proxy** ret_proxy
 ) {
     (void)data;
-    (void)opcode;
-    (void)create_interface;
-    (void)create_version;
-    (void)flags;
-    (void)args;
     (void)ret_proxy;
 
     if (is_pending_role_detached((struct wl_surface*)proxy)) {
@@ -691,11 +695,6 @@ static bool wl_surface_destroy_hook(
     struct wl_proxy** ret_proxy
 ) {
     (void)data;
-    (void)opcode;
-    (void)create_interface;
-    (void)create_version;
-    (void)flags;
-    (void)args;
     (void)ret_proxy;
 
     if (destroy_pending_role((struct wl_surface*)proxy)) {

@@ -36,7 +36,7 @@ static struct wl_proxy* (*real_wl_proxy_marshal_array_flags)(
 static void (*real_wl_proxy_destroy)(struct wl_proxy* proxy) = NULL;
 
 // The ID for ALL proxies that are created by us and not managed by the real libwayland
-const uint32_t client_facing_proxy_id = 6942069;
+static const uint32_t client_facing_proxy_id = 6942069;
 
 #define MAX_REQUEST_HOOKS 100
 static int request_hook_count = 0;
