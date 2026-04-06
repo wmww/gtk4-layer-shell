@@ -567,6 +567,8 @@ static void create_output(int width, int height) {
 }
 
 static void destroy_output(int slot) {
+    if (slot < 0 || slot >= OUTPUT_SLOTS || !outputs[slot].global)
+        FATAL_FMT("destroying invalid output %d", slot);
     struct output_data_t* output = &outputs[slot];
     for (int i = 0; i < next_surface_slot; i++) {
         if (surfaces[i].layer_surface && surfaces[i].effective_output == output) {
@@ -574,8 +576,6 @@ static void destroy_output(int slot) {
             surfaces[i].layer_is_closed = true;
         }
     }
-    if (slot < 0 || slot >= OUTPUT_SLOTS || !outputs[slot].global)
-        FATAL_FMT("destroying invalid output %d", slot);
     wl_global_remove(output->global);
     *output = (struct output_data_t){0};
 }

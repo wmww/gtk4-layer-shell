@@ -157,12 +157,11 @@ static void layer_surface_send_set_keyboard_interactivity(struct layer_surface_t
     if (self->layer_surface) {
         enum zwlr_layer_surface_v1_keyboard_interactivity mode = self->keyboard_mode;
         if (mode == ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND) {
-            uint32_t version = wl_proxy_get_version((struct wl_proxy*)self->layer_surface);
-            if (version < ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND_SINCE_VERSION) {
+            if (self->layer_surface_version < ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_ON_DEMAND_SINCE_VERSION) {
                 fprintf(
                     stderr,
                     "compositor uses layer shell version %d, which does not support on-demand keyboard interactivity\n",
-                    version
+                    self->layer_surface_version
                 );
                 mode = ZWLR_LAYER_SURFACE_V1_KEYBOARD_INTERACTIVITY_NONE;
             }
@@ -489,7 +488,6 @@ static bool xdg_wm_base_get_xdg_surface_hook(
     union wl_argument* args,
     struct wl_proxy** ret_proxy
 ) {
-    (void)data;
     (void)opcode;
     (void)create_interface;
     (void)create_version;
