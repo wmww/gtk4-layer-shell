@@ -219,10 +219,20 @@ static void gtk_lock_surface_unmap_window(struct gtk_lock_surface_t* self) {
     if (!window) return;
     self->gtk_window = NULL;
     g_signal_handlers_disconnect_by_data(window, self);
-    gtk_widget_unrealize(GTK_WIDGET(window));
+    // Hold a reference so the realized check below is safe if gtk_window_destroy() dropped the last one.
+    g_object_ref(window);
     // This destroys GTK's internal reference to the window, the program could still be holding a reference to the
-    // window if it wants to keep it alive and use it again.
+    // window if it wants to keep it alive and use it again. It must be called while the window is still realized:
+    // it removes the window from its GtkApplication (if any), and gtk_application_window_removed() uses the window's
+    // GdkSurface on GTK >= 4.22, so unrealizing first is a use-after-free crash. See
+    // https://github.com/wmww/gtk4-layer-shell/issues/122 for details.
     gtk_window_destroy(window);
+    // gtk_window_destroy() does nothing on a window that was already destroyed (such as an externally referenced
+    // window being reused for a second lock), so explicitly unrealize to make sure the surface is torn down.
+    if (gtk_widget_get_realized(GTK_WIDGET(window))) {
+        gtk_widget_unrealize(GTK_WIDGET(window));
+    }
+    g_object_unref(window);
 }
 
 static gint find_lock_surface_with_wl_surface(gconstpointer lock_surface, gconstpointer needle) {
