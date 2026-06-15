@@ -8,6 +8,8 @@ lock_tests = [
     'test-monitors-changed-after-unlocked',
     'test-immediate-failure',
     'test-async-failure',
+    'test-async-failure-application-window',
     'test-popup-on-lock-screen',
     'test-works-without-monitor-signal',
+    'test-can-unlock-application-window',
 ]
