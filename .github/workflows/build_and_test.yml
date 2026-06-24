@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/wmww/gtk4-layer-shell-ci:latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 #v5.0.0
     - name: Meson
       run: meson setup -Dexamples=true -Ddocs=true -Dtests=true -Db_sanitize=address,undefined build
       env:
@@ -20,3 +20,10 @@ jobs:
       run: ninja -C build
     - name: Test
       run: ASAN_OPTIONS="detect_leaks=0" LD_PRELOAD="$(gcc -print-file-name=libasan.so)" meson test -C build --verbose
+    - name: Upload build artifacts for language bindings
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 #v5.0.0
+      with:
+        name: build-artifacts
+        path: |
+          build/src/*.gir
+          build/src/*.vapi
