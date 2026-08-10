@@ -283,6 +283,31 @@ static void layer_surface_create_surface_object(struct layer_surface_t* self, st
 
     const char* name_space = layer_surface_get_namespace(self);
 
+    // A wl_surface can outlive the layer surface built on it: GTK keeps one
+    // wl_surface across hide/show and tears down only the role object, so this
+    // function frequently runs on a surface that was previously mapped. Since
+    // wl_surface state is persistent, a buffer that was current when the
+    // previous layer surface was destroyed is still current here.
+    //
+    // This has to be cleared BEFORE the role is created. The protocol is
+    // explicit: "Creating a layer surface from a wl_surface which has a buffer
+    // attached or committed is a client error, and any attempts by a client to
+    // attach or manipulate a buffer prior to the first layer_surface.configure
+    // call must also be treated as errors." Clearing after get_layer_surface
+    // would be too late (role creation has already violated the rule) and
+    // would itself violate the second half of that sentence.
+    //
+    // The previous layer_surface role object was destroyed at unmap. The
+    // wl_surface retains that role for its lifetime, but creating the same role
+    // again is allowed; before the new role object exists, attach+commit is
+    // legal here and matches gdk_wayland_surface_hide_surface().
+    // The commit is required: attach alone only sets pending state and would
+    // not clear the CURRENT buffer. On a genuinely fresh surface this is a
+    // no-op, since attaching a null buffer to a surface that has none changes
+    // nothing.
+    wl_surface_attach(wl_surface, NULL, 0, 0);
+    wl_surface_commit(wl_surface);
+
     self->has_initial_layer_shell_configure = false;
     self->layer_surface = zwlr_layer_shell_v1_get_layer_surface(
         layer_shell_global,
