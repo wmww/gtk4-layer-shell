@@ -56,6 +56,9 @@ static void libwayland_shim_init() {
     if (!(real_##name = dlsym(libwayland, #name))) { \
         fprintf(stderr, "libwayland_shim: dlsym failed to load %s\n", #name); \
         exit(1); \
+    } else if (real_##name == name) { \
+        fprintf(stderr, "libwayland_shim: dlsym returned our own %s instead of libwayland's\n", #name); \
+        exit(1); \
     }
 
     INIT_SYM(wl_proxy_marshal_array_flags);
