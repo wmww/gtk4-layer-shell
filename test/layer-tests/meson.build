@@ -45,3 +45,8 @@ layer_tests = [
     'test-immediate-close',
     'test-monitor-destroyed-before-configure',
 ]
+
+# The interposer relies on glibc's symbol versioning to find the real dlsym
+if meson.get_compiler('c').has_header_symbol('features.h', '__GLIBC__')
+    layer_tests += ['test-dlsym-interposed']
+endif
