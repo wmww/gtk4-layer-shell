@@ -46,8 +46,14 @@ bool libwayland_shim_has_initialized() {
 static void libwayland_shim_init() {
     if (has_initialized) return;
 
+    void* libwayland = dlopen("libwayland-client.so.0", RTLD_LAZY | RTLD_NOLOAD);
+    if (!libwayland) {
+        fprintf(stderr, "libwayland_shim: libwayland-client is not loaded: %s\n", dlerror());
+        exit(1);
+    }
+
 #define INIT_SYM(name) \
-    if (!(real_##name = dlsym(RTLD_NEXT, #name))) { \
+    if (!(real_##name = dlsym(libwayland, #name))) { \
         fprintf(stderr, "libwayland_shim: dlsym failed to load %s\n", #name); \
         exit(1); \
     }
