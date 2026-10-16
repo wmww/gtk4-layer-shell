@@ -1,6 +1,7 @@
 subdir('test-common')
 subdir('mock-server')
 subdir('integration-test-common')
+subdir('dlsym-interposer')
 subdir('layer-tests')
 subdir('lock-tests')
 subdir('unit-tests')
@@ -19,10 +20,15 @@ foreach test_list : [['layer', layer_tests], ['lock', lock_tests]]
     test_dir = test_prefix + '-tests'
     foreach test_name : test_list[1]
         test_full_name = test_prefix + '-' + test_name
+        test_deps = [gtk, wayland_client, gtk_layer_shell, integration_test_common]
+        if test_name == 'test-dlsym-interposed'
+            # Must be linked before gtk4-layer-shell to reproduce the bug
+            test_deps = [dlsym_interposer] + test_deps
+        endif
         exe = executable(
             test_full_name,
             files(join_paths(test_dir, test_name + '.c')), client_protocol_srcs,
-            dependencies: [gtk, wayland_client, gtk_layer_shell, integration_test_common])
+            dependencies: test_deps)
         test(
             test_full_name,
             py,
