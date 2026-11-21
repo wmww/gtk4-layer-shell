@@ -33,6 +33,8 @@ G_BEGIN_DECLS
  *
  * Returns: %TRUE if the platform is Wayland and Wayland compositor supports the
  * Session Lock protocol.
+ *
+ * Since: 1.1
  */
 gboolean gtk_session_lock_is_supported();
 
